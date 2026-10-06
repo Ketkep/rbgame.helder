@@ -75,6 +75,11 @@ More building blocks added for floors 2 and 3: `quiz.js: quizHall` (the quiz-lev
 3. Replace the matching placeholder in `roster.js` (`buildHotelLevels()`), keeping its tier/index.
 4. Tag your main-path platforms `path: true` and run `CAMPAIGN=hotel node tools/check-reach.mjs <n>` and `CAMPAIGN=hotel node tools/bot.mjs <n>`.
 
+## Testing quickly (any level, any time)
+Levels normally unlock in order. For play-testing, add `?debug` to the URL: everything unlocks and you can jump straight into a level, e.g. `https://trustme.helderlabs.com/?debug&campaign=hotel&level=11` (level numbers are 1–15; no `level` = the lobby). In debug mode the game does not grab your mouse automatically — **click the canvas once** to capture it. Debug runs don't count toward your saved progress the usual way, so use a normal run to test unlocking.
+
+Smoke/monkey tests for all hotel levels: `node tools/smoke-hotel.mjs` and `node tools/monkey-hotel.mjs` (need `npm run preview` running).
+
 ## Building blocks (what's in the engine now)
 - `world.plat({ slippery })` — low-friction marble. `world.rollaway(plat, …)` — rolls away after you step on it. `world.conveyor(plat, { vx, vz })` — belts that carry you. `plat.attach(mesh)` — scenery that travels with a platform.
 - `engine/keypad.js` — modal keypad (`game.modal` takes the keyboard). `engine/hint.js` — the dotted hint trail; a level can set `w.hintFn` (custom points), `w.hintFlat` or `w.hintAction` (return `'trail'` to fall back to the dotted line).
