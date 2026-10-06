@@ -21,14 +21,14 @@ The home page lists **campaigns**. **Campaign 1 — Welcome to the Show** is fiv
 - Everything is telegraphed (ping turns red before a lag spike, controls announce themselves…). Annoying, not unfair.
 
 ### Campaign 2 — Hotel Trust-Me *(in progress)*
-A luxe art-deco hotel with a **walkable lobby** as the level select: the five elevators are the floors (Easy / Medium / Hard / Impossible / Why-are-u-even-trying), and the elevators lie. 25 levels are planned (parkour, quizzes, escape rooms, mazes, tricks); the world, hub, interaction system and **Level 1 — Wet Floor** are built, the rest show as "under renovation". See [`docs/hotel-campaign.md`](docs/hotel-campaign.md) for the roster, status and how to add a level.
+A luxe art-deco hotel with a **walkable lobby** as the level select: the five elevators are the floors (Easy / Medium / Hard / Impossible / Why-are-u-even-trying), and the elevators lie. 25 levels are planned (parkour, quizzes, escape rooms, mazes, chases, tricks); the world, hub, interaction system, hint button and **all of Floor 1 (Wet Floor, Check-In, Lost Luggage, Revolving Door, Bellhop Blues)** are built, the rest show as "under renovation". See [`docs/hotel-campaign.md`](docs/hotel-campaign.md) for the roster, status and how to add a level.
 
 ### Home page & progress
 - Home page: campaign cards with progress, a level select (levels unlock as you clear them; everything unlocks after you finish the campaign), and Settings (sensitivity, volume, music, low graphics, reset progress).
 - Progress is saved per campaign in the browser (`localStorage`). Saves from the single-campaign version are migrated automatically.
 
 ### Controls
-`WASD` move · `Space` jump (tap = hop, hold = full jump) · `Mouse` look · `R` respawn · `Esc` pause · `M` mute · `Enter` resume
+`WASD` move · `Space` jump (tap = hop, hold = full jump) · `Mouse` look · `E` / click use · `H` hint · `R` respawn · `Esc` pause · `M` mute · `Enter` resume
 
 ## Develop
 

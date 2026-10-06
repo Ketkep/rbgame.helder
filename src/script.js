@@ -234,6 +234,17 @@ Object.assign(SCRIPT, {
   'hotel.l4.door': 'Revolving doors. A wonderful invention that lets you enter and leave at the same time. Mind the glass.',
   'hotel.l4.cart': ['Housekeeping has the right of way. It is in the contract.', 'You walked into a luggage cart. In a maze. Outdoors. Impressive.', 'Mind the trolley. It does not mind you.'],
   'hotel.l4.done': 'The exit! It was at the end the whole time. They always are. Mostly.',
+  'hotel.l5.intro': 'Level five: Bellhop Blues. The bellhop is VERY keen to carry your bags. Over you, if necessary. He starts in a moment. Do not look back. Or do. It does not help either way.',
+  'hotel.l5.go': 'DING DING DING. That is him. He does not do tips. He does feet.',
+  'hotel.l5.close': ['He is right behind you. I would not look. I would not stop, either.', 'Closer. Closer. Bells are not supposed to be that fast. He is on commission.'],
+  'hotel.l5.belts': 'A moving walkway! In the wrong direction. Obviously.',
+  'hotel.l5.marble': 'Polished marble. Polished by people who hate you.',
+  'hotel.l5.stairs': 'Stairs! Jump them. Walking is for the guests who tip.',
+  'hotel.l5.trolley': 'Oh, the gondola has wheels. Sorry. Rails. Whatever. It is leaving.',
+  'hotel.l5.last': 'Straight ahead! The service elevator! It is very close! It is also very slow! Run!',
+  'hotel.l5.cp': 'Checkpoint! The bellhop has been told. He does not care.',
+  'hotel.l5.caught': ['The bellhop has your bags. And you.', 'DING. Your luggage has arrived. It is you.', 'He is only doing his job. His job is you.', 'Being flattened by a bell. A rare hotel experience.'],
+  'hotel.l5.done': 'Safe! The service elevator is staff only. You are, unfortunately, the staff now.',
   'hotel.complete.first': 'Level one done! The marble is very proud of you. I\'m... fine.',
 });
 

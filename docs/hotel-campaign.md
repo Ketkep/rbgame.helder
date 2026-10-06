@@ -9,9 +9,10 @@
 | Hotel world (art-deco lobby, lighting, reflections, night skyline) | ✅ built |
 | Walkable hub with 5 elevators as the level select | ✅ built |
 | Interaction system (look at things, press **E** / click) | ✅ built |
-| Level 1 — Wet Floor | ✅ playable |
-| Levels 2–25 | ⏳ "under renovation" (named, listed, locked in the elevators) |
-| Quiz rooms, escape-room puzzle pieces, mazes, chasers | ⏳ next (needed before levels 2+) |
+| Hint button (**H**) — dotted trail / quiz 50/50 / puzzle clues | ✅ built |
+| Building blocks: slippery marble, rolling platforms, conveyor belts, quiz pads + gates, keypad, hedge maze, chasers | ✅ built |
+| **Floor 1 — Mezzanine (levels 1–5)** | ✅ playable |
+| Floors 2, 3, 4 and 13 (levels 6–25) | ⏳ "under renovation" (named, listed, locked in the elevators) |
 
 ## How it works
 
@@ -27,11 +28,11 @@
 Types: 🏃 parkour/traps · ❓ quiz · 🔑 escape room · 🌀 maze/chase · 👔 boss · 🃏 trick
 
 **Floor 1 — Mezzanine (Easy).** Complimentary lies.
-1. 🏃 **Wet Floor** ✅ — the whole lobby floor is lethal; hop across furniture, climb the cocktail tables.
-2. ❓ **Check-In** — fill in the guest form (easy trivia). Wrong answers drop a trapdoor under the desk. One question's "correct" answer is a lie.
-3. 🔑 **Lost Luggage** — find your suitcase in the baggage room; 3-digit combination from clues; the lost-and-found bell lies.
-4. 🌀 **Revolving Door** — a maze of revolving doors; each spin changes where you come out.
-5. 🏃 **Bellhop Blues** — a runaway luggage cart chases you down a ramped corridor.
+1. 🏃 **Wet Floor** ✅ — the whole lobby floor is lethal; hop across furniture (one trolley rolls away, the marble is slippery), climb the cocktail tables.
+2. ❓ **Check-In** ✅ — four questions, three answer pads each; stand on one for a second to sign it. The host is honest exactly once. Questions are about things any player can know (controls, the hotel, Wet Floor; Campaign 1 only if you cleared it). **H** removes one wrong answer.
+3. 🔑 **Lost Luggage** ✅ — locked in the baggage office. The host gives you a code (it's wrong); the real one is the suitcase counts on the poster. One black suitcase is a mimic. Behind the door: the baggage handling hall (conveyor belts, a press). **H** gives three levels of clues.
+4. 🌀 **Revolving Door** ✅ — a new random hedge maze on the roof every attempt; revolving doors block passages on a schedule (green lamp = go), luggage-cart trains patrol the corridors (hop them), the host's directions are confident and wrong. **H** draws the way out from wherever you stand.
+5. 🏃 **Bellhop Blues** ✅ — a gigantic angry service bell chases you down the back-of-house corridor: belts, wet marble, stairs, a runaway luggage gondola. Baby mode slows it down.
 
 **Floor 2 — Restaurant & Ballroom (Medium).** The soup is a trap.
 6. 🏃 **Soufflé** — kitchen parkour: ovens, steam vents, swinging pans, a fake "EXIT" fire door.
@@ -70,7 +71,19 @@ Lying elevators · locked front doors · fake exits · decoy buttons · quiz ans
 3. Replace the matching placeholder in `roster.js` (`buildHotelLevels()`), keeping its tier/index.
 4. Tag your main-path platforms `path: true` and run `CAMPAIGN=hotel node tools/check-reach.mjs <n>` and `CAMPAIGN=hotel node tools/bot.mjs <n>`.
 
+## Building blocks (what's in the engine now)
+- `world.plat({ slippery })` — low-friction marble. `world.rollaway(plat, …)` — rolls away after you step on it. `world.conveyor(plat, { vx, vz })` — belts that carry you. `plat.attach(mesh)` — scenery that travels with a platform.
+- `engine/keypad.js` — modal keypad (`game.modal` takes the keyboard). `engine/hint.js` — the dotted hint trail; a level can set `w.hintFn` (custom points), `w.hintFlat` or `w.hintAction` (return `'trail'` to fall back to the dotted line).
+- `levels/hotel/quiz.js` — question bank (gated by what the player has seen), LED board, answer pads, gate. `levels/hotel/kit.js: roomShell` — a generic grand hall for level rooms.
+- Test hooks: a level can expose `w.botPlan(game)` so `tools/bot.mjs` can solve quiz/escape/maze levels (set `NEAR=1` for the hop-to-the-near-edge style used on the hotel levels).
+
+## Building a hotel level
+1. Create `src/levels/hotel/<name>.js` exporting `{ id, name, music, build(w, game) }` (see `wet-floor.js`).
+2. Use `hotelEnv(w)` + `lobbyShell(w)` for the lobby look, or `roomShell` and the other pieces in `kit.js` / `props.js`.
+3. Add it to `BUILT` in `roster.js` (`buildHotelLevels()`), keeping its tier/index.
+4. Tag your main-path platforms `path: true` and run `CAMPAIGN=hotel node tools/check-reach.mjs <n>` and `NEAR=1 CAMPAIGN=hotel node tools/bot.mjs <n>`.
+
 ## Build plan
-- **Phase 1 (this PR):** world + hub + elevators + interaction system + Level 1.
-- **Phase 2:** the building blocks quiz/escape/maze levels need (quiz screens, keypads/levers/doors, maze walls, chasers) + the rest of Floor 1 (levels 2–5).
+- **Phase 1:** world + hub + elevators + interaction system + Level 1. ✅
+- **Phase 2:** hints, building blocks, and the rest of Floor 1 (levels 2–5). ✅ *(you are here — play-test Floor 1 and tell me what to change)*
 - **Phase 3–5:** Floors 2, 3 and 4, then Floor 13. You play-test each floor before the next.

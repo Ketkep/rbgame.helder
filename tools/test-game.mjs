@@ -264,6 +264,26 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
   await page.close();
 }
 
+// ---- Hotel: clearing floor 1 opens floor 2's elevator ---------------------------------------------------
+{
+  const page = await open(0, 'hotel');
+  const r = await page.evaluate(() => {
+    const g = window.__trust; g.debug = false;
+    const labels = () => g.world.interactables.map((it) => (typeof it.label === 'function' ? it.label(g) : it.label)).filter((l) => /elevator|Out of order|^Level \d+:/.test(l));
+    const before = labels();
+    const c = g.cs('hotel'); for (let i = 0; i < 4; i++) c.levelBest[i] = { deaths: 0, time: 10 };   // levels 1-4 done: floor 1 not finished yet
+    const mid = labels();
+    c.levelBest[4] = { deaths: 0, time: 10 };
+    const after = labels();
+    return { before: before.filter((l) => /Floor 2|Out of order/.test(l)).length, mid: mid.filter((l) => /Call elevator/.test(l)).length, after: after.filter((l) => /Call elevator/.test(l)), l5: after.find((l) => /^Level 5:/.test(l)), l6: after.find((l) => /^Level 6:/.test(l)) };
+  });
+  ok(r.mid === 1, 'hotel: with floor 1 unfinished only the first elevator works');
+  ok(r.after.length === 2, `hotel: clearing all of floor 1 opens floor 2's elevator (${r.after.join(' | ')})`);
+  ok(/Bellhop Blues/.test(r.l5) && !/locked|renovation/.test(r.l5), `hotel: level 5 is playable (${r.l5})`);
+  ok(/under renovation/.test(r.l6), `hotel: floor 2's first level is still under renovation (${r.l6})`);
+  await page.close();
+}
+
 // ---- Hotel level 2: the quiz room ---------------------------------------------------------------
 {
   const page = await open(2, 'hotel');
@@ -407,6 +427,40 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
   ok(r.hintOn && r.hintLen >= 4 && r.hintEndsAtExit, `maze: the hint (H) draws the way to the exit (${r.hintLen} points)`);
   ok(r.midHint, 'maze: the hint works from the middle of the maze too');
   ok(r.cartKills, `maze: housekeeping carts hurt (${r.carts} on the route)`);
+  await page.close();
+}
+
+// ---- Hotel level 5: the chase -------------------------------------------------------------------------
+{
+  const page = await open(5, 'hotel');
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, ch = w.chase, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    const z0 = ch.bellZ(w.t);
+    out.startsBehind = z0 > g.player.z + 8;
+    sim(1);                       // still inside the head start: it has not moved
+    out.waits = Math.abs(ch.bellZ(w.t) - z0) < 0.01;
+    sim(5);
+    out.moves = ch.bellZ(w.t) < z0 - 10;
+    // baby mode makes it slower
+    const tRef = ch.tStart + ch.delay + 6;
+    g.baby = false; const zNormal = ch.bellZ(tRef); g.baby = true; const zBaby = ch.bellZ(tRef); g.baby = false;
+    out.babySlower = zBaby > zNormal + 3;
+    // stand still and it eventually flattens you
+    sim(10);
+    out.caught = g.state === 'dead';
+    g.state = 'playing'; g.respawnPlayer(false);
+    out.resets = Math.abs(ch.bellZ(w.t) - (w.respawn.z + 15)) < 0.01;
+    // checkpoints move the bell's start line up the course
+    w.respawn = { x: 0, y: 0, z: -37.5, yaw: 0 }; g.respawnPlayer(false);
+    out.cpStart = Math.abs(ch.startZ - (-37.5 + 15)) < 0.01;
+    return out;
+  });
+  ok(r.startsBehind && r.waits, 'bellhop: the bell starts well behind you and waits for a moment');
+  ok(r.moves, 'bellhop: then it comes after you');
+  ok(r.babySlower, 'bellhop: baby mode slows the bell down');
+  ok(r.caught, 'bellhop: standing still gets you flattened');
+  ok(r.resets && r.cpStart, 'bellhop: after a death the bell restarts behind your checkpoint');
   await page.close();
 }
 
