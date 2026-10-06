@@ -328,6 +328,15 @@ Object.assign(SCRIPT, {
   'hotel.l11.hint1': 'Hint: search the furniture. Three of the four pieces hold a digit. And keep an eye on the wardrobe. Both eyes.',
   'hotel.l11.hint2': 'Hint: the bed, the desk and the dresser each hold a digit. The armchair holds a lie. I know which one is which. I am not saying.',
   'hotel.l11.hint3': 'Hint: the code is {code}. And no, it is not 404.',
+  'hotel.l12.intro': 'Level twelve: Do Not Disturb. Housekeeping is on the floor. Two of them. They have a very strict policy about guests who are not in their rooms.',
+  'hotel.l12.intro2': 'They see in a cone. I have helpfully drawn it on the floor. Do not stand in it. If you must, hide in a laundry cart. They are in the dead ends. Obviously.',
+  'hotel.l12.hide': 'Hidden! In a cart! Among the sheets! Which are, I should say, not entirely clean. Press anything to climb out.',
+  'hotel.l12.spotted': ['She has seen you! Run! Or, better, stop being in the cone.', 'Uh oh. That is the look of someone who has found a guest in a corridor.'],
+  'hotel.l12.caught': ['Housekeeping! You are in the wrong place at the wrong time. In the right hotel, though.', 'Seen! Caught! Folded and put in the cupboard.', 'No Do Not Disturb sign can save you now. There was never one on you.'],
+  'hotel.l12.found': ['She found you in the cart. She was looking for more sheets. You were more sheets.', 'The cart is hers. The cart is always hers. You were, briefly, laundry.'],
+  'hotel.l12.lie': ['Left! Always left! I have worked here for years! In a different building!', 'The exit is right there! Straight on! I can see it! It is a different exit!', 'Do Not Disturb signs mean they will not come in. That is what the sign says. It does not say anything about corridors.'],
+  'hotel.l12.cart': 'A laundry cart. Climb in. It is the only discreet thing in this hotel.',
+  'hotel.l12.done': 'The stairs! Nobody saw you. Nobody ever does. It is the hotel industry\'s greatest strength.',
   'hotel.complete.first': 'Level one done! The marble is very proud of you. I\'m... fine.',
 });
 

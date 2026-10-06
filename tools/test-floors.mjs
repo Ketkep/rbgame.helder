@@ -265,6 +265,56 @@ suite('room404', async () => {
   await page.close();
 });
 
+// ---- level 12: Do Not Disturb ----------------------------------------------------------------------------------------
+suite('dnd', async () => {
+  const page = await open(12);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, d = w.dnd, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    out.maids = d.maids.length; out.carts = d.carts.length;
+    out.cartsInDeadEnds = d.carts.every((c) => d.maze.nbrs(c.cell[0], c.cell[1]).length === 1);
+    // the housekeepers patrol
+    const c0 = d.maids.map((m) => m.wk.cell.join());
+    g.player.teleport(d.grid.cx(0), 0.01, d.grid.cz(0)); d.blind = true; sim(12);
+    out.patrol = d.maids.some((m, i) => m.wk.cell.join() !== c0[i]);
+    d.blind = false;
+    // sight: put a maid facing the player along the entrance corridor... use the first maid, put her in the player's cell facing him
+    const m = d.maids[0], wk = m.wk;
+    const p = g.player;
+    const cell = [3, 3];
+    wk.teleport(cell); wk.route = []; wk.target = null; wk.wait = 99;     // she stands still, looking around
+    p.teleport(wk.x, 0.01, wk.z - 3); wk.yaw = 0;                          // 3 m in front of her (yaw 0 faces -z)
+    // a wall between you blocks her
+    const free = d.rayWall(wk.x, wk.z, 0, -1, 12);
+    out.rayFree = free > 2.9;
+    sim(0.3); out.meterRises = m.seen > 0.2 && m.seen < 1;
+    sim(0.5); out.caught = g.state === 'dead';
+    g.state = 'playing'; g.respawnPlayer(false);
+    // hiding: invisible
+    const cart = d.carts[0]; const [ci, cj] = cart.cell;
+    const nbr = d.maze.nbrs(ci, cj)[0];
+    wk.teleport(nbr); wk.route = []; wk.target = null; wk.wait = 99;
+    // face the cart from the neighbouring cell
+    wk.yaw = Math.atan2(-(cart.x - wk.x), -(cart.z - wk.z));
+    p.teleport(cart.x, 0.01, cart.z + 0.0); d.hide(cart); sim(0.2);
+    out.hiddenFlag = d.hidden;
+    sim(1.2); out.hiddenSafe = g.state === 'playing' && m.seen === 0;
+    d.unhide(); out.climbedOut = !d.hidden && !g.mods.noMove;
+    // a maid who walks into your cart finds you
+    d.hide(cart); wk.wait = 0; wk.teleport(cart.cell); wk.wait = 99; sim(0.2);
+    out.found = g.state === 'dead';
+    return out;
+  });
+  ok(r.maids === 2 && r.carts >= 3, `dnd: ${r.maids} housekeepers and ${r.carts} laundry carts`);
+  ok(r.cartsInDeadEnds, 'dnd: carts sit in dead ends');
+  ok(r.patrol, 'dnd: the housekeepers patrol the corridors');
+  ok(r.rayFree, 'dnd: their vision is blocked by walls (clipped cone)');
+  ok(r.meterRises && r.caught, 'dnd: being in the cone fills the alert meter, then you are caught');
+  ok(r.hiddenFlag && r.hiddenSafe && r.climbedOut, 'dnd: hiding in a cart makes you invisible; you can climb out');
+  ok(r.found, 'dnd: ...unless she walks into your cart');
+  await page.close();
+});
+
 const names = Object.keys(suites).filter((n) => n.includes(filter));
 for (const n of names) { console.log(`\n== ${n}`); await suites[n](); }
 await browser.close();
