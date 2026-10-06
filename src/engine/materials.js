@@ -252,6 +252,14 @@ export function boxGeometry(w, h, d, radius = 0.08) {
   return g;
 }
 
+/** Free the cached box/edge geometries (called when a level is unloaded; the next level rebuilds what it needs). */
+export function disposeGeometryCaches() {
+  for (const g of geoCache.values()) g.dispose();
+  geoCache.clear();
+  for (const g of edgeCache.values()) g.dispose();
+  edgeCache.clear();
+}
+
 const edgeCache = new Map();
 export function edgeGeometry(w, h, d) {
   const key = [w, h, d].map((n) => +n.toFixed(3)).join('|');
