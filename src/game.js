@@ -6,6 +6,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 import { Mover, stepPlayer, MOVE, rayAABB } from './engine/physics.js';
 import { World } from './engine/world.js';
+import { HintTrail } from './engine/hint.js';
 import { GameAudio } from './engine/audio.js';
 import { UI } from './ui.js';
 import { Narrator } from './narrator.js';
@@ -92,6 +93,7 @@ export class Game {
     this.frozen = false;
     this.lastFakeCp = null; this.fakeRevealed = false;
     this.landDip = 0; this.shake = 0; this.fovKick = 0;
+    this.hintCool = 0; this.totalHints = 0; this.levelHints = 0;
     this.stepDist = 0;
     this.airMaxY = 0; this.wasGrounded = true;
     this.deadT = 0;
@@ -192,6 +194,7 @@ export class Game {
       if (e.code === 'KeyM') { this.audio.init(); this.ui.toast(this.audio.toggleMute() ? 'Muted' : 'Unmuted'); }
       if (this.state === 'playing') {
         if (e.code === 'KeyE') this.useFocus();
+        if (e.code === 'KeyH') this.useHint();
         if (e.code === 'KeyR') this.manualReset();
         if (e.code === 'KeyB') this.acceptBaby();
       }
@@ -446,6 +449,7 @@ export class Game {
     this.ui.hud(true);
     this.ui.setBaby(this.baby);
     this.ui.setDeaths(this._deathText());
+    this._chipLabel = null;
     this.state = 'playing';
     this._lock();
     this.ui.fade(true, 0);
@@ -488,6 +492,7 @@ export class Game {
     this.bloom.strength = env.bloom.strength; this.bloom.radius = env.bloom.radius; this.bloom.threshold = env.bloom.threshold;
     document.body.classList.toggle('theme-glitch', !!level.glitchTheme);
     this.deaths = 0; this.time = 0; this.timeSinceSpawn = 0;
+    this.hintCool = 0; this.levelHints = 0;
     this.deathSpots = [];
     this.lastFakeCp = null; this.fakeRevealed = false; this.fakeReveals = 0;
     this.mods = { swapStrafe: false, invertY: false, lieCounter: false, noMove: false };
@@ -636,6 +641,7 @@ export class Game {
     this.deadT = 0;
     this.deaths++; this.totalDeaths++; this.save.stats.deaths++;
     this.ui.setDeaths(this._deathText(), true);
+    this.world.hintTrail?.hide();
     this.ui.flash();
     this.ui.stamp(['WRONG!', 'NOPE', 'OOF', 'SPLAT', 'BZZT', 'NEXT!', 'OUT'][Math.floor(Math.random() * 7)]);
     this.audio.death();
@@ -768,7 +774,7 @@ export class Game {
     return [
       `TRUST ME… 🎙️ · Campaign ${this.campaign.number}: ${this.campaign.title}`,
       this.baby ? 'I trusted no one (with training wheels 👶).' : 'I trusted no one.',
-      `☠ ${this.totalDeaths} deaths · ⏱ ${fmtTime(this.totalTime)}`,
+      `☠ ${this.totalDeaths} deaths · ⏱ ${fmtTime(this.totalTime)}${this.totalHints ? ` · 💡 ${this.totalHints} hints` : ''}`,
       per,
       `Think you can do better? ${SITE_URL}`,
     ].join('\n');
@@ -886,8 +892,74 @@ export class Game {
     this.audio.setWind(Math.max(w.windLevel || 0, (w.windAmt || 0) * 0.9));
     if (w.altimeter) this.ui.setAltimeter(true, p.y, w.altimeter.max, w.altimeter.record ?? 0);
     this._updateFocus();
+    this.hintCool = Math.max(0, this.hintCool - dt);
+    w.hintTrail?.update(dt);
     this._hudT = (this._hudT || 0) + dt;
-    if (this._hudT > 0.05) { this._hudT = 0; this.ui.setTimer(this.time); if (this.mods.lieCounter && Math.random() < 0.25) this.ui.setDeaths(this._deathText()); }
+    if (this._hudT > 0.05) { this._hudT = 0; this._updateHintChip(); this.ui.setTimer(this.time); if (this.mods.lieCounter && Math.random() < 0.25) this.ui.setDeaths(this._deathText()); }
+  }
+
+  // =========================================================================================
+  //  Hints (H): a dotted trail toward the next thing to do. Quiz/puzzle levels can override.
+  // =========================================================================================
+  /** Waypoints for the default trail: where you are, then the next few path platforms (then the goal). */
+  _hintPoints() {
+    const w = this.world, p = this.player;
+    if (w.hintFn) return w.hintFn(this);
+    const path = w.plats.filter((q) => q.o.path);
+    if (!path.length) return null;
+    let idx = -1;
+    if (p.grounded && p.ground) idx = path.findIndex((q) => q.body === p.ground);
+    if (idx < 0) {
+      let best = Infinity;
+      path.forEach((q, i) => {
+        const dx = Math.max(0, Math.abs(q.body.x - p.x) - q.body.hx), dz = Math.max(0, Math.abs(q.body.z - p.z) - q.body.hz);
+        const d = Math.hypot(dx, dz) + Math.max(0, q.top - p.y) * 0.6;
+        if (d < best) { best = d; idx = i; }
+      });
+    }
+    const out = [{ x: p.x, y: p.y + 0.15, z: p.z }];
+    for (let k = 1; k <= 4 && idx + k < path.length; k++) { const q = path[idx + k]; out.push({ x: q.body.x, y: q.top + 0.15, z: q.body.z }); }
+    if (idx + 4 >= path.length - 1 && w.goalObj) out.push({ x: w.goalObj.x, y: w.goalObj.y + 0.15, z: w.goalObj.z });
+    return out.length >= 2 ? out : null;
+  }
+
+  useHint() {
+    if (this.state !== 'playing' || this.frozen || this.modal) return;
+    const w = this.world;
+    if (this.inHub) { this.narrator.say('hint.hub', { priority: 1 }); return; }
+    if (this.hintCool > 0 && !this.debug) {
+      this.ui.toast(`Hint recharging… ${Math.ceil(this.hintCool)}s`, '');
+      if (!this._cdSaid || this.time - this._cdSaid > 20) { this._cdSaid = this.time; this.narrator.say('hint.cooldown', { priority: 0 }); }
+      return;
+    }
+    let used = false;
+    if (w.hintAction) used = !!w.hintAction(this);     // custom (e.g. quiz 50/50)
+    else {
+      const pts = this._hintPoints();
+      if (!pts) { this.narrator.say('hint.none', { priority: 1 }); return; }
+      w.hintTrail ||= new HintTrail(w);
+      w.hintTrail.show(pts, this.baby ? 14 : 8);
+      used = true;
+    }
+    if (!used) return;
+    this.audio.chime();
+    this.hintCool = this.baby ? 6 : 28;
+    this.levelHints++; this.totalHints++;
+    this.cs().hints = (this.cs().hints || 0) + 1;
+    writeSave(this.save);
+    this.narrator.say(this.totalHints % 5 === 0 ? 'hint.many' : 'hint.use', { priority: 1 });
+  }
+
+  _updateHintChip() {
+    const chip = this.ui.el['hint-chip'];
+    if (!chip) return;
+    const show = !this.inHub && this.state === 'playing';
+    chip.classList.toggle('hidden', !show);
+    if (!show) return;
+    const ready = this.hintCool <= 0;
+    const label = ready ? (this.baby ? 'Hint · baby mode' : 'Hint') : `Hint in ${Math.ceil(this.hintCool)}s`;
+    if (this._chipLabel !== label) { this.ui.el['hint-label'].textContent = label; this._chipLabel = label; }
+    chip.classList.toggle('cool', !ready);
   }
 
   /** What the crosshair is on: nearest interactable in range with a clear line of sight. */

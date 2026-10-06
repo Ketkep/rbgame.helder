@@ -163,6 +163,15 @@ export const SCRIPT = {
   'l5.complete': 'Credits. Real ones, this time. ...Mostly.',
 };
 
+// ---------------------------------------------------------------- hints ---
+Object.assign(SCRIPT, {
+  'hint.use': ['Oh, you need help? Of course you do. Follow the dots.', 'A hint! Free of charge. The dignity, however, will be billed later.', 'Fine. Follow the trail. Try not to die ON the trail.', 'Glowing dots. You\'re welcome. Please don\'t thank me.'],
+  'hint.many': 'That\'s your fifth hint. I\'m starting a tab.',
+  'hint.cooldown': 'Patience. Hints are a limited-time offer. Like my respect for you.',
+  'hint.none': 'I have no hint for this one. That\'s not a lie. It\'s worse: it\'s a feeling.',
+  'hint.hub': 'The lobby needs no hint. Walk toward the elevators. They\'re the big shiny doors.',
+});
+
 // ---------------------------------------------------------------- hotel (campaign 2) ---
 Object.assign(SCRIPT, {
   'hotel.welcome': 'Welcome to Hotel Trust-Me. I\'m the manager. I was also the host. I wear many lies.',
@@ -186,6 +195,8 @@ Object.assign(SCRIPT, {
   'hotel.l1.up': 'Now the cocktail tables. They\'re pedestal tables. Pedestal is French for "you will fall".',
   'hotel.l1.near': 'Almost to the mezzanine. Staff only. Technically you\'re staff now. Unpaid.',
   'hotel.l1.slip': ['Wet floor! The sign was right there. Several signs. In yellow.', 'You slipped. Housekeeping will mop you up.', 'The floor won. The floor always wins.', 'Caution means caution. You were not cautious.'],
+  'hotel.l1.roll': ['Oh, that trolley has wheels. I said it was sturdy. Rolling is a kind of sturdy.', 'Whoops. Housekeeping never locks the brakes.', 'Fun fact: these trolleys go 5 km/h. You have about four seconds.'],
+  'hotel.l1.glide': ['Polished marble! Please don\'t stop. Stopping is where the falling happens.', 'Oh, did you want to stand still? On the wet marble? Adorable.', 'Slippery when wet. Slippery when dry. Slippery when you\'re the guest.'],
   'hotel.l1.done': 'Done! You reached the mezzanine. No one has ever been so wet and so proud.',
   'hotel.complete.first': 'Level one done! The marble is very proud of you. I\'m... fine.',
 });

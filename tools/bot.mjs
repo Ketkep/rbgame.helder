@@ -10,6 +10,7 @@ const browser = await chromium.launch({
   args: ['--use-angle=swiftshader', '--use-gl=angle', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox', '--autoplay-policy=no-user-gesture-required'],
 });
 const page = await browser.newPage({ viewport: { width: 320, height: 180 } });
+await page.addInitScript((n) => { window.__near = n; }, !!process.env.NEAR);
 const errs = [];
 page.on('pageerror', (e) => errs.push(e.message + '\n' + (e.stack || '').split('\n').slice(0, 3).join('\n')));
 await page.goto(`${base}?debug&level=${level}${process.env.CAMPAIGN ? `&campaign=${process.env.CAMPAIGN}` : ''}`, { waitUntil: 'load' });
@@ -28,6 +29,10 @@ await page.evaluate(() => {
     if (p.grounded && p.ground) { const k = path.findIndex((q) => q.body === p.ground); if (k >= 0) bot.i = Math.min(path.length - 1, k + 1); }
     const tgt = path[Math.min(bot.i, path.length - 1)];
     let tx = tgt.body.x, tz = tgt.body.z;
+    if (window.__near) {   // hop to the nearest part of the next platform (what a human does), not its centre
+      const ix = Math.max(0.15, tgt.body.hx - 0.6), iz = Math.max(0.15, tgt.body.hz - 0.6);
+      tx = Math.max(tgt.body.x - ix, Math.min(tgt.body.x + ix, p.x)); tz = Math.max(tgt.body.z - iz, Math.min(tgt.body.z + iz, p.z));
+    }
     if (bot.i >= path.length - 1 && w.goalObj) { tx = w.goalObj.x; tz = w.goalObj.z; }
     // aim at the near part of the target platform to avoid over-running small ones
     const dx = tx - p.x, dz = tz - p.z, len = Math.hypot(dx, dz) || 1;
@@ -50,7 +55,10 @@ await page.evaluate(() => {
       if (Math.abs(b.top - p.y) < 0.35) groundAhead = true;
       else if (b.top > p.y + 0.35 && b.top < p.y + 1.6) wallAhead = true;
     }
-    const jump = p.grounded && (!groundAhead || wallAhead);
+    // slippery marble: you can't stop or turn, so a human hops straight on (jump buffering) and steers in the air
+    const gm = p.ground && (Math.abs(p.ground.dx) + Math.abs(p.ground.dz) > 1e-6);   // platform rolling away under us: go now
+    const skate = p.grounded && p.ground && (((p.ground.slip > 0.8) && len < 4.4 && len > 3.0) || (gm && len < 4.4));
+    const jump = p.grounded && (!groundAhead || wallAhead || skate);
     if (jump) g.jumpEdge = true;
     if (!p.grounded) g.keys.add('Space'); else if (jump) g.keys.add('Space');
     g.keys.add('Space'); // hold for full jumps; releasing happens naturally when we stop pressing in-air (kept simple)
@@ -58,9 +66,11 @@ await page.evaluate(() => {
     w.hooks.frame?.(dt, g);
     if (g.ui._creditsOn && g.ui.creditsUpdate(dt)) w.hooks.onCreditsEnd?.();
     bot.sim += dt;
+    if (window.__trace && bot.i >= window.__trace && Math.floor(bot.sim * 10) !== bot._lt) { bot._lt = Math.floor(bot.sim * 10); bot.log.push([+bot.sim.toFixed(1), +p.x.toFixed(2), +p.y.toFixed(2), +p.z.toFixed(2), +p.vx.toFixed(1), +p.vz.toFixed(1), p.grounded ? 1 : 0, g.state]); }
   };
 });
 
+if (process.env.TRACE) await page.evaluate((t) => { window.__trace = t; }, +process.env.TRACE);
 let done = false, lastLog = 0;
 while (!done) {
   const r = await page.evaluate(() => {
@@ -74,6 +84,7 @@ while (!done) {
   else if (r.sim > maxSim) { console.log('TIMEOUT', JSON.stringify(r)); done = true; }
   else if (r.state !== 'playing' || r.frozen) await page.waitForTimeout(250);
 }
+if (process.env.TRACE) console.log((await page.evaluate(() => window.__bot.log.slice(0, 160))).map((r) => r.join(' ')).join('\n'));
 const said = await page.evaluate(() => window.__bot.said);
 console.log('narrator beats:', [...new Set(said)].join(', '));
 if (errs.length) console.log('PAGE ERRORS:\n' + errs.join('\n'));

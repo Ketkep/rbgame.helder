@@ -56,22 +56,29 @@ export default {
     };
     const P5 = trolley(-4.0, -2.4, 1.0, 1.5, 1.5);
     // 6: the grand piano lid (checkpoint)
-    const P6 = path(w.plat({ x: -0.2, y: 1.2, z: -5.4, w: 2.8, d: 1.7, h: 0.18, tex: 'wood', color: 0x15151a, roughness: 0.08, radius: 0.08 }));
+    const P6 = path(w.plat({ x: -0.2, y: 1.2, z: -5.4, w: 2.8, d: 1.7, h: 0.18, tex: 'wood', color: 0x15151a, roughness: 0.08, radius: 0.08, slippery: true }));
     for (const [sx, sz] of [[-1, -0.55], [1, -0.55], [0, 0.65]]) w.box({ x: -0.2 + sx, y: 0.55, z: -5.4 + sz, w: 0.14, h: 1.1, d: 0.14, color: 0x0b0b10, rough: 0.1 });
     w.checkpoint({ x: -0.2, y: 1.2, z: -5.4, real: true });
     // 7: another trolley
-    const P7 = trolley(3.4, -8.6, 1.5, 1.8, 1.2);
+    // (this one has wheels. It uses them.)
+    const P7 = path(w.plat({ x: 3.4, y: 1.5, z: -8.6, w: 1.8, d: 1.2, h: 0.1, tex: 'brass', color: 0xffffff, roughness: 0.3, metalness: 0.9, radius: 0.03 }));
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      P7.attach(w.box({ x: 3.4 + sx * 0.75, y: 0.75, z: -8.6 + sz * 0.45, w: 0.1, h: 1.35, d: 0.1, color: GOLD, metal: 1, rough: 0.28, static: false }));
+      P7.attach(w.box({ x: 3.4 + sx * 0.75, y: 0.12, z: -8.6 + sz * 0.45, w: 0.14, h: 0.24, d: 0.14, color: 0x14141a, rough: 0.5, static: false }));
+    }
+    P7.attach(w.box({ x: 3.4, y: 0.4, z: -8.6, w: 1.7, h: 0.06, d: 1.1, color: GOLD, metal: 1, rough: 0.3, static: false }));
+    w.rollaway(P7, { dir: [1, 0.15], dist: 6, accel: 3.5, speed: 5.5, delay: 0.7, hold: 2.4, back: 1.8, onGo: () => game.say('hotel.l1.roll', { priority: 1 }) });
     // 8: reception-style desk
-    const P8 = path(w.plat({ x: -0.6, y: 1.7, z: -11.6, w: 4.0, d: 1.2, h: 0.2, tex: 'marble', color: 0xffffff, roughness: 0.08, radius: 0.04 }));
-    w.plat({ x: -0.6, y: 1.5, z: -11.6, w: 3.8, d: 1.0, h: 1.2, tex: 'wood', color: 0xffffff, roughness: 0.3, radius: 0.05 });
+    const P8 = path(w.plat({ x: 0.5, y: 1.7, z: -11.6, w: 4.0, d: 1.2, h: 0.2, tex: 'marble', color: 0xb8b8c4, roughness: 0.14, radius: 0.04, slippery: true }));
+    w.plat({ x: 0.5, y: 1.5, z: -11.6, w: 3.8, d: 1.0, h: 1.2, tex: 'wood', color: 0xffffff, roughness: 0.3, radius: 0.05 });
     // 9-13: the cocktail-table climb
-    const table = (x, z, top) => {
-      const t = path(w.plat({ x, y: top, z, w: 1.7, d: 1.7, h: 0.12, tex: 'marble', color: 0xffffff, roughness: 0.08, radius: 0.05 }));
+    const table = (x, z, top, slippery = 0) => {
+      const t = path(w.plat({ x, y: top, z, w: 1.7, d: 1.7, h: 0.12, tex: 'marble', color: 0xc4c4cf, roughness: 0.14, radius: 0.05, slippery }));
       w.box({ x, y: (top - 0.12) / 2, z, w: 0.18, h: top - 0.12, d: 0.18, color: GOLD, metal: 1, rough: 0.28 });
       w.box({ x, y: 0.05, z, w: 1.0, h: 0.1, d: 1.0, color: GOLD, metal: 1, rough: 0.3 });
       return t;
     };
-    const climb = [[3.0, -14.2, 2.7], [-0.4, -16.2, 3.7], [3.0, -18.0, 4.7], [-0.4, -19.8, 5.7], [3.0, -21.4, 6.6]].map(([x, z, t]) => table(x, z, t));
+    const climb = [[3.0, -14.2, 2.7, 0], [-0.4, -16.2, 3.7, 0.6], [3.0, -18.0, 4.7, 0], [-0.4, -19.8, 5.7, 0.6], [3.0, -21.4, 6.6, 0]].map(([x, z, t, sl]) => table(x, z, t, sl));
     // mezzanine balcony with the goal
     const balc = path(w.plat({ x: 0, y: 7.5, z: -22.9, w: 24, d: 1.8, h: 0.6, tex: 'marble', color: 0xffffff, roughness: 0.15, radius: 0.05 }));
     for (const x of [-12, -6, 0, 6, 12]) w.box({ x, y: 3.6, z: -22.9, w: 0.5, h: 7.2, d: 0.5, color: 0xece3cf, rough: 0.3 });
@@ -90,6 +97,7 @@ export default {
     onPlat(w, P2, () => game.say('hotel.l1.1'));
     onPlat(w, P6, () => game.say('hotel.l1.mid'));
     onPlat(w, P8, () => game.say('hotel.l1.up'));
+    onPlat(w, climb[1], () => game.say('hotel.l1.glide'));
     onPlat(w, climb[2], () => game.say('hotel.l1.near'));
     w.hooks.onDeath = () => {
       if (Math.random() < 0.7) { game.say('hotel.l1.slip', { priority: 1 }); return true; }

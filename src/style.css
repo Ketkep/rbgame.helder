@@ -252,3 +252,7 @@ kbd { font: 400 13px var(--display); min-width: 30px; padding: 6px 9px; text-ali
 .pips.grouped .pip:nth-child(5n):not(:last-child) { margin-right: 7px; }
 .pip.planned { background: rgba(255,255,255,0.08); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); }
 #scr-complete .btns { margin-top: 6px; }
+
+#hint-chip { position: absolute; left: 22px; bottom: 74px; display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 12px; background: rgba(14,15,24,0.7); backdrop-filter: blur(8px); border: 1px solid rgba(102,255,204,0.55); font: 700 13px var(--body); color: #c9ffe9; }
+#hint-chip.cool { border-color: rgba(255,255,255,0.14); color: var(--muted); }
+#hint-chip kbd { min-width: 24px; padding: 4px 8px; font-size: 12px; }

@@ -123,6 +123,23 @@ const run = { wx: 0, wz: -1, jumpPressed: false, jumpHeld: false };
   ok(rayAABB(0, 3, 0, 0, -0.4, -1, b) < Infinity, 'downward ray hits the top of the box');
 }
 
+// 9. Slippery ground: much longer stopping distance, same top speed in the end, momentum kept for jumps
+{
+  function stopDist(slip) {
+    const floor = new Body(0, -0.5, -20, 5, 0.5, 30); floor.slip = slip;
+    const p = new Mover(); p.teleport(0, 0, 0);
+    for (let i = 0; i < 120; i++) stepPlayer(p, [floor], { wx: 0, wz: -1 }, DT);   // get to full speed
+    const z0 = p.z, v0 = p.vz;
+    for (let i = 0; i < 480; i++) stepPlayer(p, [floor], { wx: 0, wz: 0 }, DT);    // let go of the keys
+    return { dist: z0 - p.z, v0 };
+  }
+  const a = stopDist(0), b = stopDist(0.88);
+  console.log(`   stopping distance: normal ${a.dist.toFixed(2)} m, slippery ${b.dist.toFixed(2)} m`);
+  ok(a.dist < 0.5, 'normal ground stops in < 0.5 m');
+  ok(b.dist > 0.9 && b.dist < 2.0, 'slippery ground slides ~1-2 m');
+  ok(Math.abs(b.v0) > 6.5, 'slippery ground still reaches full speed');
+}
+
 // reach table for level design
 for (const dh of [-3, -2, -1, 0, 0.5, 0.8, 1.0, 1.2, 1.35]) console.log(`   reach(dh=${dh}) = ${reach(dh).toFixed(2)} m`);
 

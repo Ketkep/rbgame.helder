@@ -28,6 +28,7 @@ export class Body {
     this.dx = 0; this.dy = 0; this.dz = 0; // movement during the last substep (to carry riders)
     this.enabled = true;
     this.solid = true;
+    this.slip = 0; // 0..1: how slippery the top face is (scales ground accel/friction)
     this.tag = null;
   }
   get top() { return this.y + this.hy; }
@@ -124,7 +125,8 @@ export function stepPlayer(p, bodies, input, dt, opts = {}) {
   const tz = input.wz * MOVE.speed;
   const hasInput = input.wx !== 0 || input.wz !== 0;
   if (p.grounded) {
-    const a = (hasInput ? MOVE.groundAccel : MOVE.groundFriction) * dt;
+    const k = p.ground && p.ground.slip ? 1 - 0.9 * p.ground.slip : 1;
+    const a = (hasInput ? MOVE.groundAccel : MOVE.groundFriction) * dt * k;
     p.vx = approach(p.vx, tx, a);
     p.vz = approach(p.vz, tz, a);
   } else {

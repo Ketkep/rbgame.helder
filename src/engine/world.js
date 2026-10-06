@@ -45,6 +45,15 @@ export class Plat {
     this.group.position.set(x, y, z);
   }
   setEnabled(on) { this.body.enabled = on; this.group.visible = on; }
+  /** Re-parent a scenery mesh (made with world.box etc.) so it travels with this platform. */
+  attach(mesh) {
+    this.world.scene.remove(mesh);
+    mesh.position.sub(this.group.position);
+    mesh.matrixAutoUpdate = true;
+    this.group.matrixAutoUpdate = true;
+    this.group.add(mesh);
+    return mesh;
+  }
 }
 
 export class World {
@@ -230,10 +239,18 @@ export class World {
       cone.position.y = -h / 2 - rh / 2 + 0.05; cone.castShadow = true;
       group.add(cone);
     }
+    if (o.slippery) {
+      // faint wet sheen on the top face; the body gets low-friction ground control (see physics.js)
+      this._wetMat = this._wetMat || new THREE.MeshBasicMaterial({ color: new THREE.Color(0x6aa8ff).multiplyScalar(0.7), transparent: true, opacity: 0.05, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+      const sh = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.06, d - 0.06), this._wetMat);
+      sh.rotation.x = -Math.PI / 2; sh.position.y = h / 2 + 0.004;
+      group.add(sh);
+    }
     group.position.set(x, y - h / 2, z);
     const body = new Body(x, y - h / 2, z, w / 2, h / 2, d / 2);
     body.enabled = collide;
     body.tag = o.tag || null;
+    if (o.slippery) body.slip = o.slippery === true ? 0.88 : o.slippery;
     const plat = new Plat(this, body, group, { ...o, h });
     if (!o.moving) { group.matrixAutoUpdate = false; group.updateMatrix(); }
     this.scene.add(group);
@@ -360,6 +377,41 @@ export class World {
       s.t += dt;
       if (s.t >= s.gone) { this._crumbleReset(s); }
     }
+  }
+
+  /**
+   * Starts rolling away shortly after the player steps on it, then (slowly) rolls back.
+   * dir: [x,z] unit-ish vector. Attach wheels/poles to plat.group so they travel with it.
+   */
+  rollaway(plat, { dir = [1, 0], dist = 5, accel = 4, speed = 5, delay = 0.6, hold = 2.2, back = 1.6, onGo = null } = {}) {
+    plat.o.moving = true; plat.group.matrixAutoUpdate = true;
+    const len = Math.hypot(dir[0], dir[1]) || 1, ux = dir[0] / len, uz = dir[1] / len;
+    const s = { plat, state: 'idle', t: 0, s: 0, v: 0 };
+    const place = () => plat.setPos(plat.base.x + ux * s.s, plat.base.y, plat.base.z + uz * s.s);
+    const reset = () => { s.state = 'idle'; s.t = 0; s.s = 0; s.v = 0; plat.setPos(plat.base.x, plat.base.y, plat.base.z); };
+    this.updaters.push((dt) => {
+      const pl = this.game.player;
+      if (s.state === 'idle') {
+        if (pl.grounded && pl.ground === plat.body) { s.state = 'wait'; s.t = 0; this.game.audio.crumble(); }
+      } else if (s.state === 'wait') {
+        s.t += dt;
+        plat.group.position.x = plat.base.x + (Math.random() - 0.5) * 0.03;
+        if (s.t >= delay) { s.state = 'go'; s.v = 0; if (onGo) onGo(); }
+      } else if (s.state === 'go') {
+        s.v = Math.min(speed, s.v + accel * dt); s.s += s.v * dt;
+        if (s.s >= dist) { s.s = dist; s.state = 'hold'; s.t = 0; s.v = 0; }
+        place();
+      } else if (s.state === 'hold') {
+        s.t += dt; place();
+        if (s.t >= hold) { s.state = 'back'; }
+      } else if (s.state === 'back') {
+        s.s -= back * dt;
+        if (s.s <= 0) { s.s = 0; s.state = 'idle'; }
+        place();
+      }
+    });
+    this.respawnHooks.push(reset);
+    return plat;
   }
 
   /** Kill volume. `move(t)` optionally returns an offset. */

@@ -225,6 +225,44 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
   await page.close();
 }
 
+// ---- Hotel level 1: hints, slippery marble, runaway trolley -------------------------------------
+{
+  const page = await open(1, 'hotel');
+  const r = await page.evaluate(() => {
+    const g = window.__trust; g.debug = false; g.hintCool = 0;
+    const w = g.world;
+    g.useHint();
+    const a = { active: !!(w.hintTrail && w.hintTrail.active), cool: g.hintCool, hints: g.levelHints };
+    g.useHint();                                   // still on cooldown -> no second use
+    const b = { hints: g.levelHints };
+    g.baby = true; g.hintCool = 0; g.useHint();
+    const c = { cool: g.hintCool };
+    for (let i = 0; i < 60 * 16; i++) g._simulate(1 / 60);
+    return { a, b, c, still: !!w.hintTrail.active, coolAfter: g.hintCool };
+  });
+  ok(r.a.active && r.a.hints === 1, 'hint (H) draws a trail');
+  ok(r.a.cool > 20 && r.b.hints === 1, `hint has a cooldown (${r.a.cool}s) and blocks a second use`);
+  ok(r.c.cool > 0 && r.c.cool < 10, `baby mode recharges the hint much faster (${r.c.cool}s)`);
+  ok(!r.still && r.coolAfter === 0, 'trail fades out on its own and the cooldown recovers');
+
+  const s = await page.evaluate(() => {
+    const g = window.__trust, w = g.world;
+    const slippery = w.bodies.filter((b) => b.slip > 0).length;
+    // stand on the trolley (the only platform with a rollaway) and see if it leaves
+    const tr = w.plats.find((p) => Math.abs(p.base.x - 3.4) < 0.01 && Math.abs(p.base.z + 8.6) < 0.01);
+    g.player.teleport(3.4, tr.top, -8.6); g.player.grounded = true; g.player.ground = tr.body;
+    for (let i = 0; i < 20; i++) g._simulate(1 / 60);
+    const x0 = tr.body.x;
+    for (let i = 0; i < 150; i++) g._simulate(1 / 60);
+    const moved = tr.body.x - x0, carried = g.player.x - 3.4;
+    return { slippery, moved, carried };
+  });
+  ok(s.slippery >= 4, `wet-floor: marble tops are slippery (${s.slippery} bodies)`);
+  ok(s.moved > 2, `wet-floor: the trolley rolls away under you (${s.moved.toFixed(1)} m)`);
+  ok(s.carried > 2, `wet-floor: ...and takes you with it (${s.carried.toFixed(1)} m)`);
+  await page.close();
+}
+
 // ---- Level 4: pause menu troll ----------------------------------------------------------------
 {
   const page = await open(4);
