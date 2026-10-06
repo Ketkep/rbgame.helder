@@ -299,6 +299,16 @@ Object.assign(SCRIPT, {
   'hotel.l9.lie': ['Left. It is definitely left. I used to work here.', 'Straight on! The exit is straight on! I am looking at a different kitchen, but still.', 'Take the next right. A chef told me. Not this one.'],
   'hotel.l9.caught': ['Chopped. Julienned, even.', 'You have been served. By the chef. To himself.', 'Tonight\'s special: you. Medium rare.', 'He caught you. He is not even out of breath. He is out of patience.'],
   'hotel.l9.done': 'The loading dock! You escaped the kitchen. The chef is not angry. He is disappointed. And hungry.',
+  'hotel.l10.intro': 'Level ten: Dance Floor. The tiles blink to the beat. I do not control them. The DJ does. The DJ is also me.',
+  'hotel.l10.intro2': 'Hop from lit tile to lit tile. The booths are solid. Rest there. Hydrate. Blink at the right moments.',
+  'hotel.l10.warn': ['Freeze! Everybody freeze! In a moment! Statues! Do not twitch!', 'Statues in three... two... one...'],
+  'hotel.l10.freeze': 'FREEZE. Not a single step. Not a wiggle. Pretend you are a decorative urn.',
+  'hotel.l10.moved': ['You MOVED. During the freeze. That is the entire game, and you moved.', 'Statues do not walk. You were a bad statue.', 'I said freeze. I said it loudly. In a nightclub voice.'],
+  'hotel.l10.fall': ['Out of rhythm. Out of tiles. Out of luck.', 'The tile left. It had somewhere to be.', 'You were two beats late and the floor knows it.', 'Dance floor, 1. You, an interpretive blur.'],
+  'hotel.l10.s2': 'The second set! It is faster now. By "faster" I mean "the same, but you are more tired".',
+  'hotel.l10.s3': 'Halfway to the booth. The tiles are smaller now. Because the song is getting good.',
+  'hotel.l10.s4': 'Last set! This is the encore. The encore is mandatory. The encore does not care about your knees.',
+  'hotel.l10.done': 'The DJ booth! You are officially a dancer. Please stop moving. The freeze never really ends.',
   'hotel.complete.first': 'Level one done! The marble is very proud of you. I\'m... fine.',
 });
 

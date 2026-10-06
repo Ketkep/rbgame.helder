@@ -128,6 +128,8 @@ export class GameAudio {
   click() { this._tone({ f: 900, type: 'square', dur: 0.04, vol: 0.08 }); }
   confirm() { this._tone({ f: 520, type: 'triangle', dur: 0.1, vol: 0.14 }); this._tone({ f: 780, type: 'triangle', dur: 0.16, vol: 0.14, when: 0.07 }); }
   tick() { this._tone({ f: 1500, type: 'square', dur: 0.025, vol: 0.05 }); }
+  kick() { this._tone({ f: 150, slide: 42, type: 'sine', dur: 0.2, vol: 0.2 }); }
+  hat() { this._noise({ dur: 0.04, vol: 0.04, f: 7000, type: 'highpass' }); }
   crumble() { this._noise({ dur: 0.35, vol: 0.14, f: 900, slide: 250, q: 0.6 }); }
   fall(len = 1.2) { this._tone({ f: 700, slide: 90, type: 'sine', dur: len, vol: 0.1 }); }
   whoosh() { this._noise({ dur: 0.5, vol: 0.12, f: 400, slide: 2400, type: 'bandpass', q: 0.8 }); }

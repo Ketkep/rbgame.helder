@@ -186,6 +186,39 @@ suite('kitchen', async () => {
   await page.close();
 });
 
+// ---- level 10: Dance Floor --------------------------------------------------------------------------------------
+suite('dance', async () => {
+  const page = await open(10);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, d = w.dance, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    out.tiles = d.tiles.length; out.booths = d.booths.length;
+    // every tile blinks, each lit about ON/P of the time, and consecutive ones overlap (so there is always a way on)
+    const seen = d.tiles.map(() => ({ on: 0, off: 0 })); let overlap = 0, samples = 0;
+    for (let i = 0; i < 60 * 12; i++) { g._simulate(1 / 60); d.tiles.forEach((t, k) => { seen[k][t.pl.body.enabled ? 'on' : 'off']++; }); for (let k = 0; k + 1 < d.tiles.length; k += 3) { samples++; if (d.tiles[k].pl.body.enabled && d.tiles[k + 1].pl.body.enabled) overlap++; } }
+    out.blink = seen.every((s) => s.on > 60 && s.off > 60);
+    out.overlap = overlap / samples;
+    // the booths are solid, always
+    out.boothsSolid = d.booths.every((b) => b.pl.body.enabled);
+    // freeze: moving kills, standing still is fine
+    const tFreeze = (() => { let t = w.t; while (d.phaseOf(t) !== 'freeze') t += 0.05; return t; })();
+    // put the player on the first booth-less spot: the start platform
+    g.player.teleport(0, 0.001, 9); g.player.grounded = true;
+    while (w.t < tFreeze + 0.2) g._simulate(1 / 60);
+    out.frozen = d.frozen;
+    sim(0.9); out.stillOk = g.state === 'playing';
+    g.keys.add('KeyW'); sim(0.5); g.keys.delete('KeyW');
+    out.movingKills = g.state === 'dead';
+    return out;
+  });
+  ok(r.tiles === 18 && r.booths === 3, `dance: ${r.tiles} blinking tiles and ${r.booths} solid booths`);
+  ok(r.blink && r.boothsSolid, 'dance: tiles blink on and off, booths never do');
+  ok(r.overlap > 0.35, `dance: consecutive tiles are lit together often enough to hop (${(r.overlap * 100).toFixed(0)}%)`);
+  ok(r.frozen && r.stillOk, 'dance: FREEZE: standing still is fine');
+  ok(r.movingKills, 'dance: ...moving is not');
+  await page.close();
+});
+
 const names = Object.keys(suites).filter((n) => n.includes(filter));
 for (const n of names) { console.log(`\n== ${n}`); await suites[n](); }
 await browser.close();
