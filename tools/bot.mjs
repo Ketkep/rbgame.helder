@@ -10,7 +10,7 @@ const browser = await chromium.launch({
   args: ['--use-angle=swiftshader', '--use-gl=angle', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox', '--autoplay-policy=no-user-gesture-required'],
 });
 const page = await browser.newPage({ viewport: { width: 320, height: 180 } });
-await page.addInitScript((n) => { window.__near = n; }, !!process.env.NEAR);
+await page.addInitScript((o) => { window.__near = o.near; window.__noHold = o.noHold; window.__noMom = o.noMom; }, { near: !!process.env.NEAR, noHold: !!process.env.NOHOLD, noMom: !!process.env.NOMOM });
 const errs = [];
 page.on('pageerror', (e) => errs.push(e.message + '\n' + (e.stack || '').split('\n').slice(0, 3).join('\n')));
 await page.goto(`${base}?debug&level=${level}${process.env.CAMPAIGN ? `&campaign=${process.env.CAMPAIGN}` : ''}`, { waitUntil: 'load' });
@@ -48,6 +48,10 @@ await page.evaluate(() => {
       if (Math.max(hb.hx, hb.hz) > 4) continue;   // floor-sized hazards (wet floor, lava…) aren't lasers to wait for
       const ahead = (hb.x - p.x) * ux + (hb.z - p.z) * uz;
       if (h.jumpable) { if (ahead > 0.2 && ahead < 2.7 && Math.abs(hb.y - p.y) < 2 && Math.hypot(hb.x - p.x, hb.z - p.z) < 3.6) hop = true; continue; }   // low carts: hop them
+      if (!window.__near) {   // campaign-1 style: wait for lasers that are on (or about to fire) just ahead
+        if (ahead > -0.5 && ahead < 2.6 && Math.abs(hb.y - p.y) < 2 && (h.enabled || h.group.visible)) { hold = true; break; }
+        continue;
+      }
       if (!p.grounded) continue;
       if (ahead < -2.5 || ahead > 7) continue;
       // would it hurt on the way over in the next second? (levels can give a hazard .predict(t) -> bool; moving ones are replayed from .move)
@@ -64,6 +68,7 @@ await page.evaluate(() => {
       }
       if (bad) { hold = true; break; }
     }
+    if (window.__noHold) hold = false;
     if (hold) g.keys.delete('KeyW');
     // look-ahead: is there ground (or wall) ahead?
     const ax = p.x + (dx / len) * 0.55, az = p.z + (dz / len) * 0.55;
@@ -82,7 +87,7 @@ await page.evaluate(() => {
     const vproj = (p.vx * dx + p.vz * dz) / len;
     if (!p.grounded) bot.turn = 0;
     const edge = !groundAhead || wallAhead;
-    const edgeOk = !edge || vproj > 2.5 || (bot.turn = (bot.turn || 0) + dt) > 0.35;
+    const edgeOk = !edge || window.__noMom || vproj > 2.5 || (bot.turn = (bot.turn || 0) + dt) > 0.35;
     const jump = p.grounded && !(plan && plan.wait) && !hold && ((edge && edgeOk) || skate || hop);
     if (jump) g.jumpEdge = true;
     if (!p.grounded) g.keys.add('Space'); else if (jump) g.keys.add('Space');
