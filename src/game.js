@@ -169,6 +169,8 @@ export class Game {
       this.pitch = Math.max(-1.5, Math.min(1.5, this.pitch));
       if (e.movementX || e.movementY) this.idleT = 0;
     });
+    // ?debug has no automatic pointer lock (the test harness drives the game), so let a human click to capture the mouse
+    if (this.debug) this.canvas.addEventListener('click', () => { try { this.canvas.requestPointerLock(); } catch { /* ignore */ } });
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === this.canvas;
       if (!this.locked && this.state === 'playing' && !this.debug) this.pause();

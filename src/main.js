@@ -21,5 +21,5 @@ game.loadLevel(0).then(() => {
 const q = new URLSearchParams(location.search);
 if (q.has('debug') && q.has('level')) {
   game.audio.init();
-  game.newGame(Math.max(0, +q.get('level') - 1));
+  game.newGame(Math.max(0, +q.get('level') - 1)).then(() => game.ui.toast('Debug mode: click the screen to capture the mouse', 'good'));
 }
