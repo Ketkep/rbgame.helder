@@ -3,6 +3,7 @@
 import { chromium } from 'playwright-core';
 import { reach } from '../src/engine/physics.js';
 
+const campaign = process.env.CAMPAIGN || '';
 const levels = process.argv.slice(2).map(Number);
 if (!levels.length) levels.push(1, 2, 3, 4, 5);
 const base = process.env.BASE || 'http://localhost:4173/';
@@ -13,7 +14,7 @@ const browser = await chromium.launch({
 let bad = 0;
 for (const lv of levels) {
   const page = await browser.newPage({ viewport: { width: 320, height: 180 } });
-  await page.goto(`${base}?debug&level=${lv}`, { waitUntil: 'load' });
+  await page.goto(`${base}?debug&level=${lv}${campaign ? `&campaign=${campaign}` : ''}`, { waitUntil: 'load' });
   await page.waitForFunction(() => window.__trust && window.__trust.world && window.__trust.state === 'playing', null, { timeout: 60000 });
   const data = await page.evaluate(() => {
     const w = window.__trust.world;

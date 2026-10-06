@@ -12,7 +12,7 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 320, height: 180 } });
 const errs = [];
 page.on('pageerror', (e) => errs.push(e.message + '\n' + (e.stack || '').split('\n').slice(0, 3).join('\n')));
-await page.goto(`${base}?debug&level=${level}`, { waitUntil: 'load' });
+await page.goto(`${base}?debug&level=${level}${process.env.CAMPAIGN ? `&campaign=${process.env.CAMPAIGN}` : ''}`, { waitUntil: 'load' });
 await page.waitForFunction(() => window.__trust && window.__trust.world && window.__trust.state === 'playing', null, { timeout: 60000 });
 
 await page.evaluate(() => {
@@ -36,6 +36,7 @@ await page.evaluate(() => {
     // wait for lasers: don't walk into an active hazard (or one about to fire) just ahead
     for (const h of w.hazards) {
       const hb = h.body;
+      if (Math.max(hb.hx, hb.hz) > 4) continue;   // floor-sized hazards (wet floor, lava…) aren't lasers to wait for
       const ahead = (hb.x - p.x) * (dx / len) + (hb.z - p.z) * (dz / len);
       if (ahead > -0.5 && ahead < 2.6 && Math.abs(hb.y - p.y) < 2 && (h.enabled || (h.group.visible))) { g.keys.delete('KeyW'); break; }
     }

@@ -69,6 +69,9 @@ export class World {
     this.envCfg = null;
     this.extraAccel = { x: 0, z: 0 };
     this.checkpoints = [];
+    this.interactables = [];  // things you can press E on
+    this.stepHeight = 0;      // >0 enables auto step-up (stairs) for this world
+    this.isHub = false;
     this._bursts = [];
     this.completed = false;
     this.hooks = {};          // onDeath, onCheckpoint, onLand, onComplete, onCreditsEnd, frame
@@ -114,12 +117,14 @@ export class World {
     this.hemi = new THREE.HemisphereLight(c.hemi.sky, c.hemi.ground, c.hemi.intensity);
     scene.add(this.hemi);
     const sun = (this.sun = new THREE.DirectionalLight(c.sun.color, c.sun.intensity));
-    sun.castShadow = true;
+    sun.castShadow = c.sun.shadow !== false;
     sun.shadow.mapSize.set(2048, 2048);
     const sc = sun.shadow.camera; sc.left = -46; sc.right = 46; sc.top = 46; sc.bottom = -46; sc.near = 1; sc.far = 260;
     sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.05;
     this.sunDir = new V3(...c.sun.dir).normalize();
     scene.add(sun, sun.target);
+
+    if (c.envMap) this._buildEnvMap(c.envMap);
 
     // soft clouds
     if (c.clouds) this._makeClouds(c.clouds);
@@ -130,6 +135,27 @@ export class World {
     const sh = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), new THREE.MeshBasicMaterial({ map: softTexture('shadow'), transparent: true, depthWrite: false, opacity: 0.85, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
     sh.rotation.x = -Math.PI / 2; sh.renderOrder = 5; sh.visible = false;
     this.blob = sh; scene.add(sh);
+  }
+
+  /** Image-based lighting from a tiny procedural scene: gradient room + bright light panels. Makes marble/brass shine. */
+  _buildEnvMap(cfg) {
+    const pm = new THREE.PMREMGenerator(this.game.renderer);
+    const sc = new THREE.Scene();
+    const mat = new THREE.ShaderMaterial({
+      side: THREE.BackSide, depthWrite: false,
+      uniforms: { top: { value: new THREE.Color(cfg.top ?? 0xffe6c0) }, mid: { value: new THREE.Color(cfg.mid ?? 0x6a4a3a) }, bottom: { value: new THREE.Color(cfg.bottom ?? 0x1a1210) } },
+      vertexShader: 'varying vec3 d; void main(){ d = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: 'uniform vec3 top; uniform vec3 mid; uniform vec3 bottom; varying vec3 d; void main(){ float h = d.y; vec3 c = h > 0.0 ? mix(mid, top, pow(h, 0.6)) : mix(mid, bottom, pow(-h, 0.5)); gl_FragColor = vec4(c, 1.0); }',
+    });
+    sc.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), mat));
+    for (const L of cfg.lights || []) {
+      const q = new THREE.Mesh(new THREE.PlaneGeometry(L.w, L.h), new THREE.MeshBasicMaterial({ color: new THREE.Color(L.color).multiplyScalar(L.intensity ?? 6), side: THREE.DoubleSide }));
+      q.position.set(...L.pos); q.lookAt(0, 0, 0); sc.add(q);
+    }
+    this._envRT = pm.fromScene(sc, 0.025);
+    this.scene.environment = this._envRT.texture;
+    this.scene.environmentIntensity = cfg.intensity ?? 0.7;
+    pm.dispose();
   }
 
   _makeClouds(cfg) {
@@ -181,9 +207,9 @@ export class World {
     if (o.edge !== undefined) edge = o.edge;
     if (o.color !== undefined) color = o.color;
     if (o.trim !== undefined) trim = o.trim;
-    const mat = surfaceMaterial({ tex, color, roughness: th.roughness, metalness: th.metalness ?? 0.05 });
+    const mat = surfaceMaterial({ tex, color, roughness: o.roughness ?? th.roughness, metalness: o.metalness ?? th.metalness ?? 0.05 });
     const group = new THREE.Group();
-    const mesh = new THREE.Mesh(boxGeometry(w, h, d, Math.min(0.09, h / 3)), mat);
+    const mesh = new THREE.Mesh(boxGeometry(w, h, d, o.radius ?? Math.min(0.09, h / 3)), mat);
     mesh.castShadow = true; mesh.receiveShadow = true;
     group.add(mesh);
     if (trim !== null && trim !== undefined) {
@@ -258,6 +284,37 @@ export class World {
     const l = new THREE.PointLight(color, intensity, distance, 1.6);
     l.position.set(x, y, z);
     this.scene.add(l);
+    return l;
+  }
+
+  /** Invisible solid box (for things whose visuals are not boxes: columns, furniture…). Centre-based. */
+  collider({ x, y, z, w = 1, h = 1, d = 1 }) {
+    const b = new Body(x, y, z, w / 2, h / 2, d / 2);
+    this.bodies.push(b);
+    return b;
+  }
+
+  /**
+   * Something the player can press E (or click) on while looking at it within `range` metres.
+   * `label` may be a string or a function returning one; `enabled` (optional) hides it when false.
+   */
+  interactable({ x, y, z, w = 0.6, h = 0.6, d = 0.6, label = 'Use', onUse, range = 3.2, enabled = null, pad = 0.12 }) {
+    const body = new Body(x, y, z, w / 2, h / 2, d / 2);
+    body.solid = false;
+    const it = { body, label, onUse, range, enabled, pad };
+    this.interactables.push(it);
+    return it;
+  }
+
+  /** A real spotlight, optionally shadow-casting (use one or two per scene). */
+  spotLight({ color = 0xfff0d0, intensity = 40, x, y, z, tx, ty, tz, angle = 1.2, penumbra = 0.6, distance = 0, shadow = false, mapSize = 2048, far = 60 }) {
+    const l = new THREE.SpotLight(color, intensity, distance, angle, penumbra, 1.2);
+    l.position.set(x, y, z); l.target.position.set(tx, ty, tz);
+    if (shadow) {
+      l.castShadow = true; l.shadow.mapSize.set(mapSize, mapSize);
+      l.shadow.camera.near = 0.5; l.shadow.camera.far = far; l.shadow.bias = -0.0003; l.shadow.normalBias = 0.04;
+    }
+    this.scene.add(l, l.target);
     return l;
   }
 
@@ -578,6 +635,7 @@ export class World {
   }
 
   dispose() {
+    this._envRT?.dispose();
     for (const t of this.ownTextures) t.dispose();
     this.scene.traverse((o) => {
       if (o.isMesh || o.isLine || o.isPoints) {

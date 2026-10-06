@@ -1,4 +1,4 @@
-import { Body, Mover, stepPlayer, MOVE, reach, jumpApex } from '../src/engine/physics.js';
+import { Body, Mover, stepPlayer, MOVE, reach, jumpApex, rayAABB } from '../src/engine/physics.js';
 
 const DT = 1 / 120;
 let fails = 0;
@@ -92,6 +92,35 @@ const run = { wx: 0, wz: -1, jumpPressed: false, jumpHeld: false };
   const p = new Mover(); p.teleport(0, 120, 0);
   for (let i = 0; i < 2000; i++) stepPlayer(p, [floor], { wx: 0, wz: 0 }, 1 / 60);
   ok(p.grounded && Math.abs(p.y) < 1e-6, 'no tunnelling at terminal velocity (dt=1/60, 0.5m floor)');
+}
+
+// 7. Auto step-up (stairs) only when enabled and only up to the step height
+{
+  function walkInto(stepH, riser) {
+    const floor = new Body(0, -0.5, 0, 20, 0.5, 20);
+    const step = new Body(0, riser / 2, -6, 3, riser / 2, 2);   // top at `riser`, z in [-8,-4]
+    const p = new Mover(); p.teleport(0, 0, 0);
+    for (let i = 0; i < 110; i++) stepPlayer(p, [floor, step], { wx: 0, wz: -1 }, DT, { stepHeight: stepH });  // ~6m: standing on the step
+    return p;
+  }
+  const a = walkInto(0.5, 0.35), b = walkInto(0.5, 0.7), c = walkInto(0, 0.35);
+  ok(a.grounded && Math.abs(a.y - 0.35) < 1e-3 && a.z < -4.5, `steps up a 0.35m riser when stepHeight=0.5 (y=${a.y.toFixed(2)}, z=${a.z.toFixed(1)})`);
+  ok(b.y < 0.01 && b.z > -4, `does NOT step a 0.7m riser (y=${b.y.toFixed(2)}, z=${b.z.toFixed(1)})`);
+  ok(c.y < 0.01 && c.z > -4, 'no step-up when stepHeight is 0 (campaign 1 behaviour unchanged)');
+  // low ceiling blocks the step
+  const floor = new Body(0, -0.5, 0, 20, 0.5, 20), step = new Body(0, 0.175, -6, 3, 0.175, 2), ceil = new Body(0, 2.0, -6, 3, 0.5, 2);
+  const p = new Mover(); p.teleport(0, 0, 0);
+  for (let i = 0; i < 110; i++) stepPlayer(p, [floor, step, ceil], { wx: 0, wz: -1 }, DT, { stepHeight: 0.5 });
+  ok(p.y < 0.01 && p.z > -4, 'no step-up without headroom');
+}
+
+// 8. Ray vs box (used for interaction targeting)
+{
+  const b = new Body(0, 1, -5, 1, 1, 1);
+  ok(Math.abs(rayAABB(0, 1, 0, 0, 0, -1, b) - 4) < 1e-6, 'ray hits box front face at distance 4');
+  ok(rayAABB(0, 1, 0, 0, 0, 1, b) === Infinity, 'ray pointing away misses');
+  ok(rayAABB(5, 1, 0, 0, 0, -1, b) === Infinity, 'ray beside the box misses');
+  ok(rayAABB(0, 3, 0, 0, -0.4, -1, b) < Infinity, 'downward ray hits the top of the box');
 }
 
 // reach table for level design

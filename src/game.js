@@ -4,12 +4,12 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-import { Mover, stepPlayer, MOVE } from './engine/physics.js';
+import { Mover, stepPlayer, MOVE, rayAABB } from './engine/physics.js';
 import { World } from './engine/world.js';
 import { GameAudio } from './engine/audio.js';
 import { UI } from './ui.js';
 import { Narrator } from './narrator.js';
-import { CAMPAIGNS, getCampaign } from './campaigns.js';
+import { CAMPAIGNS, getCampaign, isLevelUnlocked } from './campaigns.js';
 
 const FIXED = 1 / 120;
 const SAVE_KEY = 'trustme.save.v2';
@@ -145,13 +145,21 @@ export class Game {
     this.pixelRatio = low ? 1 : Math.min(window.devicePixelRatio || 1, 1.5);
     this.bloom.enabled = !low;
     for (const rt of [this.composer.renderTarget1, this.composer.renderTarget2]) { rt.samples = low ? 0 : 4; rt.dispose(); }
-    const sun = this.world?.sun;
-    if (sun) { sun.shadow.mapSize.set(low ? 1024 : 2048, low ? 1024 : 2048); sun.shadow.map?.dispose(); sun.shadow.map = null; }
+    this._applyShadowQuality(this.world);
     this.renderer.setPixelRatio(this.pixelRatio);
     this._resize();
     const cb = this.ui.el['set-gfx'];
     if (cb) cb.checked = !!low;
     if (persist) this._saveSettings();
+  }
+
+  /** Smaller shadow maps in low-graphics mode (sun + any shadow-casting spotlights, e.g. the hotel's). */
+  _applyShadowQuality(world) {
+    if (!world) return;
+    const size = this.lowGfx ? 1024 : 2048;
+    world.scene.traverse((o) => {
+      if ((o.isDirectionalLight || o.isSpotLight) && o.castShadow) { o.shadow.mapSize.set(size, size); o.shadow.map?.dispose(); o.shadow.map = null; }
+    });
   }
 
   _fpsWatch(dt) {
@@ -183,6 +191,7 @@ export class Game {
       if (e.code === 'Space') this.jumpEdge = true;
       if (e.code === 'KeyM') { this.audio.init(); this.ui.toast(this.audio.toggleMute() ? 'Muted' : 'Unmuted'); }
       if (this.state === 'playing') {
+        if (e.code === 'KeyE') this.useFocus();
         if (e.code === 'KeyR') this.manualReset();
         if (e.code === 'KeyB') this.acceptBaby();
       }
@@ -204,6 +213,7 @@ export class Game {
       this.pitch = Math.max(-1.5, Math.min(1.5, this.pitch));
       if (e.movementX || e.movementY) this.idleT = 0;
     });
+    document.addEventListener('mousedown', (e) => { if (e.button === 0 && this.locked && this.state === 'playing') this.useFocus(); });
     // ?debug has no automatic pointer lock (the test harness drives the game), so let a human click to capture the mouse
     if (this.debug) this.canvas.addEventListener('click', () => { try { this.canvas.requestPointerLock(); } catch { /* ignore */ } });
     document.addEventListener('pointerlockchange', () => {
@@ -229,6 +239,8 @@ export class Game {
     el['btn-mercy'].addEventListener('click', () => this.begForMercy());
     el['btn-quit'].addEventListener('click', () => { this.audio.click(); this.toHome(); });
     el['btn-next'].addEventListener('click', () => this._next());
+    el['btn-lobby'].addEventListener('click', () => { this.audio.click(); this.backToLobby(); });
+    el['btn-lobby-pause'].addEventListener('click', () => { this.audio.click(); this.backToLobby(); });
     el['btn-again'].addEventListener('click', () => { this.audio.click(); this.newGame(0, this.campaign.id); });
     el['btn-home'].addEventListener('click', () => { this.audio.click(); this.toHome(); });
     el['btn-share'].addEventListener('click', () => this._copyShare());
@@ -313,22 +325,32 @@ export class Game {
       return card;
     }
     const cs = this.cs(c.id);
-    const pips = mk('div', 'pips');
+    const hub = !!c.hub;
+    const pips = mk('div', 'pips' + (hub ? ' grouped' : ''));
     c.levels.forEach((lv, i) => {
       const done = !!cs.levelBest[i];
-      const open = this.debug || cs.completed || i <= (cs.furthest || 0);
-      const pip = mk('span', 'pip ' + (done ? 'done' : open ? 'open' : 'locked'));
-      pip.title = `${i + 1}. ${lv.name}`;
+      const open = isLevelUnlocked(c, cs, i, this.debug);
+      const pip = mk('span', 'pip ' + (done ? 'done' : lv.placeholder ? 'planned' : open ? 'open' : 'locked'));
+      pip.title = `${i + 1}. ${lv.name}${lv.placeholder ? ' (under renovation)' : ''}`;
       pips.appendChild(pip);
     });
     card.appendChild(pips);
+    const btns = mk('div', 'card-btns');
+    if (hub) {
+      const cleared = c.levels.filter((_, i) => cs.levelBest[i]).length, ready = c.levels.filter((l) => !l.placeholder).length;
+      card.appendChild(mk('p', 'card-stats', cleared ? `${cleared}/${c.levels.length} cleared · ☠ ${cs.deaths}` : `Opening floor by floor · ${ready}/${c.levels.length} levels ready`));
+      const enter = mk('button', 'btn primary', cleared || cs.deaths ? 'Back to the lobby' : 'Enter the hotel');
+      enter.addEventListener('click', () => { this.audio.init(); this.audio.click(); this.enterHub(c.id); });
+      btns.appendChild(enter);
+      card.appendChild(btns);
+      return card;
+    }
     const inProgress = cs.level > 0 || cs.deaths > 0 || cs.time > 0;
     let line;
     if (inProgress) line = `In progress: Level ${cs.level + 1} · ☠ ${cs.deaths}`;
     else if (cs.best) line = `Best run: ☠ ${cs.best.deaths} · ⏱ ${fmtTime(cs.best.time)}`;
     else line = `${c.levels.length} levels · ${c.eta}`;
     card.appendChild(mk('p', 'card-stats', line));
-    const btns = mk('div', 'card-btns');
     const play = mk('button', 'btn primary', inProgress ? 'Continue' : cs.completed ? 'Play again' : 'Play');
     play.addEventListener('click', () => { this.audio.init(); this.audio.click(); inProgress ? this.continueGame(c.id) : this.newGame(0, c.id); });
     const lv = mk('button', 'btn ghost', 'Levels');
@@ -344,7 +366,7 @@ export class Game {
     el['levels-title'].textContent = c.title;
     el['levels-grid'].innerHTML = '';
     c.levels.forEach((lv, i) => {
-      const unlocked = this.debug || cs.completed || i <= (cs.furthest || 0);
+      const unlocked = isLevelUnlocked(c, cs, i, this.debug);
       const best = cs.levelBest[i];
       const t = document.createElement('button');
       t.className = 'tile ' + (best ? 'done' : unlocked ? 'open' : 'locked');
@@ -386,6 +408,39 @@ export class Game {
     return true;
   }
 
+  /** Hub campaigns: walk into the lobby. `arrivalTier` puts you at that floor's elevator (coming back from a level). */
+  async enterHub(campaignId = this.campaign.id, arrivalTier = null) {
+    this.campaign = getCampaign(campaignId);
+    const cs = this.cs();
+    this.reset();
+    this.runStart = 0;
+    this.totalDeaths = cs.deaths || 0; this.totalTime = cs.time || 0; this.baby = !!cs.baby;
+    this.nextBabyOffer = (Math.floor(this.totalDeaths / BABY_EVERY) + 1) * BABY_EVERY;
+    this.levelDeaths = cs.levelDeaths || []; this.levelTimes = cs.levelTimes || [];
+    this.hubArrival = arrivalTier;
+    if (!(await this._loadLevelObj(this.campaign.hub, -1))) return false;
+    this._begin();
+    return true;
+  }
+
+  /** From the lobby's elevators. Placeholder ("under renovation") levels refuse politely. */
+  async enterLevel(i) {
+    const lv = this.campaign.levels[i];
+    if (!lv || lv.placeholder) return false;
+    if (!(await this.loadLevel(i))) return false;
+    this._begin();
+    return true;
+  }
+
+  /** Is level `i` of the current campaign playable? (hub elevators and level select ask this) */
+  isUnlocked(i) { return isLevelUnlocked(this.campaign, this.cs(), i, this.debug); }
+
+  async backToLobby() {
+    this.ui.hideScreens();
+    const tier = this.levelIndex >= 0 ? this.level?.tier ?? null : this.hubArrival;
+    return this.enterHub(this.campaign.id, tier);
+  }
+
   _begin() {
     this.ui.hideScreens();
     this.ui.hud(true);
@@ -395,18 +450,27 @@ export class Game {
     this._lock();
     this.ui.fade(true, 0);
     requestAnimationFrame(() => this.ui.fade(false, 800));
-    const c = this.cs();
-    c.furthest = Math.max(c.furthest || 0, this.levelIndex);
-    writeSave(this.save);
+    if (this.levelIndex >= 0) {
+      const c = this.cs();
+      c.furthest = Math.max(c.furthest || 0, this.levelIndex);
+      writeSave(this.save);
+    }
     this.level.onStart?.(this.world, this);
   }
 
   /** Builds a level. Resolves false if a newer loadLevel call superseded this one. */
   async loadLevel(i) {
-    const tok = ++this._loadTok;
     const levels = this.campaign.levels;
-    this.levelIndex = Math.max(0, Math.min(levels.length - 1, i));
-    const level = (this.level = levels[this.levelIndex]);
+    const idx = Math.max(0, Math.min(levels.length - 1, i));
+    return this._loadLevelObj(levels[idx], idx);
+  }
+
+  /** `idx` is the level's index in the campaign, or -1 for a campaign hub. */
+  async _loadLevelObj(level, idx) {
+    const tok = ++this._loadTok;
+    this.levelIndex = idx;
+    this.level = level;
+    this.inHub = idx < 0;
     if (document.fonts?.load) {
       try { await Promise.all([document.fonts.load('400 48px "Archivo Black"'), document.fonts.load('600 24px "Inter Variable"')]); } catch { /* fall back to system fonts */ }
     }
@@ -417,7 +481,8 @@ export class Game {
     if (old) { try { old.dispose(); } catch { /* best effort */ } this.renderer.renderLists.dispose(); }
     level.build(w, this);
     this.renderPass.scene = w.scene;
-    if (this.lowGfx) w.sun.shadow.mapSize.set(1024, 1024);
+    if (this.lowGfx) this._applyShadowQuality(w);
+    this.focus = null;
     const env = w.envCfg;
     this.renderer.toneMappingExposure = env.exposure;
     this.bloom.strength = env.bloom.strength; this.bloom.radius = env.bloom.radius; this.bloom.threshold = env.bloom.threshold;
@@ -429,7 +494,9 @@ export class Game {
     this.frozen = false;
     this.history.length = 0;
     this.respawnPlayer(true);
-    this.ui.setLevelChip(`Level ${this.levelIndex + 1} · ${level.name}`);
+    this.ui.setLevelChip(idx < 0 ? `${this.campaign.title} · ${level.name}` : `Level ${idx + 1} · ${level.name}`);
+    this.ui.setHubMode(idx < 0);
+    this.ui.setInteract(null);
     this.ui.setDeaths(this._deathText());
     this.ui.setTimer(0);
     this.ui.setAltimeter(false); this.ui.setPing(false); this.ui.loading(false); this.ui.ad(false); this.ui.bars(false); this.ui.glitch(false); this.ui.creditsStop();
@@ -450,6 +517,8 @@ export class Game {
     if (this.state !== 'playing') return;
     this.state = 'paused';
     this.ui.showScreen('pause');
+    this.ui.el['btn-restart'].classList.toggle('hidden', this.levelIndex < 0);
+    this.ui.el['btn-lobby-pause'].classList.toggle('hidden', !(this.campaign.hub && this.levelIndex >= 0));
     this.ui.el['pause-quip'].textContent = '';
     if (this.level.pauseTroll) this.level.pauseTroll(this);
     else {
@@ -525,10 +594,9 @@ export class Game {
   }
 
   persist() {
-    Object.assign(this.cs(), {
-      level: this.levelIndex, deaths: this.totalDeaths, time: this.totalTime, baby: this.baby,
-      levelDeaths: this.levelDeaths, levelTimes: this.levelTimes,
-    });
+    const c = this.cs();
+    Object.assign(c, { deaths: this.totalDeaths, time: this.totalTime, baby: this.baby, levelDeaths: this.levelDeaths, levelTimes: this.levelTimes });
+    if (!this.campaign.hub) c.level = this.levelIndex;
     writeSave(this.save);
   }
 
@@ -623,7 +691,7 @@ export class Game {
 
   completeLevel() {
     if (this.state !== 'playing' || this.world.completed) return;
-    const levels = this.levels, last = this.levelIndex === levels.length - 1;
+    const levels = this.levels, hubCamp = !!this.campaign.hub;
     this.world.completed = true;
     this.levelDeaths[this.levelIndex] = this.deaths;
     this.levelTimes[this.levelIndex] = this.time;
@@ -634,6 +702,8 @@ export class Game {
     const c = this.cs();
     const lb = (c.levelBest[this.levelIndex] ||= { deaths: this.deaths, time: this.time });
     lb.deaths = Math.min(lb.deaths, this.deaths); lb.time = Math.min(lb.time, this.time);
+    // a hub campaign is finished when every one of its levels has been cleared; others when you beat the last one
+    const last = hubCamp ? levels.every((l, i) => c.levelBest[i]) : this.levelIndex === levels.length - 1;
     c.furthest = Math.max(c.furthest || 0, last ? this.levelIndex : nextIdx);
     if (last) {
       c.completed = true; c.runs = (c.runs || 0) + 1;
@@ -641,7 +711,8 @@ export class Game {
       const run = { deaths: this.totalDeaths, time: this.totalTime };
       if (this.runStart === 0 && (!c.best || run.deaths < c.best.deaths || (run.deaths === c.best.deaths && run.time < c.best.time))) c.best = run;
     }
-    Object.assign(c, {
+    if (hubCamp) Object.assign(c, { deaths: this.totalDeaths, time: this.totalTime, baby: this.baby, levelDeaths: this.levelDeaths, levelTimes: this.levelTimes });
+    else Object.assign(c, {
       level: last ? 0 : nextIdx, deaths: last ? 0 : this.totalDeaths, time: last ? 0 : this.totalTime,
       baby: this.baby, levelDeaths: this.levelDeaths, levelTimes: this.levelTimes,
     });
@@ -657,7 +728,12 @@ export class Game {
       e['cmp-title'].textContent = this.level.name;
       e['cmp-deaths'].textContent = this.deaths; e['cmp-time'].textContent = fmtTime(this.time); e['cmp-total'].textContent = this.totalDeaths;
       e['cmp-quip'].textContent = this.level.completeQuip ? '“' + this.level.completeQuip + '”' : '';
-      e['btn-next'].textContent = `Level ${nextIdx + 1}: ${levels[nextIdx].name}`;
+      const nextLv = levels[nextIdx];
+      const hasNext = !!nextLv && !(hubCamp && nextLv.placeholder);
+      e['btn-next'].classList.toggle('hidden', !hasNext);
+      if (hasNext) e['btn-next'].textContent = `Level ${nextIdx + 1}: ${nextLv.name}`;
+      e['btn-lobby'].classList.toggle('hidden', !hubCamp);
+      e['cmp-eyebrow'].textContent = hubCamp ? `LEVEL ${this.levelIndex + 1} COMPLETE` : 'LEVEL COMPLETE';
       this.ui.showScreen('complete');
     }, last ? 2600 : 2200);
   }
@@ -666,7 +742,8 @@ export class Game {
     if (this.state !== 'complete' || !this.ui.screens.complete.classList.contains('show')) return;
     this.audio.click();
     this.ui.hideScreens();
-    this.totalTime += 0; // already accumulated per frame
+    const next = this.levels[this.levelIndex + 1];
+    if (this.campaign.hub && (!next || next.placeholder)) return this.backToLobby();
     await this.loadLevel(this.levelIndex + 1);
     this._begin();
   }
@@ -762,7 +839,7 @@ export class Game {
     const opts = {
       jumpMul: this.baby ? 1.07 : 1,
       coyoteExtra: this.baby ? 0.12 : 0,
-      accelX: w.extraAccel.x, accelZ: w.extraAccel.z,
+      accelX: w.extraAccel.x, accelZ: w.extraAccel.z, stepHeight: w.stepHeight,
     };
     const n = Math.max(1, Math.ceil(dt / FIXED)), h = dt / n;
     let landed = 0, jumped = false;
@@ -808,8 +885,38 @@ export class Game {
     // continuous audio / HUD
     this.audio.setWind(Math.max(w.windLevel || 0, (w.windAmt || 0) * 0.9));
     if (w.altimeter) this.ui.setAltimeter(true, p.y, w.altimeter.max, w.altimeter.record ?? 0);
+    this._updateFocus();
     this._hudT = (this._hudT || 0) + dt;
     if (this._hudT > 0.05) { this._hudT = 0; this.ui.setTimer(this.time); if (this.mods.lieCounter && Math.random() < 0.25) this.ui.setDeaths(this._deathText()); }
+  }
+
+  /** What the crosshair is on: nearest interactable in range with a clear line of sight. */
+  _updateFocus() {
+    const w = this.world, p = this.player;
+    this.focus = null;
+    if (!w.interactables.length || this.frozen) { this.ui.setInteract(null); return; }
+    const cp = Math.cos(this.pitch);
+    const dx = -Math.sin(this.yaw) * cp, dy = Math.sin(this.pitch), dz = -Math.cos(this.yaw) * cp;
+    const ox = p.x, oy = p.y + MOVE.eye, oz = p.z;
+    let best = null, bestT = Infinity;
+    for (const it of w.interactables) {
+      if (it.enabled && !it.enabled(this)) continue;
+      const t = rayAABB(ox, oy, oz, dx, dy, dz, it.body, it.pad);
+      if (t < bestT && t <= it.range) { bestT = t; best = it; }
+    }
+    if (best) {
+      for (const b of w.bodies) {            // is something solid in the way?
+        if (!b.enabled || !b.solid) continue;
+        if (rayAABB(ox, oy, oz, dx, dy, dz, b) < bestT - 0.03) { best = null; break; }
+      }
+    }
+    this.focus = best;
+    this.ui.setInteract(best ? (typeof best.label === 'function' ? best.label(this) : best.label) : null);
+  }
+
+  useFocus() {
+    if (!this.focus || this.state !== 'playing' || this.frozen) return;
+    this.focus.onUse?.(this);
   }
 
   _tick() {

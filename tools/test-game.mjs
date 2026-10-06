@@ -10,10 +10,10 @@ let fails = 0;
 const ok = (c, m) => { if (!c) { fails++; console.log('FAIL', m); } else console.log('ok  ', m); };
 const errs = [];
 
-async function open(level) {
+async function open(level, campaign) {
   const page = await browser.newPage({ viewport: { width: 320, height: 180 } });
   page.on('pageerror', (e) => errs.push(e.message));
-  await page.goto(`${base}?debug&level=${level}`, { waitUntil: 'load' });
+  await page.goto(`${base}?debug${campaign ? `&campaign=${campaign}` : ''}${level ? `&level=${level}` : ''}`, { waitUntil: 'load' });
   await page.waitForFunction(() => window.__trust && window.__trust.world && window.__trust.state === 'playing', null, { timeout: 60000 });
   await page.evaluate(() => { window.__trust.manual = true; });
   return page;
@@ -31,9 +31,9 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
     playable: document.querySelectorAll('.card.playable').length,
     soon: document.querySelectorAll('.card.soon').length,
     btn: document.querySelector('.card.playable .btn.primary').textContent,
-    pips: [...document.querySelectorAll('.card.playable .pip')].map((p) => p.className.replace('pip ', '')),
+    pips: [...document.querySelector('.card.playable').querySelectorAll('.pip')].map((p) => p.className.replace('pip ', '')),
   }));
-  ok(r.cards === 3 && r.playable === 1 && r.soon === 2, `home shows 1 playable + 2 coming-soon campaigns (${r.playable}/${r.soon})`);
+  ok(r.cards === 3 && r.playable === 2 && r.soon === 1, `home shows 2 playable (Campaign 1 + Hotel) + 1 coming-soon campaign (${r.playable}/${r.soon})`);
   ok(r.btn === 'Play', 'fresh player sees "Play"');
   ok(JSON.stringify(r.pips) === JSON.stringify(['open', 'locked', 'locked', 'locked', 'locked']), `fresh player: only level 1 unlocked (${r.pips})`);
   await fresh.click('.card.playable .btn.ghost');
@@ -156,6 +156,72 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
   await page.waitForFunction(() => document.getElementById('scr-end').classList.contains('show'), null, { timeout: 15000 });
   const end = await page.evaluate(() => document.getElementById('end-share').textContent);
   ok(/TRUST ME/.test(end) && /deaths/.test(end) && /trustme\.helderlabs\.com/.test(end), 'end screen builds a shareable result with the domain');
+  await page.close();
+}
+
+// ---- Hotel Trust-Me: lobby hub, elevators, level, back to lobby ----------------------------------
+{
+  const page = await open(0, 'hotel');
+  const lbl = (i) => `(typeof ${i}.label === 'function' ? ${i}.label(g) : ${i}.label)`;
+  const h = await page.evaluate(() => {
+    const g = window.__trust, w = g.world;
+    const labels = w.interactables.map((it) => (typeof it.label === 'function' ? it.label(g) : it.label));
+    return { inHub: g.inHub, idx: g.levelIndex, n: w.interactables.length, calls: labels.filter((l) => /elevator|Out of order/.test(l)).length, levelBtns: labels.filter((l) => /^Level \d+:/.test(l)).length, step: w.stepHeight };
+  });
+  ok(h.inHub && h.idx === -1, 'hotel: the campaign opens in the lobby hub');
+  ok(h.calls === 5 && h.levelBtns === 25, `hotel: 5 elevator call buttons + 25 level buttons (${h.calls}/${h.levelBtns})`);
+  ok(h.step > 0, 'hotel: stairs/thresholds enabled in the lobby (step-up)');
+
+  // floor 1 is open, the others are not (debug mode unlocks everything, so turn that off for this check)
+  const calls = await page.evaluate(() => { const g = window.__trust; g.debug = false; return g.world.interactables.filter((it) => /elevator|Out of order/.test(typeof it.label === 'function' ? it.label(g) : it.label)).map((it) => it.label(g)); });
+  ok(/Call elevator/.test(calls[0]) && calls.slice(1).every((c) => c === 'Out of order'), `hotel: only floor 1's elevator works at first (${calls.map((c) => c.slice(0, 14))})`);
+
+  // look at the call button -> prompt -> press -> doors open
+  const r1 = await page.evaluate(() => {
+    const g = window.__trust;
+    g.player.teleport(-9.7, 0.01, -21); g.yaw = 0; g.pitch = 0.0;
+    g._simulate(1 / 60);
+    const label = g.focus ? g.focus.label(g) : null;
+    g.useFocus();
+    for (let i = 0; i < 150; i++) g._simulate(1 / 60);
+    const leaves = g.world.plats.filter((p) => p.o.moving && p.o.tex === 'brass');
+    const moved = leaves.slice(0, 2).map((p) => +(p.body.x - p.base.x).toFixed(2));
+    return { label, moved };
+  });
+  ok(/Call elevator/.test(r1.label || ''), `hotel: crosshair on the call button shows a prompt (${r1.label})`);
+  ok(r1.moved[0] < -1 && r1.moved[1] > 1, `hotel: pressing it slides the doors open (${r1.moved})`);
+
+  // inside the car: aim at the "Level 1" button and ride
+  const r2 = await page.evaluate(() => {
+    const g = window.__trust;
+    g.player.teleport(-12, 0.01, -26.2); g.yaw = 0; g.pitch = -0.16;
+    for (let i = 0; i < 3; i++) g._simulate(1 / 60);
+    const label = g.focus ? g.focus.label(g) : null;
+    g.useFocus();
+    for (let i = 0; i < 420 && g.levelIndex === -1; i++) g._simulate(1 / 60);
+    return { label };
+  });
+  ok(/^Level 1: Wet Floor/.test(r2.label || ''), `hotel: button inside the car targets level 1 (${r2.label})`);
+  await page.waitForFunction(() => window.__trust.levelIndex === 0 && !window.__trust.inHub, null, { timeout: 60000 });
+  ok(true, 'hotel: the elevator ride delivers you into level 1 (Wet Floor)');
+
+  // beat it -> complete screen offers the lobby (not a non-existent level 2)
+  await page.evaluate(() => { const g = window.__trust; g.state = 'playing'; g.completeLevel(); });
+  await page.waitForFunction(() => document.getElementById('scr-complete').classList.contains('show'), null, { timeout: 30000 });
+  const c = await page.evaluate(() => ({ lobby: !document.getElementById('btn-lobby').classList.contains('hidden'), next: !document.getElementById('btn-next').classList.contains('hidden'), save: JSON.parse(localStorage.getItem('trustme.save.v2')).campaigns.hotel }));
+  ok(c.lobby && !c.next, 'hotel: complete screen offers "Back to the lobby" (level 2 is under renovation)');
+  ok(c.save.levelBest['0'] && c.save.levelBest['0'].deaths === 0, 'hotel: level 1 recorded as cleared');
+  await page.evaluate(() => document.getElementById('btn-lobby').click());
+  await page.waitForFunction(() => window.__trust.inHub && window.__trust.state === 'playing', null, { timeout: 60000 });
+  const back = await page.evaluate(() => {
+    const g = window.__trust, p = g.player;
+    const calls = g.world.interactables.filter((it) => /elevator|Out of order/.test(typeof it.label === 'function' ? it.label(g) : it.label)).map((it) => it.label(g));
+    const lv2 = g.world.interactables.find((it) => /^Level 2:/.test(typeof it.label === 'function' ? it.label(g) : it.label));
+    return { z: p.z, x: p.x, calls, lv2: lv2.label(g) };
+  });
+  ok(back.z < -24 && Math.abs(back.x + 12) < 0.5, `hotel: you arrive back inside floor 1's elevator (x=${back.x.toFixed(1)}, z=${back.z.toFixed(1)})`);
+  ok(/under renovation/.test(back.lv2), `hotel: level 2 is marked under renovation (${back.lv2})`);
+  ok(back.calls.slice(1).every((c) => c === 'Out of order'), 'hotel: later floors stay locked until the tier is cleared');
   await page.close();
 }
 

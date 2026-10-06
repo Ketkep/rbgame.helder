@@ -8,6 +8,8 @@ import level2 from './levels/level2.js';
 import level3 from './levels/level3.js';
 import level4 from './levels/level4.js';
 import level5 from './levels/level5.js';
+import hotelLobby from './levels/hotel/lobby.js';
+import { TIERS, buildHotelLevels } from './levels/hotel/roster.js';
 
 export const CAMPAIGNS = [
   {
@@ -21,11 +23,16 @@ export const CAMPAIGNS = [
     after: 'Campaign 2 is coming soon. The host promises it will be "fair".',
   },
   {
-    id: 'season2',
+    id: 'hotel',
     number: 2,
-    title: '???',
-    tagline: 'The host says it\'s "almost ready". He has said that about everything.',
-    status: 'soon',
+    title: 'Hotel Trust-Me',
+    tagline: 'Check in. Checking out is a process. 25 rooms, five floors, one very smug manager.',
+    eta: '25 levels',
+    status: 'playable',
+    hub: hotelLobby,            // a walkable lobby; its elevators are the level select
+    tiers: TIERS,
+    levels: buildHotelLevels(),
+    after: 'Campaign 3 is coming soon. The manager says it will be "fair".',
   },
   {
     id: 'season3',
@@ -37,3 +44,14 @@ export const CAMPAIGNS = [
 ];
 
 export const getCampaign = (id) => CAMPAIGNS.find((c) => c.id === id) || CAMPAIGNS[0];
+
+/**
+ * Is level `i` of campaign `c` playable for save `cs`?
+ *  - hub campaigns: strictly in order (clear level i-1 to unlock i)
+ *  - others: anything up to the furthest level reached, or everything once the campaign is finished
+ */
+export function isLevelUnlocked(c, cs, i, debug = false) {
+  if (debug) return true;
+  if (c.hub) return i === 0 || !!cs.levelBest[i - 1];
+  return cs.completed || i <= (cs.furthest || 0);
+}

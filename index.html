@@ -34,6 +34,7 @@
         <div class="alt-track"><div class="alt-fill" id="alt-fill"></div><div class="alt-rec" id="alt-rec"></div></div>
         <div class="alt-label"><b id="alt-n">0</b> m</div>
       </div>
+      <div id="interact" class="hidden"><kbd>E</kbd><span id="interact-label"></span></div>
       <div id="prompt" class="hidden"></div>
       <div id="toasts"></div>
       <div id="achievements"></div>
@@ -128,6 +129,7 @@
           <button id="btn-resume" class="btn primary">Resume</button>
           <button id="btn-restart" class="btn">Restart level</button>
           <button id="btn-mercy" class="btn">Beg for mercy</button>
+          <button id="btn-lobby-pause" class="btn hidden">Return to the lobby</button>
           <button id="btn-settings" class="btn">Settings</button>
           <button id="btn-quit" class="btn ghost">Quit to home</button>
         </div>
@@ -151,7 +153,10 @@
           <div><b id="cmp-total">0</b><span>total deaths</span></div>
         </div>
         <p id="cmp-quip" class="quip"></p>
-        <button id="btn-next" class="btn primary">Next level</button>
+        <div class="btns">
+          <button id="btn-next" class="btn primary">Next level</button>
+          <button id="btn-lobby" class="btn hidden">Back to the lobby</button>
+        </div>
       </div>
     </section>
 

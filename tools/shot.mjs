@@ -14,21 +14,21 @@ const browser = await chromium.launch({
   args: ['--use-angle=swiftshader', '--use-gl=angle', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl', '--no-sandbox', '--autoplay-policy=no-user-gesture-required'],
 });
 const logs = [];
-async function session(level) {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+async function session(level, campaign) {
+  const page = await browser.newPage({ viewport: { width: +(process.env.VW || 1280), height: +(process.env.VH || 720) } });
   page.on('console', (m) => { if (['error', 'warning'].includes(m.type())) logs.push(`[${m.type()}] ${m.text()}`); });
   page.on('pageerror', (e) => logs.push('[pageerror] ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 4).join('\n')));
-  const url = base + (level ? `?debug&level=${level}` : '?debug');
+  const url = base + '?debug' + (campaign ? `&campaign=${campaign}` : '') + (level ? `&level=${level}` : '');
   await page.goto(url, { waitUntil: 'load' });
-  await page.waitForFunction(() => window.__trust && window.__trust.world, null, { timeout: 30000 });
+  await page.waitForFunction(() => window.__trust && window.__trust.world && window.__trust.state === 'playing' || (window.__trust && window.__trust.state === 'title'), null, { timeout: 180000, polling: 500 });
   return page;
 }
 
 let curKey = null, page = null;
 try {
 for (const s of shots) {
-  const key = s.level || 0;
-  if (key !== curKey) { if (page) await page.close(); page = await session(s.level); curKey = key; }
+  const key = `${s.campaign || ''}:${s.level || 0}`;
+  if (key !== curKey) { if (page) await page.close(); page = await session(s.level, s.campaign); curKey = key; }
   if (s.js) await page.evaluate(s.js);
   if (s.tp) await page.evaluate(({ tp, yaw, pitch }) => {
     const g = window.__trust; g.player.teleport(tp[0], tp[1], tp[2]); g.yaw = yaw ?? g.yaw; g.pitch = pitch ?? 0;

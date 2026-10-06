@@ -163,6 +163,33 @@ export const SCRIPT = {
   'l5.complete': 'Credits. Real ones, this time. ...Mostly.',
 };
 
+// ---------------------------------------------------------------- hotel (campaign 2) ---
+Object.assign(SCRIPT, {
+  'hotel.welcome': 'Welcome to Hotel Trust-Me. I\'m the manager. I was also the host. I wear many lies.',
+  'hotel.welcome2': 'Check in at the elevators. Check out... we\'ll discuss it later.',
+  'hotel.return': ['Welcome back to the lobby. Did you miss the marble? Everyone misses the marble.', 'Back so soon? The elevator remembers everything.'],
+  'hotel.bell': ['*ding* How may I ignore you?', 'Service! ...is not available at this time.', 'Yes? No? Wrong bell.', 'You rang. I heard. That\'s all I\'m promising.'],
+  'hotel.bell.many': 'If you ring that again, I am going to start charging you.',
+  'hotel.doors': ['Check out? Hilarious. The doors are decorative.', 'Locked. For your safety. Mostly mine.', 'Those doors are for guests. You are a contestant. Different thing.'],
+  'hotel.guestbook': ['Signed. You\'re checked in. Permanently.', 'Name noted. Debt noted. Welcome.'],
+  'hotel.piano1': 'Lovely. Truly. Please stop.',
+  'hotel.piano2': 'I\'m not paying for the piano tuner. Stop. It costs more than you do.',
+  'hotel.out_of_order': ['That elevator is out of order. For you, specifically.', 'Out of order. Clear a floor first. I make the rules. I also lie about them.'],
+  'hotel.locked_level': ['That level isn\'t open yet. Finish the previous one first. Yes, I\'m enjoying this.', 'Locked. Good things come to those who die repeatedly.'],
+  'hotel.renovation': ['That floor is under renovation. It\'s been under renovation since the 90s.', 'Closed for renovation. The builders are... also contestants.', 'Floor not ready. The carpet is still lying about being finished.'],
+  'hotel.elevator.go': ['Going up! ...probably.', 'Please hold on to something. Anything. Your dignity, maybe.', 'Next stop: consequences.'],
+  'hotel.elevator.lie': ['Floor reached! Oh wait, no, that\'s the lobby. Again. My mistake. Not mine.', 'Ding! Lobby. Why are you surprised? The buttons are decorative.'],
+  'hotel.l1.intro': 'Level one: Wet Floor. Housekeeping just mopped the lobby. All of it. With something that kills you.',
+  'hotel.l1.intro2': 'Do not touch the floor. Use the furniture. It\'s what it\'s for. Probably.',
+  'hotel.l1.1': 'Hop on the ottoman. It\'s very comfortable. That\'s not a trap. This time.',
+  'hotel.l1.mid': 'Halfway! Notice how I said "halfway" and not "safe". Words matter.',
+  'hotel.l1.up': 'Now the cocktail tables. They\'re pedestal tables. Pedestal is French for "you will fall".',
+  'hotel.l1.near': 'Almost to the mezzanine. Staff only. Technically you\'re staff now. Unpaid.',
+  'hotel.l1.slip': ['Wet floor! The sign was right there. Several signs. In yellow.', 'You slipped. Housekeeping will mop you up.', 'The floor won. The floor always wins.', 'Caution means caution. You were not cautious.'],
+  'hotel.l1.done': 'Done! You reached the mezzanine. No one has ever been so wet and so proud.',
+  'hotel.complete.first': 'Level one done! The marble is very proud of you. I\'m... fine.',
+});
+
 export const CREDITS = [
   ['TRUST ME…', ''],
   ['Written, directed & narrated by', 'The Host'],
