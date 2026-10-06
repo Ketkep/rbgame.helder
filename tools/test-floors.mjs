@@ -219,6 +219,52 @@ suite('dance', async () => {
   await page.close();
 });
 
+// ---- level 11: Room 404 ------------------------------------------------------------------------------------------
+suite('room404', async () => {
+  const page = await open(11);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, rm = w.room404, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    const face = (x, z) => { const p = g.player; g.yaw = Math.atan2(-(x - p.x), -(z - p.z)); g.pitch = 0; };
+    const bed = rm.pieces.find((p) => p.name === 'bed'), chair = rm.pieces.find((p) => p.name === 'armchair');
+    out.code = rm.code; out.notFake = rm.code !== rm.fake;
+    // searching the bed/desk/dresser reveals the three digits, the armchair is a lie
+    for (const p of rm.pieces) rm.search(p);
+    out.digits = rm.found.join('') === rm.code;
+    // the wardrobe is frozen while you look at it and walks when you do not
+    rm.ward.active = true;
+    g.player.teleport(0, 0.001, 6.5);
+    face(rm.ward.x, rm.ward.z); const w0 = [rm.ward.x, rm.ward.z]; sim(1.5);
+    out.frozenWhenWatched = Math.hypot(rm.ward.x - w0[0], rm.ward.z - w0[1]) < 0.01;
+    g.yaw += Math.PI; const w1 = [rm.ward.x, rm.ward.z]; sim(1.0);
+    out.walksWhenNot = Math.hypot(rm.ward.x - w1[0], rm.ward.z - w1[1]) > 1.2;
+    // furniture: stays put while watched (or near), relocates when unseen for a while and far away
+    g.player.teleport(0, 0.001, 8.2); rm.ward.active = false;
+    const slot0 = bed.slot;
+    // look at the bed from afar
+    face(bed.cx, bed.cz); sim(3.5); out.bedStays = bed.slot === slot0;
+    // look the other way: something moves
+    const before = rm.pieces.map((p) => p.slot).join();
+    g.yaw += Math.PI; sim(4);
+    out.moves = rm.pieces.map((p) => p.slot).join() !== before;
+    // a blackout counts as not looking, even if you are facing the wardrobe
+    rm.ward.active = true; g.player.teleport(0, 0.001, 8); face(rm.ward.x, rm.ward.z); rm.setDark(true);
+    const w2 = [rm.ward.x, rm.ward.z]; sim(0.8); out.darkWalks = Math.hypot(rm.ward.x - w2[0], rm.ward.z - w2[1]) > 0.8;
+    rm.setDark(false);
+    // it kills on contact
+    g.player.teleport(rm.ward.x + 0.5, 0.001, rm.ward.z + 0.5); g.yaw += Math.PI; sim(0.2);
+    out.kills = g.state === 'dead';
+    return out;
+  });
+  ok(r.notFake, `room404: the real code (${r.code}) is not the host's 404`);
+  ok(r.digits, 'room404: the bed, desk and dresser hold the three digits');
+  ok(r.frozenWhenWatched && r.walksWhenNot, 'room404: the wardrobe is frozen while watched and walks when you look away');
+  ok(r.bedStays && r.moves, 'room404: furniture holds still while watched, and moves when you are not looking');
+  ok(r.darkWalks, 'room404: in a blackout the wardrobe moves even if you face it');
+  ok(r.kills, 'room404: the wardrobe is fatal');
+  await page.close();
+});
+
 const names = Object.keys(suites).filter((n) => n.includes(filter));
 for (const n of names) { console.log(`\n== ${n}`); await suites[n](); }
 await browser.close();

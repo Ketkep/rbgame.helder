@@ -272,3 +272,4 @@ kbd { font: 400 13px var(--display); min-width: 30px; padding: 6px 9px; text-ali
 .kp-pad button:hover { background: rgba(216,169,74,0.25); }
 #panel-foot { font: 600 12px var(--body); color: var(--muted); }
 #panel-foot kbd { margin: 0 2px; }
+.kp-info { margin: -2px 0 12px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.05); font: 600 12px var(--body); color: #ffd890; letter-spacing: 0.04em; }
