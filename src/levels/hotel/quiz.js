@@ -60,6 +60,25 @@ const BANK = [
   ['f1', (g) => !hotelBest(g, 4) ? null : { q: 'Where did Bellhop Blues\nend?', a: 'A service elevator', w: ['A swimming pool', 'The roof', 'Nowhere'] }],
   ['f1', (g) => !hotelBest(g, 1) ? null : { q: 'How many questions were\nin Check-In?', a: '4', w: ['9', '12', '40'] }],
   ['f1', (g) => !hotelBest(g, 0) ? null : { q: 'What was on the wet floor\nin Wet Floor?', a: 'Yellow signs', w: ['Green signs', 'Fish', 'Nothing at all'] }],
+  // ---- what you did on floor 2 -------------------------------------------------------------------------------------
+  ['f2', (g) => !hotelBest(g, 5) ? null : { q: 'What was rising behind\nyou in Soufflé?', a: 'A soufflé', w: ['Water', 'Lava', 'The host\'s ego'] }],
+  ['f2', (g) => !hotelBest(g, 5) ? null : { q: 'What was the fake EXIT\nin Soufflé?', a: 'An oven', w: ['A window', 'A fridge', 'A trapdoor'] }],
+  ['f2', (g) => !hotelBest(g, 6) ? null : { q: 'How long was the clock\nin Trivia Night round 4?', a: '12 seconds', w: ['5 seconds', '30 seconds', 'There was no clock'] }],
+  ['f2', (g) => !hotelBest(g, 6) ? null : { q: 'How many rounds were\nin Trivia Night?', a: '6', w: ['3', '10', '99'] }],
+  ['f2', (g) => !hotelBest(g, 7) ? null : { q: 'What fell on you in\nDinner Is Served?', a: 'A cake', w: ['A chandelier', 'A waiter', 'The ceiling'] }],
+  ['f2', (g) => !hotelBest(g, 7) ? null : { q: 'What rolled down the\nwine cellar?', a: 'Barrels', w: ['Bowling balls', 'Cheese wheels', 'The chef'] }],
+  ['f2', (g) => !hotelBest(g, 8) ? null : { q: 'Who chased you in\nKitchen Maze?', a: 'A chef', w: ['A bellhop', 'A maid', 'A giant soufflé'] }],
+  ['f2', (g) => !hotelBest(g, 8) ? null : { q: 'What was slippery\nin Kitchen Maze?', a: 'The freezer floors', w: ['The hedges', 'The chef', 'The doors'] }],
+  ['f2', (g) => !hotelBest(g, 9) ? null : { q: 'What did you have to do\nwhen the DJ yelled FREEZE?', a: 'Stand perfectly still', w: ['Dance harder', 'Jump', 'Run'] }],
+  ['f2', (g) => !hotelBest(g, 9) ? null : { q: 'What did the tiles in\nDance Floor do?', a: 'Blinked on the beat', w: ['Exploded', 'Played music', 'Nothing'] }],
+  ['dyn3', (g) => {   // your deadliest floor 2 level (only when there is a clear winner)
+    const names = ['Soufflé', 'Trivia Night', 'Dinner Is Served', 'Kitchen Maze', 'Dance Floor'];
+    const rows = names.map((n, i) => [n, hotelBest(g, 5 + i)?.deaths]).filter(([, d]) => d !== undefined);
+    if (rows.length < 4) return null;
+    rows.sort((a, b) => b[1] - a[1]);
+    if (rows[0][1] === rows[1][1]) return null;
+    return { q: 'Which Floor 2 level\nkilled you the most?', a: rows[0][0], w: rows.slice(1).map((r) => r[0]) };
+  }],
   ['dyn2', (g) => {   // your deadliest level so far (only when there is a clear winner)
     const names = ['Wet Floor', 'Check-In', 'Lost Luggage', 'Revolving Door', 'Bellhop Blues'];
     const rows = names.map((n, i) => [n, hotelBest(g, i)?.deaths]).filter(([, d]) => d !== undefined);
@@ -286,7 +305,7 @@ export function quizHall(w, game, spec) {
     const gate = makeGate(w, { z: isl.zN - 8.4 });
     const board = boardMesh(w, { x: 0, y: 6.6, z: isl.zN - 8.9, width: 12, height: 3.6, header: sp.header || `QUESTION ${k + 1} OF ${N}`, text: q.q });
     const correctPad = pads.find((p) => p.correct), wrongPads = pads.filter((p) => !p.correct);
-    const st = { k, spec: sp, pads, gate, q, board, correctPad, wrongPads, lieLetter: null, timer: null };
+    const st = { k, spec: sp, pads, gate, q, board, correctPad, wrongPads, lieLetter: null, timer: null, unlocked: !sp.lockedTags };
     if (sp.gimmick === 'lie') st.lieLetter = sp.lieLetter || wrongPads[Math.floor(Math.random() * wrongPads.length)].letter;
     if (sp.gimmick === 'timer') {
       const clock = clockMesh(w, 8.2, 6.6, isl.zN - 8.9);
@@ -297,9 +316,10 @@ export function quizHall(w, game, spec) {
 
   // ---- state ----------------------------------------------------------------------------------------------
   let cleared = 0;
-  const reveal = () => stages.forEach((st) => { const on = st.k <= cleared; st.board.visible = on; st.pads.forEach((p) => { p.tag.visible = on; }); if (st.timer && !on) st.timer.clock.show(false); });
+  const reveal = () => stages.forEach((st) => { const on = st.k <= cleared; st.board.visible = on; st.pads.forEach((p) => { p.tag.visible = on && st.unlocked; }); if (st.timer && !on) st.timer.clock.show(false); });
   reveal();
   const cur = () => stages[cleared];
+  stages.forEach((st) => { st.unlock = () => { st.unlocked = true; reveal(); }; });
   const resetPad = (pad) => {
     pad.set('idle'); pad.lockT = 0; pad.dropT = 0; pad.fallY = 0; pad.vy = 0; pad.eliminated = false; pad.falling = false;
     pad.plat.setEnabled(true); pad.plat.group.scale.setScalar(1);

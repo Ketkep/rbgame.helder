@@ -315,6 +315,48 @@ suite('dnd', async () => {
   await page.close();
 });
 
+// ---- level 13: Minibar ------------------------------------------------------------------------------------------
+suite('minibar', async () => {
+  const page = await open(13);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, mb = w.minibar, qz = mb.quiz, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    out.start = mb.balance;
+    out.hiddenAnswers = qz.stages.every((s) => s.pads.every((p) => !p.tag.visible));
+    // opening the minibar shows the answers and costs MORE than the $4.00 on the door
+    mb.openFridge(0);
+    out.revealed = qz.stages[0].pads.every((p) => p.tag.visible);
+    out.cost = mb.start === undefined ? 45 - mb.balance : 0;
+    out.costMore = out.cost > 8;
+    // a minibar you cannot afford stays shut
+    mb.balance = 3; qz.stages[0].correctPad; const before = mb.opens; mb.openFridge(0);
+    out.noDoubleOpen = mb.opens === before;
+    mb.balance = 45;
+    // hints cost too, and are declined when broke
+    g.debug = false; g.hintCool = 0; const bal0 = mb.balance; g.useHint(); out.hintCharged = mb.balance < bal0 - 9;
+    mb.balance = 2; g.hintCool = 0; const h0 = mb.hints; g.useHint(); out.hintDeclined = mb.hints === h0;
+    // the bill: no tip, no zero tip, only 18/20/25
+    mb.showBill();
+    const msg = () => document.querySelector('#panel .kp-msg').textContent;
+    g.modal.key({ code: 'Enter' }); out.needsTip = /select a tip/i.test(msg());
+    g.modal.key({ code: 'Digit0' }); out.zeroRefused = /zero/i.test(msg());
+    g.modal.key({ code: 'Digit1' });
+    out.tipButtons = [...document.querySelectorAll('.bill-tip')].map((b) => b.textContent).join('|');
+    out.total = document.querySelector('.bill-total b').textContent;
+    return out;
+  });
+  ok(r.start === 45 && r.hiddenAnswers, 'minibar: you start with $45 and the answers are locked in the minibars');
+  ok(r.revealed && r.costMore, `minibar: opening one reveals the answers and costs more than the $4.00 on the door (paid $${r.cost.toFixed(2)})`);
+  ok(r.noDoubleOpen, 'minibar: with no money the minibar stays shut');
+  ok(r.hintCharged && r.hintDeclined, 'minibar: hints cost money and are declined when you are broke');
+  ok(r.needsTip && r.zeroRefused, 'minibar: the bill refuses to be paid without a tip (and refuses a zero tip)');
+  ok(r.tipButtons === '1 · 18%|2 · 20%|3 · 25%', `minibar: the tip choices are 18 / 20 / 25 (${r.tipButtons})`);
+  await page.evaluate(() => { window.__trust.modal.key({ code: 'Enter' }); });
+  await page.waitForFunction(() => window.__trust.state === 'complete' || window.__trust.world.completed, null, { timeout: 15000 });
+  ok(true, 'minibar: paying the bill completes the level');
+  await page.close();
+});
+
 const names = Object.keys(suites).filter((n) => n.includes(filter));
 for (const n of names) { console.log(`\n== ${n}`); await suites[n](); }
 await browser.close();
