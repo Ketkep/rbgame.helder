@@ -209,18 +209,18 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
   await page.evaluate(() => { const g = window.__trust; g.state = 'playing'; g.completeLevel(); });
   await page.waitForFunction(() => document.getElementById('scr-complete').classList.contains('show'), null, { timeout: 30000 });
   const c = await page.evaluate(() => ({ lobby: !document.getElementById('btn-lobby').classList.contains('hidden'), next: !document.getElementById('btn-next').classList.contains('hidden'), save: JSON.parse(localStorage.getItem('trustme.save.v2')).campaigns.hotel }));
-  ok(c.lobby && !c.next, 'hotel: complete screen offers "Back to the lobby" (level 2 is under renovation)');
+  ok(c.lobby && c.next, 'hotel: complete screen offers "Back to the lobby" and the next level (Check-In)');
   ok(c.save.levelBest['0'] && c.save.levelBest['0'].deaths === 0, 'hotel: level 1 recorded as cleared');
   await page.evaluate(() => document.getElementById('btn-lobby').click());
   await page.waitForFunction(() => window.__trust.inHub && window.__trust.state === 'playing', null, { timeout: 60000 });
   const back = await page.evaluate(() => {
     const g = window.__trust, p = g.player;
     const calls = g.world.interactables.filter((it) => /elevator|Out of order/.test(typeof it.label === 'function' ? it.label(g) : it.label)).map((it) => it.label(g));
-    const lv2 = g.world.interactables.find((it) => /^Level 2:/.test(typeof it.label === 'function' ? it.label(g) : it.label));
-    return { z: p.z, x: p.x, calls, lv2: lv2.label(g) };
+    const lv3 = g.world.interactables.find((it) => /^Level 3:/.test(typeof it.label === 'function' ? it.label(g) : it.label));
+    return { z: p.z, x: p.x, calls, lv2: lv3.label(g) };
   });
   ok(back.z < -24 && Math.abs(back.x + 12) < 0.5, `hotel: you arrive back inside floor 1's elevator (x=${back.x.toFixed(1)}, z=${back.z.toFixed(1)})`);
-  ok(/under renovation/.test(back.lv2), `hotel: level 2 is marked under renovation (${back.lv2})`);
+  ok(/under renovation/.test(back.lv2), `hotel: levels that are not built yet are marked under renovation (${back.lv2})`);
   ok(back.calls.slice(1).every((c) => c === 'Out of order'), 'hotel: later floors stay locked until the tier is cleared');
   await page.close();
 }
@@ -260,6 +260,60 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
   ok(s.slippery >= 4, `wet-floor: marble tops are slippery (${s.slippery} bodies)`);
   ok(s.moved > 2, `wet-floor: the trolley rolls away under you (${s.moved.toFixed(1)} m)`);
   ok(s.carried > 2, `wet-floor: ...and takes you with it (${s.carried.toFixed(1)} m)`);
+  await page.close();
+}
+
+// ---- Hotel level 2: the quiz room ---------------------------------------------------------------
+{
+  const page = await open(2, 'hotel');
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, qz = w.quiz, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    const stand = (pad) => { const b = pad.plat.body; g.player.teleport(b.x, b.top + 0.001, b.z); g.player.grounded = true; g.player.ground = b; };
+    out.stages = qz.stages.length;
+    out.threeAnswers = qz.stages.every((s) => s.pads.length === 3 && s.pads.filter((p) => p.correct).length === 1);
+    out.gatesShut = qz.stages.every((s) => s.gate.body.enabled);
+    out.boardsHidden = qz.stages.slice(1).every((s) => !s.board.visible);
+    // wrong answer on question 1: lock in, then the pad drops and you die
+    const s0 = qz.stages[0];
+    stand(s0.wrongPads[0]); sim(0.5);
+    out.locking = s0.wrongPads[0].state;
+    sim(0.8);
+    out.wrongState = s0.wrongPads[0].state;
+    sim(3);
+    out.deadAfterWrong = g.state === 'dead';
+    g.state = 'playing'; g.respawnPlayer(false);
+    out.padsReset = s0.pads.every((p) => p.state === 'idle' && p.plat.body.enabled);
+    // the 50/50 hint takes away one wrong pad (and not the right one)
+    g.debug = false; g.hintCool = 0; g.useHint();
+    out.eliminated = s0.pads.filter((p) => p.eliminated).length;
+    out.rightKept = s0.correctPad.plat.body.enabled && !s0.correctPad.eliminated;
+    sim(3); g.hintCool = 0; g.useHint();
+    out.eliminated2 = s0.pads.filter((p) => p.eliminated).length;
+    g.hintCool = 0; g.useHint();      // nothing left to remove: no charge
+    out.eliminated3 = s0.pads.filter((p) => p.eliminated).length;
+    // right answer: gate opens, next board appears
+    g.respawnPlayer(false);
+    stand(s0.correctPad); sim(1.2);
+    out.cleared = qz.cleared; out.gateOpen = !s0.gate.body.enabled; out.nextBoard = qz.stages[1].board.visible;
+    // stand on the next island: respawn moves up
+    const i1 = qz.islands[1]; g.player.teleport(0, 0.001, i1.zN + 3); sim(0.3);
+    out.respawnZ = w.respawn.z; out.islandZ = i1.zN + 3;
+    // a death on question 2 keeps question 1 solved
+    g.kill('fall'); g.state = 'playing'; g.respawnPlayer(false);
+    out.keptProgress = qz.cleared === 1 && !qz.stages[0].gate.body.enabled && qz.stages[1].gate.body.enabled;
+    return out;
+  });
+  ok(r.stages === 4 && r.threeAnswers, 'check-in: 4 questions, each with 3 answers and exactly one right');
+  ok(r.gatesShut && r.boardsHidden, 'check-in: every gate starts shut; later questions are hidden');
+  ok(r.locking === 'lock', 'check-in: standing on a pad starts locking the answer in');
+  ok(r.wrongState === 'wrong' && r.deadAfterWrong, 'check-in: a wrong answer drops the pad and kills you');
+  ok(r.padsReset, 'check-in: the pads come back after you respawn');
+  ok(r.eliminated === 1 && r.rightKept, 'check-in: hint (50/50) removes one WRONG pad and keeps the right one');
+  ok(r.eliminated2 === 2 && r.eliminated3 === 2, 'check-in: a second hint removes the other wrong pad, a third finds nothing to remove');
+  ok(r.cleared === 1 && r.gateOpen && r.nextBoard, 'check-in: the right answer opens the gate and reveals the next question');
+  ok(Math.abs(r.respawnZ - r.islandZ) < 0.6, 'check-in: reaching the next island saves your progress');
+  ok(r.keptProgress, 'check-in: dying on question 2 keeps question 1 solved');
   await page.close();
 }
 

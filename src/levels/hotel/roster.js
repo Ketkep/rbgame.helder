@@ -2,6 +2,7 @@
 // ("under renovation") so the elevators, saves and home page already know about all 25.
 
 import wetFloor from './wet-floor.js';
+import checkIn from './check-in.js';
 
 export const TIERS = [
   { floor: '1',  name: 'Mezzanine',            difficulty: 'Easy',                    short: 'EASY',       color: 0x3ddc97, blurb: 'Complimentary lies.' },
@@ -25,5 +26,6 @@ export const KIND_ICON = { parkour: '🏃', quiz: '❓', escape: '🔑', maze: '
 const planned = (name, kind, i) => ({ id: `hotel-${i + 1}`, name, kind, tier: Math.floor(i / 5), index: i, placeholder: true });
 
 export function buildHotelLevels() {
-  return ROSTER.map(([name, kind], i) => (i === 0 ? Object.assign(wetFloor, { kind, tier: 0, index: 0 }) : planned(name, kind, i)));
+  const BUILT = [wetFloor, checkIn];
+  return ROSTER.map(([name, kind], i) => (BUILT[i] ? Object.assign(BUILT[i], { kind, tier: Math.floor(i / 5), index: i }) : planned(name, kind, i)));
 }

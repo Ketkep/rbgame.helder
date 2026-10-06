@@ -321,3 +321,51 @@ function moonShaft(w, x, y, z, tx, ty, tz) {
   cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir);
   cone.matrixAutoUpdate = false; cone.updateMatrix(); w.add(cone);
 }
+
+// ================================================================================================
+//  A generic grand hall (used by the level rooms): walls with a wainscot + cornice, coffered ceiling,
+//  gold-capped pilasters and ceiling beams. Everything inside is up to the level.
+// ================================================================================================
+export function roomShell(w, o = {}) {
+  const { x0 = -14, x1 = 14, z0 = -40, z1 = 14, yb = -10, H = L.H, wallTex = 'damask', wallColor = 0xffffff, ceilColor = 0xffffff, beamEvery = 8, pilasterEvery = 10, lamps = true } = o;
+  const T = 1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, W = x1 - x0, D = z1 - z0, hh = H - yb;
+  const wallMat = { tex: wallTex, color: wallColor, roughness: 0.65 };
+  w.plat({ x: x0 - T / 2, y: H, z: cz, w: T, d: D + 2 * T, h: hh, ...wallMat });
+  w.plat({ x: x1 + T / 2, y: H, z: cz, w: T, d: D + 2 * T, h: hh, ...wallMat });
+  w.plat({ x: cx, y: H, z: z0 - T / 2, w: W + 2 * T, d: T, h: hh, ...wallMat });
+  w.plat({ x: cx, y: H, z: z1 + T / 2, w: W + 2 * T, d: T, h: hh, ...wallMat });
+  w.plat({ x: cx, y: H + 1, z: cz, w: W + 2 * T, d: D + 2 * T, h: 1, tex: 'coffer', color: ceilColor, roughness: 0.8 });
+  const sideBox = (side, u, n, y, len, th, h, op = {}) => {   // box hugging a side wall
+    const x = side < 0 ? x0 + n : x1 - n;
+    return w.box({ x, y, z: u, w: th, h, d: len, ...op });
+  };
+  for (const s of [-1, 1]) {
+    sideBox(s, cz, 0.12, 1.3, D, 0.24, 2.6, { tex: 'panel', color: 0xffffff, shadow: false });
+    sideBox(s, cz, 0.2, 2.7, D, 0.34, 0.12, { color: GOLD, metal: 1, rough: 0.3, shadow: false });
+    sideBox(s, cz, 0.2, 0.14, D, 0.34, 0.28, { color: 0xece3cf, rough: 0.3, shadow: false });
+    sideBox(s, cz, 0.35, H - 0.35, D, 0.8, 0.7, { color: 0xece3cf, rough: 0.35, shadow: false });
+    sideBox(s, cz, 0.62, H - 0.72, D, 0.14, 0.16, { color: GOLD, metal: 1, rough: 0.3, shadow: false });
+    for (let z = z1 - 4; z > z0 + 3; z -= pilasterEvery) {
+      sideBox(s, z, 0.35, H / 2, 1.0, 0.7, H - 0.4, { color: 0xece3cf, rough: 0.25, shadow: false });
+      sideBox(s, z, 0.4, 0.4, 1.3, 0.8, 0.5, { color: GOLD, metal: 1, rough: 0.3, shadow: false });
+      sideBox(s, z, 0.4, H - 1.2, 1.3, 0.8, 0.5, { color: GOLD, metal: 1, rough: 0.3, shadow: false });
+      if (lamps) {   // a sconce on every pilaster, but only the glow (no lights)
+        const x = s < 0 ? x0 + 0.95 : x1 - 0.95;
+        w.box({ x, y: 4.6, z, w: 0.3, h: 0.7, d: 0.3, glow: 0xffd8a0, glowIntensity: 1.5, shadow: false });
+        halo(w, x, 4.7, z, 2.4, 0xffc070, 0.18);
+      }
+    }
+  }
+  for (const z of [z0, z1]) {
+    const n = z === z0 ? 0.12 : -0.12;
+    w.box({ x: cx, y: 1.3, z: z - n, w: W, h: 2.6, d: 0.24, tex: 'panel', color: 0xffffff, shadow: false });
+    w.box({ x: cx, y: 2.7, z: z - n * 1.6, w: W, h: 0.12, d: 0.34, color: GOLD, metal: 1, rough: 0.3, shadow: false });
+    w.box({ x: cx, y: H - 0.35, z: z - n * 3, w: W, h: 0.7, d: 0.8, color: 0xece3cf, rough: 0.35, shadow: false });
+  }
+  for (let z = z1 - 2; z > z0 + 1; z -= beamEvery) {
+    w.box({ x: cx, y: H - 0.5, z, w: W, h: 0.9, d: 1.4, color: 0xe3d7bd, rough: 0.5, shadow: false });
+    w.box({ x: cx, y: H - 1.0, z, w: W, h: 0.12, d: 1.5, color: GOLD, metal: 1, rough: 0.3, shadow: false });
+  }
+  return { cx, cz, W, D };
+}
+export { halo as hotelHalo };
