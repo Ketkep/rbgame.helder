@@ -7,12 +7,12 @@ export class UI {
     for (const id of ['hud', 'lvl-chip', 'deaths', 'deaths-n', 'baby-badge', 'timer', 'ping', 'ping-n', 'altimeter', 'alt-fill', 'alt-rec', 'alt-n',
       'prompt', 'toasts', 'achievements', 'baby-offer', 'stamp', 'subs', 'sub-shown', 'sub-rest', 'flash', 'fade', 'ov-loading', 'ld-fill', 'ld-tip',
       'ov-ad', 'ad-sec', 'ov-bars', 'ov-credits', 'credits-roll', 'ov-glitch', 'pause-quip', 'btn-resume', 'btn-restart', 'btn-mercy', 'btn-quit',
-      'btn-play', 'btn-continue', 'btn-chapters', 'chapters', 'btn-next', 'btn-share', 'btn-again', 'set-sens', 'set-vol', 'set-music', 'set-gfx',
+      'campaigns', 'home-tag', 'home-stats', 'btn-settings-home', 'btn-settings', 'btn-settings-back', 'btn-levels-back', 'btn-reset', 'levels-grid', 'levels-eyebrow', 'levels-title', 'btn-home', 'end-eyebrow', 'end-next', 'btn-next', 'btn-share', 'btn-again', 'set-sens', 'set-vol', 'set-music', 'set-gfx',
       'cmp-eyebrow', 'cmp-title', 'cmp-deaths', 'cmp-time', 'cmp-total', 'cmp-quip', 'end-title', 'end-deaths', 'end-time', 'end-baby', 'end-share']) {
       this.el[id] = $(id);
     }
     this.screens = {
-      title: $('scr-title'), pause: $('scr-pause'), click: $('scr-click'), complete: $('scr-complete'), end: $('scr-end'), mobile: $('scr-mobile'),
+      home: $('scr-home'), levels: $('scr-levels'), settings: $('scr-settings'), pause: $('scr-pause'), click: $('scr-click'), complete: $('scr-complete'), end: $('scr-end'), mobile: $('scr-mobile'),
     };
     this._subHideT = null;
     this._creditsY = 0; this._creditsSpeed = 0; this._creditsOn = false;

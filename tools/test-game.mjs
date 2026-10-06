@@ -20,6 +20,44 @@ async function open(level) {
 }
 const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for (let i = 0; i < n; i++) g._simulate(1 / 60); }, n);
 
+// ---- home page (real, non-debug mode) ---------------------------------------------------------
+{
+  const fresh = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  fresh.on('pageerror', (e) => errs.push(e.message));
+  await fresh.goto(base, { waitUntil: 'load' });
+  await fresh.waitForSelector('.card');
+  const r = await fresh.evaluate(() => ({
+    cards: document.querySelectorAll('.card').length,
+    playable: document.querySelectorAll('.card.playable').length,
+    soon: document.querySelectorAll('.card.soon').length,
+    btn: document.querySelector('.card.playable .btn.primary').textContent,
+    pips: [...document.querySelectorAll('.card.playable .pip')].map((p) => p.className.replace('pip ', '')),
+  }));
+  ok(r.cards === 3 && r.playable === 1 && r.soon === 2, `home shows 1 playable + 2 coming-soon campaigns (${r.playable}/${r.soon})`);
+  ok(r.btn === 'Play', 'fresh player sees "Play"');
+  ok(JSON.stringify(r.pips) === JSON.stringify(['open', 'locked', 'locked', 'locked', 'locked']), `fresh player: only level 1 unlocked (${r.pips})`);
+  await fresh.click('.card.playable .btn.ghost');
+  const tiles = await fresh.evaluate(() => [...document.querySelectorAll('.tile')].map((t) => t.disabled));
+  ok(JSON.stringify(tiles) === JSON.stringify([false, true, true, true, true]), `level select: levels 2-5 locked at first (${tiles})`);
+  await fresh.close();
+
+  // a v1 save (from before the home page existed) is migrated, not lost
+  const old = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  old.on('pageerror', (e) => errs.push(e.message));
+  await old.addInitScript(() => localStorage.setItem('trustme.save.v1', JSON.stringify({ level: 2, deaths: 31, time: 400, baby: true, levelDeaths: [3, 12], levelTimes: [60, 120] })));
+  await old.goto(base, { waitUntil: 'load' });
+  await old.waitForSelector('.card');
+  const m = await old.evaluate(() => ({
+    btn: document.querySelector('.card.playable .btn.primary').textContent,
+    stats: document.querySelector('.card-stats').textContent,
+    pips: [...document.querySelectorAll('.card.playable .pip')].map((p) => p.className.replace('pip ', '')),
+  }));
+  ok(m.btn === 'Continue', `v1 save migrated: Continue offered (${m.btn})`);
+  ok(/Level 3/.test(m.stats) && /31/.test(m.stats), `v1 save migrated: level + death count kept (${m.stats})`);
+  ok(m.pips.slice(0, 3).every((p) => p !== 'locked') && m.pips[3] === 'locked', `v1 save migrated: levels up to 3 unlocked (${m.pips})`);
+  await old.close();
+}
+
 // ---- Level 2: fake vs real checkpoints -------------------------------------------------------
 {
   const page = await open(2);
@@ -87,9 +125,10 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
   const page = await open(1);
   const r = await page.evaluate(() => {
     const g = window.__trust; g.totalDeaths = 9; g.deaths = 9; g.completeLevel();
-    return JSON.parse(localStorage.getItem('trustme.save.v1'));
+    return JSON.parse(localStorage.getItem('trustme.save.v2')).campaigns.pilot;
   });
   ok(r.level === 1 && r.deaths === 9, `progress saved after level 1 (level=${r.level}, deaths=${r.deaths})`);
+  ok(r.furthest >= 1 && r.levelBest['0'] && r.levelBest['0'].deaths === 9, 'level 1 recorded as cleared with its best stats');
   await page.close();
 }
 

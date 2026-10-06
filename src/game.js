@@ -9,10 +9,11 @@ import { World } from './engine/world.js';
 import { GameAudio } from './engine/audio.js';
 import { UI } from './ui.js';
 import { Narrator } from './narrator.js';
-import { LEVELS } from './levels/index.js';
+import { CAMPAIGNS, getCampaign } from './campaigns.js';
 
 const FIXED = 1 / 120;
-const SAVE_KEY = 'trustme.save.v1';
+const SAVE_KEY = 'trustme.save.v2';
+const OLD_SAVE_KEY = 'trustme.save.v1';
 const BABY_FIRST = 25;
 const BABY_EVERY = 25;
 const SITE_URL = 'https://trustme.helderlabs.com';
@@ -22,8 +23,34 @@ const fmtTime = (s) => {
   return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`;
 };
 
+const defaultCs = () => ({ level: 0, deaths: 0, time: 0, baby: false, levelDeaths: [], levelTimes: [], furthest: 0, completed: false, best: null, levelBest: {}, runs: 0, runStart: 0 });
+
+/** v1 (single campaign, flat) -> v2 (per-campaign). */
+function migrateV1(v1) {
+  return {
+    v: 2, settings: { lowGfx: !!v1.lowGfx }, stats: { deaths: v1.deaths || 0, completions: v1.completed ? 1 : 0 },
+    campaigns: {
+      pilot: {
+        ...defaultCs(), level: v1.level || 0, deaths: v1.deaths || 0, time: v1.time || 0, baby: !!v1.baby,
+        levelDeaths: v1.levelDeaths || [], levelTimes: v1.levelTimes || [], completed: !!v1.completed,
+        furthest: v1.completed ? 4 : (v1.level || 0),
+      },
+    },
+  };
+}
+
 function loadSave() {
-  try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch { return {}; }
+  let s = null;
+  try {
+    s = JSON.parse(localStorage.getItem(SAVE_KEY));
+    if (!s || s.v !== 2) {
+      const old = JSON.parse(localStorage.getItem(OLD_SAVE_KEY));
+      s = old ? migrateV1(old) : null;
+    }
+  } catch { s = null; }
+  s = s || { v: 2 };
+  s.settings ||= {}; s.stats ||= { deaths: 0, completions: 0 }; s.campaigns ||= {};
+  return s;
 }
 function writeSave(s) {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch { /* storage blocked: fine */ }
@@ -31,6 +58,7 @@ function writeSave(s) {
 
 export class Game {
   constructor() {
+    this.save = loadSave();
     this.canvas = document.getElementById('c');
     this.ui = new UI();
     this.audio = new GameAudio();
@@ -39,11 +67,14 @@ export class Game {
     this.yaw = 0; this.pitch = 0; this.roll = 0;
     this.keys = new Set();
     this.jumpEdge = false;
-    this.sens = 1;
+    this.sens = this.save.settings.sens ?? 1;
+    if (this.save.settings.vol !== undefined) this.audio.volume = this.save.settings.vol;
+    if (this.save.settings.music === false) this.audio.musicOn = false;
     this.locked = false;
     this.state = 'title'; // title | playing | paused | dead | complete | ended
     this.world = null; this.level = null; this.levelIndex = 0;
-    this.save = loadSave();
+    this.campaign = CAMPAIGNS[0];
+    this._loadTok = 0;
     this.debug = new URLSearchParams(location.search).has('debug');
     this.manual = false; // tests: when true the caller drives _simulate() itself
 
@@ -74,7 +105,7 @@ export class Game {
     this._bindUI();
 
     if (matchMedia('(pointer: coarse)').matches && !matchMedia('(pointer: fine)').matches) this.ui.showScreen('mobile');
-    this._refreshTitleButtons();
+    this._refreshHome();
     if (this.debug) window.__trust = this;
 
     this.last = performance.now();
@@ -105,7 +136,7 @@ export class Game {
     this.composer.addPass(new OutputPass());
     this._resize();
     window.addEventListener('resize', () => this._resize());
-    if (this.save.lowGfx) this.setQuality(true, false);
+    if (this.save.settings.lowGfx) this.setQuality(true, false);
   }
 
   /** Low graphics: no bloom/MSAA, smaller shadow map and 1x pixel ratio. Persisted. */
@@ -120,7 +151,7 @@ export class Game {
     this._resize();
     const cb = this.ui.el['set-gfx'];
     if (cb) cb.checked = !!low;
-    if (persist) { this.save = { ...this.save, lowGfx: !!low }; writeSave(this.save); }
+    if (persist) this._saveSettings();
   }
 
   _fpsWatch(dt) {
@@ -154,6 +185,10 @@ export class Game {
       if (this.state === 'playing') {
         if (e.code === 'KeyR') this.manualReset();
         if (e.code === 'KeyB') this.acceptBaby();
+      }
+      if (e.code === 'Escape') {
+        if (this.ui.screens.levels.classList.contains('show')) this.ui.showScreen('home');
+        else if (this.ui.screens.settings.classList.contains('show')) this.closeSettings();
       }
       if (e.code === 'Enter' && this.state === 'complete') this._next();
       if (e.code === 'Enter' && this.state === 'paused') this.resume();
@@ -189,56 +224,166 @@ export class Game {
 
   _bindUI() {
     const { el } = this.ui;
-    el['btn-play'].addEventListener('click', () => { this.audio.init(); this.audio.click(); this.newGame(); });
-    el['btn-continue'].addEventListener('click', () => { this.audio.init(); this.audio.click(); this.continueGame(); });
-    el['btn-chapters'].addEventListener('click', () => el.chapters.classList.toggle('hidden'));
     el['btn-resume'].addEventListener('click', () => this.resume());
     el['btn-restart'].addEventListener('click', () => { this.audio.click(); this.restartLevel(); });
     el['btn-mercy'].addEventListener('click', () => this.begForMercy());
-    el['btn-quit'].addEventListener('click', () => { this.audio.click(); this.toTitle(); });
+    el['btn-quit'].addEventListener('click', () => { this.audio.click(); this.toHome(); });
     el['btn-next'].addEventListener('click', () => this._next());
-    el['btn-again'].addEventListener('click', () => { this.audio.click(); this.newGame(); });
+    el['btn-again'].addEventListener('click', () => { this.audio.click(); this.newGame(0, this.campaign.id); });
+    el['btn-home'].addEventListener('click', () => { this.audio.click(); this.toHome(); });
     el['btn-share'].addEventListener('click', () => this._copyShare());
     this.ui.screens.click.addEventListener('click', () => this.resume());
-    el['set-sens'].addEventListener('input', (e) => { this.sens = +e.target.value; });
-    el['set-vol'].addEventListener('input', (e) => { this.audio.setVolume(+e.target.value); });
-    el['set-music'].addEventListener('change', (e) => this.audio.setMusicEnabled(e.target.checked));
+
+    // settings (reachable from the home page and the pause menu)
+    el['btn-settings-home'].addEventListener('click', () => { this.audio.init(); this.audio.click(); this.openSettings('home'); });
+    el['btn-settings'].addEventListener('click', () => { this.audio.click(); this.openSettings('pause'); });
+    el['btn-settings-back'].addEventListener('click', () => { this.audio.click(); this.closeSettings(); });
+    el['btn-levels-back'].addEventListener('click', () => { this.audio.click(); this.ui.showScreen('home'); });
+    el['set-sens'].value = this.sens;
+    el['set-vol'].value = this.audio.volume;
+    el['set-music'].checked = this.audio.musicOn;
+    el['set-gfx'].checked = !!this.save.settings.lowGfx;
+    el['set-sens'].addEventListener('input', (e) => { this.sens = +e.target.value; this._saveSettings(); });
+    el['set-vol'].addEventListener('input', (e) => { this.audio.setVolume(+e.target.value); this._saveSettings(); });
+    el['set-music'].addEventListener('change', (e) => { this.audio.setMusicEnabled(e.target.checked); this._saveSettings(); });
     el['set-gfx'].addEventListener('change', (e) => this.setQuality(e.target.checked));
-    el['set-gfx'].checked = !!this.save.lowGfx;
+    let armed = null;
+    el['btn-reset'].addEventListener('click', () => {
+      if (!armed) {
+        el['btn-reset'].textContent = 'Click again to erase all progress';
+        armed = setTimeout(() => { armed = null; el['btn-reset'].textContent = 'Reset all progress'; }, 4000);
+        return;
+      }
+      clearTimeout(armed); armed = null;
+      this.save = { v: 2, settings: this.save.settings, stats: { deaths: 0, completions: 0 }, campaigns: {} };
+      writeSave(this.save);
+      el['btn-reset'].textContent = 'Progress erased';
+      setTimeout(() => { el['btn-reset'].textContent = 'Reset all progress'; }, 1800);
+      this._refreshHome();
+    });
   }
 
-  _refreshTitleButtons() {
-    const s = this.save;
-    const cont = this.ui.el['btn-continue'], chap = this.ui.el['btn-chapters'];
-    cont.classList.toggle('hidden', !(s.level > 0 || s.deaths > 0));
-    chap.classList.toggle('hidden', !s.completed);
-    const box = this.ui.el.chapters;
-    box.innerHTML = '';
-    LEVELS.forEach((lv, i) => {
-      const b = document.createElement('button');
-      b.textContent = `${i + 1}. ${lv.name}`;
-      b.addEventListener('click', () => { this.audio.init(); this.newGame(i); });
-      box.appendChild(b);
+  _saveSettings() {
+    this.save.settings = { ...this.save.settings, sens: this.sens, vol: this.audio.volume, music: this.audio.musicOn, lowGfx: !!this.lowGfx };
+    writeSave(this.save);
+  }
+
+  openSettings(from) { this.settingsFrom = from; this.ui.showScreen('settings'); }
+  closeSettings() { this.ui.showScreen(this.settingsFrom || 'home'); }
+
+  // =========================================================================================
+  //  Home page (campaign hub)
+  // =========================================================================================
+  get levels() { return this.campaign.levels; }
+
+  /** Per-campaign save record (created on demand). */
+  cs(id = this.campaign.id) {
+    this.save.campaigns[id] ||= defaultCs();
+    return this.save.campaigns[id];
+  }
+
+  _homeQuip() {
+    const pick = (a) => a[Math.floor(Math.random() * a.length)];
+    const c = this.cs('pilot'), st = this.save.stats;
+    if (c.runs > 0 && !c.level) return pick(['You beat the show. I\'m not mad. I\'m just recalculating.', 'Back to rub it in? Fine. Welcome back, champion.']);
+    if (c.level > 0 || c.deaths > 0) return pick([`Back already? Level ${c.level + 1} missed you. So did your ${c.deaths} deaths.`, 'Oh good, you\'re back. I was just rehearsing my lies.']);
+    if (st.deaths > 0) return pick(['Welcome back. I\'ve redecorated. Nothing has changed.', 'A game show where you can trust me completely.']);
+    return 'A game show where you can trust me completely.';
+  }
+
+  _refreshHome() {
+    const { el } = this.ui;
+    el['campaigns'].innerHTML = '';
+    for (const c of CAMPAIGNS) el['campaigns'].appendChild(this._campaignCard(c));
+    const st = this.save.stats;
+    el['home-stats'].textContent = st.deaths
+      ? `☠ ${st.deaths} lifetime death${st.deaths === 1 ? '' : 's'}${st.completions ? ` · ✔ ${st.completions} campaign${st.completions === 1 ? '' : 's'} cleared` : ''}`
+      : '';
+    el['home-tag'].textContent = this._homeQuip();
+  }
+
+  _campaignCard(c) {
+    const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+    const card = mk('article', 'card ' + (c.status === 'playable' ? 'playable' : 'soon'));
+    card.appendChild(mk('p', 'eyebrow', `CAMPAIGN ${c.number}`));
+    card.appendChild(mk('h3', '', c.title));
+    card.appendChild(mk('p', 'blurb', c.tagline));
+    if (c.status !== 'playable') {
+      card.appendChild(mk('div', 'soon-badge', '🔒 Coming soon'));
+      return card;
+    }
+    const cs = this.cs(c.id);
+    const pips = mk('div', 'pips');
+    c.levels.forEach((lv, i) => {
+      const done = !!cs.levelBest[i];
+      const open = this.debug || cs.completed || i <= (cs.furthest || 0);
+      const pip = mk('span', 'pip ' + (done ? 'done' : open ? 'open' : 'locked'));
+      pip.title = `${i + 1}. ${lv.name}`;
+      pips.appendChild(pip);
     });
+    card.appendChild(pips);
+    const inProgress = cs.level > 0 || cs.deaths > 0 || cs.time > 0;
+    let line;
+    if (inProgress) line = `In progress: Level ${cs.level + 1} · ☠ ${cs.deaths}`;
+    else if (cs.best) line = `Best run: ☠ ${cs.best.deaths} · ⏱ ${fmtTime(cs.best.time)}`;
+    else line = `${c.levels.length} levels · ${c.eta}`;
+    card.appendChild(mk('p', 'card-stats', line));
+    const btns = mk('div', 'card-btns');
+    const play = mk('button', 'btn primary', inProgress ? 'Continue' : cs.completed ? 'Play again' : 'Play');
+    play.addEventListener('click', () => { this.audio.init(); this.audio.click(); inProgress ? this.continueGame(c.id) : this.newGame(0, c.id); });
+    const lv = mk('button', 'btn ghost', 'Levels');
+    lv.addEventListener('click', () => { this.audio.init(); this.audio.click(); this.openLevels(c.id); });
+    btns.append(play, lv);
+    card.appendChild(btns);
+    return card;
+  }
+
+  openLevels(id) {
+    const c = getCampaign(id), cs = this.cs(id), { el } = this.ui;
+    el['levels-eyebrow'].textContent = `CAMPAIGN ${c.number}`;
+    el['levels-title'].textContent = c.title;
+    el['levels-grid'].innerHTML = '';
+    c.levels.forEach((lv, i) => {
+      const unlocked = this.debug || cs.completed || i <= (cs.furthest || 0);
+      const best = cs.levelBest[i];
+      const t = document.createElement('button');
+      t.className = 'tile ' + (best ? 'done' : unlocked ? 'open' : 'locked');
+      t.disabled = !unlocked;
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = unlocked ? (best ? '✔' : i + 1) : '🔒';
+      const b = document.createElement('b'); b.textContent = unlocked ? lv.name : '???';
+      const sm = document.createElement('small'); sm.textContent = best ? `best ☠ ${best.deaths} · ⏱ ${fmtTime(best.time)}` : unlocked ? 'not cleared' : 'locked';
+      t.append(n, b, sm);
+      if (unlocked) t.addEventListener('click', () => { this.audio.init(); this.audio.click(); this.newGame(i, id); });
+      el['levels-grid'].appendChild(t);
+    });
+    this.ui.showScreen('levels');
   }
 
   // =========================================================================================
   //  Flow
   // =========================================================================================
-  async newGame(startLevel = 0) {
+  /** Start a fresh run of a campaign from `startLevel`. Returns false if superseded by another load. */
+  async newGame(startLevel = 0, campaignId = this.campaign.id) {
+    this.campaign = getCampaign(campaignId);
     this.reset();
-    this.save = { ...this.save, level: 0, deaths: 0, time: 0 };
-    await this.loadLevel(startLevel);
+    this.runStart = startLevel;
+    Object.assign(this.cs(), { level: startLevel, deaths: 0, time: 0, baby: false, levelDeaths: [], levelTimes: [], runStart: startLevel });
+    writeSave(this.save);
+    if (!(await this.loadLevel(startLevel))) return false;
     this._begin();
+    return true;
   }
-  async continueGame() {
-    const s = this.save;
+  async continueGame(campaignId = this.campaign.id) {
+    this.campaign = getCampaign(campaignId);
+    const s = this.cs();
     this.reset();
+    this.runStart = s.runStart || 0;
     this.totalDeaths = s.deaths || 0; this.totalTime = s.time || 0; this.baby = !!s.baby;
     this.nextBabyOffer = (Math.floor(this.totalDeaths / BABY_EVERY) + 1) * BABY_EVERY;
     this.levelDeaths = s.levelDeaths || []; this.levelTimes = s.levelTimes || [];
-    await this.loadLevel(s.level || 0);
+    if (!(await this.loadLevel(s.level || 0))) return false;
     this._begin();
+    return true;
   }
 
   _begin() {
@@ -250,15 +395,22 @@ export class Game {
     this._lock();
     this.ui.fade(true, 0);
     requestAnimationFrame(() => this.ui.fade(false, 800));
+    const c = this.cs();
+    c.furthest = Math.max(c.furthest || 0, this.levelIndex);
+    writeSave(this.save);
     this.level.onStart?.(this.world, this);
   }
 
+  /** Builds a level. Resolves false if a newer loadLevel call superseded this one. */
   async loadLevel(i) {
-    this.levelIndex = Math.max(0, Math.min(LEVELS.length - 1, i));
-    const level = (this.level = LEVELS[this.levelIndex]);
+    const tok = ++this._loadTok;
+    const levels = this.campaign.levels;
+    this.levelIndex = Math.max(0, Math.min(levels.length - 1, i));
+    const level = (this.level = levels[this.levelIndex]);
     if (document.fonts?.load) {
       try { await Promise.all([document.fonts.load('400 48px "Archivo Black"'), document.fonts.load('600 24px "Inter Variable"')]); } catch { /* fall back to system fonts */ }
     }
+    if (tok !== this._loadTok) return false;
     const old = this.world;
     const w = (this.world = new World(this));
     w.hooks = {};
@@ -286,6 +438,7 @@ export class Game {
     this.audio.playMusic(level.music || 'l1');
     this.audio.setWind(0);
     this.last = performance.now();
+    return true;
   }
 
   _lock() {
@@ -319,18 +472,18 @@ export class Game {
     this.narrator.say('resume', { priority: 0 });
   }
 
-  toTitle() {
+  toHome() {
     document.exitPointerLock?.();
     this.state = 'title';
     this.ui.hud(false);
-    this.ui.showScreen('title');
     this.narrator.clear();
     this.ui.promptClear();
     this.ui.setAltimeter(false); this.ui.ad(false); this.ui.loading(false); this.ui.bars(false); this.ui.glitch(false); this.ui.creditsStop();
-    this.save = loadSave();
-    this._refreshTitleButtons();
+    this.campaign = CAMPAIGNS[0]; // the home screen's live backdrop is always campaign 1, level 1
+    this._refreshHome();
+    this.ui.showScreen('home');
     this.audio.playMusic('title');
-    this.loadLevel(0).then(() => { this.state = 'title'; this.ui.hud(false); });
+    this.loadLevel(0).then((ok) => { if (ok) { this.state = 'title'; this.ui.hud(false); } });
   }
 
   async restartLevel() {
@@ -372,11 +525,10 @@ export class Game {
   }
 
   persist() {
-    this.save = {
-      ...this.save,
+    Object.assign(this.cs(), {
       level: this.levelIndex, deaths: this.totalDeaths, time: this.totalTime, baby: this.baby,
       levelDeaths: this.levelDeaths, levelTimes: this.levelTimes,
-    };
+    });
     writeSave(this.save);
   }
 
@@ -414,7 +566,7 @@ export class Game {
     if (this.state !== 'playing') return;
     this.state = 'dead';
     this.deadT = 0;
-    this.deaths++; this.totalDeaths++;
+    this.deaths++; this.totalDeaths++; this.save.stats.deaths++;
     this.ui.setDeaths(this._deathText(), true);
     this.ui.flash();
     this.ui.stamp(['WRONG!', 'NOPE', 'OOF', 'SPLAT', 'BZZT', 'NEXT!', 'OUT'][Math.floor(Math.random() * 7)]);
@@ -471,16 +623,28 @@ export class Game {
 
   completeLevel() {
     if (this.state !== 'playing' || this.world.completed) return;
-    const last = this.levelIndex === LEVELS.length - 1;
+    const levels = this.levels, last = this.levelIndex === levels.length - 1;
     this.world.completed = true;
     this.levelDeaths[this.levelIndex] = this.deaths;
     this.levelTimes[this.levelIndex] = this.time;
     this.audio.levelComplete();
     this.world.burst(new THREE.Vector3(this.player.x, this.player.y + 1.5, this.player.z), 0xffc83d, 70, 7);
     this.state = 'complete';
-    this.save.completed = this.save.completed || last;
     const nextIdx = this.levelIndex + 1;
-    this.save = { ...this.save, level: last ? 0 : nextIdx, deaths: last ? 0 : this.totalDeaths, time: last ? 0 : this.totalTime, baby: this.baby, levelDeaths: this.levelDeaths, levelTimes: this.levelTimes };
+    const c = this.cs();
+    const lb = (c.levelBest[this.levelIndex] ||= { deaths: this.deaths, time: this.time });
+    lb.deaths = Math.min(lb.deaths, this.deaths); lb.time = Math.min(lb.time, this.time);
+    c.furthest = Math.max(c.furthest || 0, last ? this.levelIndex : nextIdx);
+    if (last) {
+      c.completed = true; c.runs = (c.runs || 0) + 1;
+      this.save.stats.completions++;
+      const run = { deaths: this.totalDeaths, time: this.totalTime };
+      if (this.runStart === 0 && (!c.best || run.deaths < c.best.deaths || (run.deaths === c.best.deaths && run.time < c.best.time))) c.best = run;
+    }
+    Object.assign(c, {
+      level: last ? 0 : nextIdx, deaths: last ? 0 : this.totalDeaths, time: last ? 0 : this.totalTime,
+      baby: this.baby, levelDeaths: this.levelDeaths, levelTimes: this.levelTimes,
+    });
     writeSave(this.save);
     const customQuip = this.world.hooks.onComplete?.();
     if (customQuip) this.narrator.say(customQuip, { priority: 2 });
@@ -493,7 +657,7 @@ export class Game {
       e['cmp-title'].textContent = this.level.name;
       e['cmp-deaths'].textContent = this.deaths; e['cmp-time'].textContent = fmtTime(this.time); e['cmp-total'].textContent = this.totalDeaths;
       e['cmp-quip'].textContent = this.level.completeQuip ? '“' + this.level.completeQuip + '”' : '';
-      e['btn-next'].textContent = `Level ${nextIdx + 1}: ${LEVELS[nextIdx].name}`;
+      e['btn-next'].textContent = `Level ${nextIdx + 1}: ${levels[nextIdx].name}`;
       this.ui.showScreen('complete');
     }, last ? 2600 : 2200);
   }
@@ -516,6 +680,8 @@ export class Game {
     e['end-baby'].textContent = this.baby ? 'Yes 👶' : 'No';
     e['end-title'].textContent = this.totalDeaths === 0 ? 'Zero deaths?! Cheater.' : this.baby ? 'You trusted no one. (After some help.)' : 'You trusted no one. You win.';
     e['end-share'].textContent = this._shareText();
+    e['end-eyebrow'].textContent = `CAMPAIGN ${this.campaign.number} COMPLETE`;
+    e['end-next'].textContent = this.campaign.after || '';
     this.ui.hud(false);
     this.ui.showScreen('end');
   }
@@ -523,7 +689,7 @@ export class Game {
   _shareText() {
     const per = this.levelDeaths.map((d, i) => `L${i + 1}:${d ?? 0}`).join(' ');
     return [
-      'TRUST ME… 🎙️',
+      `TRUST ME… 🎙️ · Campaign ${this.campaign.number}: ${this.campaign.title}`,
       this.baby ? 'I trusted no one (with training wheels 👶).' : 'I trusted no one.',
       `☠ ${this.totalDeaths} deaths · ⏱ ${fmtTime(this.totalTime)}`,
       per,

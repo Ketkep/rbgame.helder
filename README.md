@@ -7,7 +7,7 @@ Plays in the browser (desktop, keyboard + mouse). Live at **https://trustme.held
 
 ## The game
 
-Five short levels, each with a different way to betray you:
+The home page lists **campaigns**. **Campaign 1 — Welcome to the Show** is five short levels, each with a different way to betray you (more campaigns are planned; the home page has "coming soon" slots for them):
 
 | # | Level | Gimmick |
 |---|-------|---------|
@@ -19,6 +19,10 @@ Five short levels, each with a different way to betray you:
 
 - **Baby Mode**: after 25 deaths the Host offers it (press **B**, or "Beg for mercy" in the pause menu): higher jumps, longer coyote time, fake checkpoints actually save, and a permanent badge on your share card.
 - Everything is telegraphed (ping turns red before a lag spike, controls announce themselves…). Annoying, not unfair.
+
+### Home page & progress
+- Home page: campaign cards with progress, a level select (levels unlock as you clear them; everything unlocks after you finish the campaign), and Settings (sensitivity, volume, music, low graphics, reset progress).
+- Progress is saved per campaign in the browser (`localStorage`). Saves from the single-campaign version are migrated automatically.
 
 ### Controls
 `WASD` move · `Space` jump (tap = hop, hold = full jump) · `Mouse` look · `R` respawn · `Esc` pause · `M` mute · `Enter` resume
@@ -41,9 +45,14 @@ Handy URL params: `?debug` exposes `window.__trust` (the game object) and doesn'
 - `node tools/test-game.mjs` — in-browser rule tests (fake vs real checkpoints, baby mode, wrong door, save/continue…).
 - `node tools/shot.mjs <outdir> '<json>'` — headless screenshots.
 
+### Adding a campaign
+1. Build its levels (copy `src/levels/level1.js` for the shape; shared helpers are in `src/levels/common.js`).
+2. Add an entry to `src/campaigns.js` with `status: 'playable'` and a `levels` array (turn one of the "coming soon" placeholders into it). The home page, level select, saves and share card all pick it up. Keep each campaign's `id` stable — saves are keyed by it.
+
 ### Layout
 ```
 src/
+  campaigns.js     the campaign registry (what the home page lists)
   game.js          state machine, input, camera, death/respawn, baby mode, saves, post-processing
   narrator.js      subtitles + voice blips (+ optional voice pack)
   script.js        every line the Host says
