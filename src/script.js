@@ -369,6 +369,16 @@ Object.assign(SCRIPT, {
   'hotel.l14.hint.some': 'Hint: there is something different in the corridor. Turn around when you find it. I will not tell you what. Press H again if you must.',
   'hotel.l14.hint.where': 'Hint: {where}',
   'hotel.l14.done': 'Out! The hallway is still looping, for the next guest. It has a lot of patience. And a lot of paintings.',
+  'hotel.l15.intro': 'Level fifteen: Window Ledge. We are outside the hotel. Eleven floors up. In a thunderstorm. Because I could not find the other door.',
+  'hotel.l15.intro2': 'Window to window along the ledges. The wind will push you off the wall in gusts. Lean into the wall. The wall is the one that is solid.',
+  'hotel.l15.wind': 'Gusts! They push you away from the building. Lean in. Press the key that goes toward the wall. Which is, helpfully, the one I did not say.',
+  'hotel.l15.ac': 'Air conditioners! They are very stable. They are bolted to a very old wall. Do not think about the wall.',
+  'hotel.l15.crumble': 'These sills have been here since eighteen ninety. They are tired. They would like to retire, now, under you.',
+  'hotel.l15.pipe': 'A pipe. Balance on it. Gymnasts do it on a beam. A beam is wider. And indoors. And there is no thunderstorm.',
+  'hotel.l15.gondola': 'The window cleaner\'s gondola! He is on his break. His break has lasted since March. Hop on when it is close.',
+  'hotel.l15.gargoyle': 'Gargoyles! Lovely craftsmanship. They are not meant to be stood on. They are not meant to be stood on by you in particular.',
+  'hotel.l15.fall': ['Eleven floors. A long way down. The shorter way is not available.', 'You have left the building. Not in the way I intended.', 'The wind won. The wind always wins. It is the wind.', 'Splat is a word. It is also, I regret to say, the outcome.'],
+  'hotel.l15.done': 'The window! It is open! It is a staff closet! It has mops! It is the best room in the hotel!',
   'hotel.complete.first': 'Level one done! The marble is very proud of you. I\'m... fine.',
 });
 

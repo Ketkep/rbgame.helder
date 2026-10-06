@@ -396,6 +396,36 @@ suite('hallway', async () => {
   await page.close();
 });
 
+// ---- level 15: Window Ledge ---------------------------------------------------------------------------------------
+suite('ledge', async () => {
+  const page = await open(15);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, lg = w.ledge, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    out.ledges = lg.ledges.length;
+    out.types = [...new Set(lg.ledges.map((l) => l.type))].sort().join(',');
+    // gusts push you off the wall, and leaning into it (D while facing +x) holds you on
+    const corn = lg.ledges.find((l) => l.type === 'cornice');
+    const wind = lg.winds[0];
+    const stand = () => { g.player.teleport(corn.x, corn.y + 0.001, -corn.dep / 2); g.player.grounded = true; g.yaw = -Math.PI / 2; g.pitch = 0; g.keys.clear(); };
+    const waitGust = () => { for (let i = 0; i < 60 * 12 && !wind.active; i++) g._simulate(1 / 60); };
+    waitGust(); stand(); const z0 = g.player.z; sim(1.0); out.drift = z0 - g.player.z;       // positive = pushed away from the wall
+    // lean in
+    waitGust(); stand(); g.keys.add('KeyD'); sim(1.0); out.leanDrift = g.player.z - (-corn.dep / 2);   // positive = toward the wall
+    g.keys.clear();
+    // the gondola moves and carries you
+    const gd = lg.ledges.find((l) => l.type === 'gondola'); const gx0 = gd.pl.body.x; let gmax = 0; for (let i = 0; i < 60 * 8; i++) { g._simulate(1 / 60); gmax = Math.max(gmax, Math.abs(gd.pl.body.x - gx0)); }
+    out.gondola = gmax;
+    return out;
+  });
+  ok(r.ledges >= 24, `ledge: a long route (${r.ledges} ledges)`);
+  ok(/ac/.test(r.types) && /cornice/.test(r.types) && /crumble/.test(r.types) && /gondola/.test(r.types) && /perch/.test(r.types) && /pipe/.test(r.types), `ledge: every kind of hazard is on the route (${r.types})`);
+  ok(r.drift > 0.2, `ledge: a gust pushes you away from the wall (${r.drift.toFixed(2)} m in a second)`);
+  ok(r.leanDrift > -0.2 && r.leanDrift > 0.3 - 0.6, 'ledge: leaning into the wall (D) keeps you on the ledge');
+  ok(r.gondola > 1.5, `ledge: the gondola swings (${r.gondola.toFixed(1)} m)`);
+  await page.close();
+});
+
 const names = Object.keys(suites).filter((n) => n.includes(filter));
 for (const n of names) { console.log(`\n== ${n}`); await suites[n](); }
 await browser.close();
