@@ -41,10 +41,12 @@ await page.evaluate(() => {
     g.yaw = Math.atan2(-dx, -dz); g.pitch = 0;
     g.keys.clear(); if (!(plan && plan.wait)) g.keys.add('KeyW');
     // wait for lasers: don't walk into an active hazard (or one about to fire) just ahead
+    let hop = false;
     for (const h of w.hazards) {
       const hb = h.body;
       if (Math.max(hb.hx, hb.hz) > 4) continue;   // floor-sized hazards (wet floor, lava…) aren't lasers to wait for
       const ahead = (hb.x - p.x) * (dx / len) + (hb.z - p.z) * (dz / len);
+      if (h.jumpable) { if (ahead > 0.2 && ahead < 2.7 && Math.abs(hb.y - p.y) < 2 && Math.hypot(hb.x - p.x, hb.z - p.z) < 3.6) hop = true; continue; }   // low carts: hop them
       if (ahead > -0.5 && ahead < 2.6 && Math.abs(hb.y - p.y) < 2 && (h.enabled || (h.group.visible))) { g.keys.delete('KeyW'); break; }
     }
     // look-ahead: is there ground (or wall) ahead?
@@ -60,7 +62,7 @@ await page.evaluate(() => {
     // slippery marble: you can't stop or turn, so a human hops straight on (jump buffering) and steers in the air
     const gm = p.ground && (Math.abs(p.ground.dx) + Math.abs(p.ground.dz) > 1e-6);   // platform rolling away under us: go now
     const skate = p.grounded && p.ground && (((p.ground.slip > 0.8) && len < 4.4 && len > 3.0) || (gm && len < 4.4));
-    const jump = p.grounded && !(plan && plan.wait) && (!groundAhead || wallAhead || skate);
+    const jump = p.grounded && !(plan && plan.wait) && (!groundAhead || wallAhead || skate || hop);
     if (jump) g.jumpEdge = true;
     if (!p.grounded) g.keys.add('Space'); else if (jump) g.keys.add('Space');
     g.keys.add('Space'); // hold for full jumps; releasing happens naturally when we stop pressing in-air (kept simple)

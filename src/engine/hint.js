@@ -13,7 +13,7 @@ export class HintTrail {
     this.pts = null; this.base = null; this.orbs = [];
   }
 
-  show(points, seconds) {
+  show(points, seconds, { flat = false } = {}) {
     this.hide();
     if (!points || points.length < 2) return;
     const SP = 0.5;
@@ -21,7 +21,7 @@ export class HintTrail {
     for (let i = 0; i < points.length - 1; i++) {
       const a = points[i], b = points[i + 1];
       const dist = Math.hypot(b.x - a.x, b.z - a.z), dy = b.y - a.y;
-      const arc = Math.min(2.4, 0.16 * dist + Math.max(0, dy) * 0.6 + 0.15);
+      const arc = flat ? 0 : Math.min(2.4, 0.16 * dist + Math.max(0, dy) * 0.6 + 0.15);
       const n = Math.max(2, Math.ceil(Math.hypot(dist, dy) / SP));
       for (let k = (i === 0 ? 0 : 1); k <= n; k++) {
         const u = k / n;

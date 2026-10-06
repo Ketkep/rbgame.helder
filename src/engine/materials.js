@@ -174,6 +174,15 @@ const TEX_BUILDERS = {
     noise(ctx, S, S, 8);
   },
   // sun-bleached stone / pastel island rock
+  hedge(ctx, S) {   // clipped box hedge: dense leaf noise, a few lighter tips
+    ctx.fillStyle = '#3a7040'; ctx.fillRect(0, 0, S, S);
+    for (let i = 0; i < 2600; i++) {
+      const g = 60 + Math.random() * 90, r = 22 + Math.random() * 40;
+      ctx.fillStyle = `rgba(${r | 0},${g | 0},${30 + Math.random() * 30 | 0},${0.35 + Math.random() * 0.5})`;
+      ctx.beginPath(); ctx.ellipse(Math.random() * S, Math.random() * S, 2 + Math.random() * 6, 1.5 + Math.random() * 3.5, Math.random() * 6.28, 0, 7); ctx.fill();
+    }
+    for (let i = 0; i < 260; i++) { ctx.fillStyle = `rgba(150,210,110,${Math.random() * 0.35})`; ctx.fillRect(Math.random() * S, Math.random() * S, 2, 2); }
+  },
   stone(ctx, S) {
     ctx.fillStyle = '#e7d9cb'; ctx.fillRect(0, 0, S, S);
     for (let i = 0; i < 260; i++) { ctx.fillStyle = `rgba(${Math.random() < 0.5 ? '90,60,50' : '255,255,255'},${Math.random() * 0.1})`; ctx.beginPath(); ctx.arc(Math.random() * S, Math.random() * S, 3 + Math.random() * 14, 0, 7); ctx.fill(); }

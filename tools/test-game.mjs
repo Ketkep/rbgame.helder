@@ -216,7 +216,8 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
   const back = await page.evaluate(() => {
     const g = window.__trust, p = g.player;
     const calls = g.world.interactables.filter((it) => /elevator|Out of order/.test(typeof it.label === 'function' ? it.label(g) : it.label)).map((it) => it.label(g));
-    const lv4 = g.world.interactables.find((it) => /^Level 4:/.test(typeof it.label === 'function' ? it.label(g) : it.label));
+    const firstPlanned = g.campaign.levels.findIndex((l) => l.placeholder) + 1;
+    const lv4 = g.world.interactables.find((it) => new RegExp(`^Level ${firstPlanned}:`).test(typeof it.label === 'function' ? it.label(g) : it.label));
     return { z: p.z, x: p.x, calls, lv2: lv4.label(g) };
   });
   ok(back.z < -24 && Math.abs(back.x + 12) < 0.5, `hotel: you arrive back inside floor 1's elevator (x=${back.x.toFixed(1)}, z=${back.z.toFixed(1)})`);
@@ -371,6 +372,41 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
   await page.waitForFunction(() => window.__trust.world.escape.doorOpen, null, { timeout: 15000 });
   const r3 = await page.evaluate(() => { const g = window.__trust; for (let i = 0; i < 150; i++) g._simulate(1 / 60); const d = g.world.bodies.find((b) => Math.abs(b.x) < 0.01 && Math.abs(b.hx - 2) < 0.01 && Math.abs(b.hy - 2.2) < 0.01); return { open: g.world.escape.doorOpen, doorGone: !d || !d.enabled || d.y > 5, modal: !!g.modal }; });
   ok(r3.open && !r3.modal && r3.doorGone, 'lost-luggage: the right code opens the door');
+  await page.close();
+}
+
+// ---- Hotel level 4: the rooftop maze ------------------------------------------------------------------
+{
+  const page = await open(4, 'hotel');
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, m = w.maze, out = {};
+    const sol = m.solve([0, 0]);
+    out.solved = sol.length > 12 && sol[0].join() === '0,0' && sol[sol.length - 1].join() === `${m.N - 1},${m.N - 1}`;
+    out.doors = m.doors.length; out.decoys = m.doors.filter((d) => d.decoy).length;
+    // doors alternate between blocking and open
+    const seen = m.doors.map(() => new Set());
+    for (let i = 0; i < 60 * 8; i++) { g._simulate(1 / 60); m.doors.forEach((d, k) => seen[k].add(d.body.enabled)); }
+    out.doorsCycle = seen.every((s) => s.size === 2);
+    // the hint draws the way out from where you stand, as a flat trail
+    g.debug = false; g.hintCool = 0;
+    const pts = g._hintPoints();
+    out.hintLen = pts.length; out.hintEndsAtExit = pts[pts.length - 1].z < m.Z0 - m.N * m.C;
+    g.useHint(); out.hintOn = !!(w.hintTrail && w.hintTrail.active);
+    // standing in the middle of the maze still gives a hint toward the exit
+    g.player.teleport(m.cx(3), 0.001, m.cz(3)); const p2 = g._hintPoints();
+    out.midHint = p2 && p2.length >= 3 && Math.hypot(p2[0].x - m.cx(3), p2[0].z - m.cz(3)) < 0.5;
+    // carts kill
+    out.carts = m.carts.length;
+    if (m.carts.length) { const hz = m.carts[0].hz; g.player.teleport(hz.body.x, 0.001, hz.body.z); g._simulate(1 / 60); out.cartKills = g.state === 'dead'; }
+    else out.cartKills = true;
+    return out;
+  });
+  ok(r.solved, 'maze: it can be solved from the entrance to the exit');
+  ok(r.doors >= 6 && r.decoys >= 1, `maze: revolving doors on the way (${r.doors}) and some on the way to nowhere (${r.decoys})`);
+  ok(r.doorsCycle, 'maze: every revolving door alternates between blocking and open');
+  ok(r.hintOn && r.hintLen >= 4 && r.hintEndsAtExit, `maze: the hint (H) draws the way to the exit (${r.hintLen} points)`);
+  ok(r.midHint, 'maze: the hint works from the middle of the maze too');
+  ok(r.cartKills, `maze: housekeeping carts hurt (${r.carts} on the route)`);
   await page.close();
 }
 

@@ -226,6 +226,14 @@ Object.assign(SCRIPT, {
   'hotel.l3.hint1': 'Hint: count the suitcases by colour. The poster says in what order.',
   'hotel.l3.hint2': 'Hint: the first two digits are {a} and {b}. The rest is counting. I am told you can do that.',
   'hotel.l3.hint3': 'Hint: the code is {code}. I am not lying. This once. Possibly.',
+  'hotel.l4.intro': 'Level four: Revolving Door. The hotel has a rooftop hedge maze. It is not in the brochure. It is, however, in the lawsuits.',
+  'hotel.l4.intro2': 'A new maze every time you try. The revolving doors run on a schedule. Not mine. Green lamp means go.',
+  'hotel.l4.lie': ['Left. Always left. It is the rule of mazes.', 'I can see the exit from up here. It is straight ahead. I am looking at a different maze, but still.', 'Take the next right. Trust me. I have a map. It is upside down.'],
+  'hotel.l4.deadend': ['A dead end! Every maze has one. Yours has several.', 'Nothing here but hedge and regret.', 'Congratulations, you found the part of the maze I am proudest of.'],
+  'hotel.l4.half': 'Halfway! Statistically you are as lost as ever.',
+  'hotel.l4.door': 'Revolving doors. A wonderful invention that lets you enter and leave at the same time. Mind the glass.',
+  'hotel.l4.cart': ['Housekeeping has the right of way. It is in the contract.', 'You walked into a luggage cart. In a maze. Outdoors. Impressive.', 'Mind the trolley. It does not mind you.'],
+  'hotel.l4.done': 'The exit! It was at the end the whole time. They always are. Mostly.',
   'hotel.complete.first': 'Level one done! The marble is very proud of you. I\'m... fine.',
 });
 

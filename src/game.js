@@ -946,7 +946,7 @@ export class Game {
       const pts = this._hintPoints();
       if (!pts) { this.narrator.say('hint.none', { priority: 1 }); return; }
       w.hintTrail ||= new HintTrail(w);
-      w.hintTrail.show(pts, this.baby ? 14 : 8);
+      w.hintTrail.show(pts, this.baby ? 14 : 8, { flat: !!w.hintFlat });
       used = true;
     }
     if (!used) return;
