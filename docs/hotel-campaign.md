@@ -76,7 +76,7 @@ More building blocks added for floors 2 and 3: `quiz.js: quizHall` (the quiz-lev
 4. Tag your main-path platforms `path: true` and run `CAMPAIGN=hotel node tools/check-reach.mjs <n>` and `CAMPAIGN=hotel node tools/bot.mjs <n>`.
 
 ## Testing quickly (any level, any time)
-Levels normally unlock in order. For play-testing, add `?debug` to the URL: everything unlocks and you can jump straight into a level, e.g. `https://trustme.helderlabs.com/?debug&campaign=hotel&level=11` (level numbers are 1–15; no `level` = the lobby). In debug mode the game does not grab your mouse automatically — **click the canvas once** to capture it. Debug runs don't count toward your saved progress the usual way, so use a normal run to test unlocking.
+Levels normally unlock in order. For play-testing, add `?debug` to the URL: everything unlocks and you can jump straight into a level, e.g. `https://trustme.helderlabs.com/?debug&campaign=hotel&level=11` (level numbers are 1–15; no `level` = the lobby). In debug mode the game does not grab your mouse automatically — **click the canvas once** to capture it. Note: debug runs are saved like normal ones (finishing a level this way marks it cleared in your save), so use a normal run when you want to test the unlock order.
 
 Smoke/monkey tests for all hotel levels: `node tools/smoke-hotel.mjs` and `node tools/monkey-hotel.mjs` (need `npm run preview` running).
 
