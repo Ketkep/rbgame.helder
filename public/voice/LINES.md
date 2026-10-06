@@ -6,7 +6,7 @@ Lines without a file keep working with subtitles + the synthesised voice blips.
 
 `{n}`, `{m}`, `{letter}`, `{text}`, `{fake}`, `{a}`, `{b}`, `{code}` in a line are filled in at runtime (death count, metres fallen, the answer letter, a code digit…); record those lines with a generic read, or reword them in `src/script.js`.
 
-255 lines.
+456 lines.
 
 | ID | Line |
 |----|------|
@@ -264,4 +264,205 @@ Lines without a file keep working with subtitles + the synthesised voice blips.
 | `hotel.l5.caught#2` | He is only doing his job. His job is you. |
 | `hotel.l5.caught#3` | Being flattened by a bell. A rare hotel experience. |
 | `hotel.l5.done` | Safe! The service elevator is staff only. You are, unfortunately, the staff now. |
+| `hotel.l6.intro` | Level six: Soufflé. The chef made a soufflé. A big one. It is rising. It does not care that you are in the kitchen. |
+| `hotel.l6.intro2` | Climb. Up is where the roof hatch is. Down is where the soufflé is. Choose carefully. It is mostly egg. |
+| `hotel.l6.rise` | And there it goes. Gently, at first. Never trust a dessert that is gentle. |
+| `hotel.l6.near#0` | Close! It is rising. Soufflés do that. It is the entire personality. |
+| `hotel.l6.near#1` | You can smell it, right? Vanilla. And doom. |
+| `hotel.l6.tray` | Serving trays! They slide. Hospitality is a moving target. |
+| `hotel.l6.legb` | The west side now. The chef works here. He is not in. He left a very sharp note. |
+| `hotel.l6.burner` | Hot plates! Lit on a timer. I do not set the timer. The timer sets me. |
+| `hotel.l6.exit` | Look! An EXIT door! Right there on the wall! It is definitely an exit! Go on! Walk in! |
+| `hotel.l6.pans` | Swinging pans. Housekeeping calls it "a wall of cutlery". I call it Tuesday. |
+| `hotel.l6.top` | The roof hatch! I can see it from here! It is the exact opposite of the soufflé: high, dry and not delicious. |
+| `hotel.l6.cp` | Checkpoint! The soufflé has been informed that you are above it. It is reasoning. |
+| `hotel.l6.foam#0` | You have been folded in. That is a cooking term. |
+| `hotel.l6.foam#1` | Soufflé: 1. You: a cautionary tale. |
+| `hotel.l6.foam#2` | Delicious. For the soufflé. |
+| `hotel.l6.burn#0` | Hot. Hot hot hot. It was hot. |
+| `hotel.l6.burn#1` | The pan has been pre-heated. By me. For you. |
+| `hotel.l6.burn#2` | Medium rare. Mostly rare. |
+| `hotel.l6.fakeexit#0` | That is the OVEN. The exit is up there. Where I pointed. The other way. |
+| `hotel.l6.fakeexit#1` | You walked into an oven. In a kitchen. And you are surprised. |
+| `hotel.l6.done` | The roof! It rose, you rose faster. Spiritually, you are now a pastry chef. |
+| `hotel.l7.intro` | Level seven: Trivia Night! Six rounds. A live audience. And me, your dashing host, with the answers. Mostly. |
+| `hotel.l7.intro2` | Stand on an answer to lock it in. Wrong answers are removed, and so are you. Applause is mandatory. |
+| `hotel.l7.s0` | Round one. Easy. It is {letter}. I am being honest. I will be honest again, in a bit. |
+| `hotel.l7.s1` | Round two! The answer is {letter}. I have never been so sure. Write that down. Seriously, write that down. |
+| `hotel.l7.s2` | Round three. The pads are sliding. It is called "audience engagement". Keep your balance. And your dignity. |
+| `hotel.l7.s3` | Round four! You have twelve seconds. When the clock hits zero, the pads leave. I cannot stop them. I would not stop them. |
+| `hotel.l7.s4` | Round five. Four answers! Whatever you do, do not pick {letter}. I would not pick {letter}. You know how I feel about {letter}. |
+| `hotel.l7.s5` | The final round. Pay attention. I have said some things tonight. One of them is the answer. Think back. |
+| `hotel.l7.right#0` | Correct! The audience goes wild. The audience is a tablecloth. But still. |
+| `hotel.l7.right#1` | Right! Take a bow. A small one. Do not strain anything. |
+| `hotel.l7.right#2` | Yes! You are doing so well that I am worried about the ratings. |
+| `hotel.l7.right#3` | Correct. I was hoping you would not be. |
+| `hotel.l7.right.last` | CORRECT! You listened to me. You, of all people, listened to ME. I am so proud. I am so annoyed. |
+| `hotel.l7.wrong#0` | Wrong! Gasp! The audience gasps! The tablecloths flutter! |
+| `hotel.l7.wrong#1` | No. The correct answer is the other one. Obviously. |
+| `hotel.l7.wrong#2` | Incorrect! Please enjoy a little fall. |
+| `hotel.l7.wrong#3` | That is not right. That is not even close to right. That is right-adjacent. |
+| `hotel.l7.wrong.lie#0` | You believed me. In round two. In THIS hotel. |
+| `hotel.l7.wrong.lie#1` | I said {letter}. Out loud. On air. And you went with it. |
+| `hotel.l7.hint#0` | One wrong answer, gone. Consider it a complimentary lie, reversed. |
+| `hotel.l7.hint#1` | There. One fewer way to fail. We will find more. |
+| `hotel.l7.hint.none` | Only the right answer is left. Even I cannot make this easier. |
+| `hotel.l7.timeup#0` | TIME! The pads have left. They are on break. |
+| `hotel.l7.timeup#1` | Time is up. That is the sound of the answers retiring. |
+| `hotel.l7.done` | You are the champion! The trophy is plastic. The title is real. The prize is... this moment. |
+| `hotel.l8.intro` | Level eight: Dinner Is Served. You have been invited to dinner. You are not on the menu. Yet. |
+| `hotel.l8.intro2` | Our guest is very hungry and very particular. The menu on the wall says the order. Between us, I say serve the {first} first. Tradition. |
+| `hotel.l8.first` | One down. The guest nods. He has no neck. It is a very subtle nod. |
+| `hotel.l8.half` | Halfway through the courses. The guest is thrilled. You can tell by the absolute lack of expression. |
+| `hotel.l8.open` | All six courses served in order. The kitchen door opens. I am furious. Mostly with the order. |
+| `hotel.l8.dessert#0` | DESSERT FIRST?! Then you shall have it. All of it. From above. |
+| `hotel.l8.dessert#1` | Dessert is last. Everyone knows that. Look out. |
+| `hotel.l8.wrong#0` | Wrong course! The trolley has been dispatched. Look up. Or sideways. Quickly. |
+| `hotel.l8.wrong#1` | Out of order! The kitchen has strong feelings. They are about to be delivered. |
+| `hotel.l8.wrong#2` | That was not the next course. Brace yourself, a cake has been notified. |
+| `hotel.l8.cellar` | The wine cellar. It is where we keep the good stuff and the questionable decisions. |
+| `hotel.l8.merlot` | Someone spilled the Merlot. Somebody. Who? Do not look at me. Do look at your feet. |
+| `hotel.l8.barrel#0` | A barrel! They roll! It is in the name! Well, it is in the physics. |
+| `hotel.l8.barrel#1` | Flattened by a barrel of something nice. Cheers. |
+| `hotel.l8.barrel#2` | Barrel one, you nil. A classic. |
+| `hotel.l8.done` | The kitchen! You made it through the entire meal without eating. The guest has left you a tip. It is a sock. |
+| `hotel.l8.hint1` | Hint: the menu on the wall describes each course in a riddle. They are in the order to serve them. Not the order I said. |
+| `hotel.l8.hint2` | Hint: first the {a}, then the {b}. After that you are on your own. Which is the usual arrangement. |
+| `hotel.l8.hint3` | Hint: the order is {all}. I am not lying. Obviously I would say that if I were. |
+| `hotel.l9.intro` | Level nine: Kitchen Maze. Walk-in freezers, one-way doors, and a chef. He is not here yet. Do not wait for him to arrive. |
+| `hotel.l9.intro2` | A different maze every time. The freezers are slippery. The chef is not. Dead ends are a bad idea. I mention it as a courtesy. |
+| `hotel.l9.go` | He has noticed you. Chefs notice everything. Especially texture. |
+| `hotel.l9.near#0` | He is right behind you. He has a very large knife and a very small sense of humour. |
+| `hotel.l9.near#1` | Can you hear that? That is the sound of professional commitment. |
+| `hotel.l9.oneway` | One-way doors! Hygiene regulations. Cross-contamination, you see. Of you. Into the rest of the building. |
+| `hotel.l9.ice` | The freezers. Slippery. That is for food safety. Not yours. |
+| `hotel.l9.lie#0` | Left. It is definitely left. I used to work here. |
+| `hotel.l9.lie#1` | Straight on! The exit is straight on! I am looking at a different kitchen, but still. |
+| `hotel.l9.lie#2` | Take the next right. A chef told me. Not this one. |
+| `hotel.l9.caught#0` | Chopped. Julienned, even. |
+| `hotel.l9.caught#1` | You have been served. By the chef. To himself. |
+| `hotel.l9.caught#2` | Tonight's special: you. Medium rare. |
+| `hotel.l9.caught#3` | He caught you. He is not even out of breath. He is out of patience. |
+| `hotel.l9.done` | The loading dock! You escaped the kitchen. The chef is not angry. He is disappointed. And hungry. |
+| `hotel.l10.intro` | Level ten: Dance Floor. The tiles blink to the beat. I do not control them. The DJ does. The DJ is also me. |
+| `hotel.l10.intro2` | Hop from lit tile to lit tile. The booths are solid. Rest there. Hydrate. Blink at the right moments. |
+| `hotel.l10.warn#0` | Freeze! Everybody freeze! In a moment! Statues! Do not twitch! |
+| `hotel.l10.warn#1` | Statues in three... two... one... |
+| `hotel.l10.freeze` | FREEZE. Not a single step. Not a wiggle. Pretend you are a decorative urn. |
+| `hotel.l10.moved#0` | You MOVED. During the freeze. That is the entire game, and you moved. |
+| `hotel.l10.moved#1` | Statues do not walk. You were a bad statue. |
+| `hotel.l10.moved#2` | I said freeze. I said it loudly. In a nightclub voice. |
+| `hotel.l10.fall#0` | Out of rhythm. Out of tiles. Out of luck. |
+| `hotel.l10.fall#1` | The tile left. It had somewhere to be. |
+| `hotel.l10.fall#2` | You were two beats late and the floor knows it. |
+| `hotel.l10.fall#3` | Dance floor, 1. You, an interpretive blur. |
+| `hotel.l10.s2` | The second set! It is faster now. By "faster" I mean "the same, but you are more tired". |
+| `hotel.l10.s3` | Halfway to the booth. The tiles are smaller now. Because the song is getting good. |
+| `hotel.l10.s4` | Last set! This is the encore. The encore is mandatory. The encore does not care about your knees. |
+| `hotel.l10.done` | The DJ booth! You are officially a dancer. Please stop moving. The freeze never really ends. |
+| `hotel.l11.intro` | Level eleven: Room 404. Your room. We found it. We lost it. We found it again. It is... slightly different from last time. |
+| `hotel.l11.intro2` | The door has a three-digit code. The digits are in the furniture. The furniture is shy. It moves when you are not looking at it. I mention that for no reason. |
+| `hotel.l11.moved` | Did that dresser just... no. No, it did not. You are tired. Furniture is famously stationary. |
+| `hotel.l11.ward` | Oh, and the wardrobe. It is very old. It is also very curious. Do not take your eyes off it. I would not say that if I did not care. I do not care. |
+| `hotel.l11.close#0` | It is getting closer. Look at it. LOOK AT IT. |
+| `hotel.l11.close#1` | Stop looking at the dresser. Look at the wardrobe. The wardrobe is the one. |
+| `hotel.l11.dark` | Maintenance! The lights are out. That is not a euphemism. Mind the wardrobe. |
+| `hotel.l11.first` | One digit. Two to go. And a wardrobe to keep an eye on. Both eyes, ideally. |
+| `hotel.l11.second` | Two digits. You are doing so well. The wardrobe is proud. It does not say so. |
+| `hotel.l11.all` | All three digits! Now the door. It is the one with the number on it. 404. Not found. Found. |
+| `hotel.l11.note` | A note from the armchair: "The code is 404." Signed: me. Naturally I would never lie to a guest. |
+| `hotel.l11.fake#0` | 404? Room 404, code 404. It would be so tidy. It is also wrong. |
+| `hotel.l11.fake#1` | Not found! That is what 404 means. Nice try. |
+| `hotel.l11.denied#0` | Wrong code. |
+| `hotel.l11.denied#1` | The door does not like that one. |
+| `hotel.l11.denied#2` | No. Try the furniture. |
+| `hotel.l11.lock` | Three tries. The keypad has locked itself. For your own good. It is mostly spite. |
+| `hotel.l11.caught#0` | The wardrobe has got you. It has a very big door. You are inside now. |
+| `hotel.l11.caught#1` | You looked away. Everybody looks away. That is how it wins. |
+| `hotel.l11.caught#2` | Wardrobe: 1. You: a hanger. |
+| `hotel.l11.open` | The door is open! Run! Do not look back! It cannot move if you look, but it can if you do not! Oh, I cannot decide. |
+| `hotel.l11.done` | Out! You left Room 404. It will be there, unseen, behind you. Do not look back. |
+| `hotel.l11.hint1` | Hint: search the furniture. Three of the four pieces hold a digit. And keep an eye on the wardrobe. Both eyes. |
+| `hotel.l11.hint2` | Hint: the bed, the desk and the dresser each hold a digit. The armchair holds a lie. I know which one is which. I am not saying. |
+| `hotel.l11.hint3` | Hint: the code is {code}. And no, it is not 404. |
+| `hotel.l12.intro` | Level twelve: Do Not Disturb. Housekeeping is on the floor. Two of them. They have a very strict policy about guests who are not in their rooms. |
+| `hotel.l12.intro2` | They see in a cone. I have helpfully drawn it on the floor. Do not stand in it. If you must, hide in a laundry cart. They are in the dead ends. Obviously. |
+| `hotel.l12.hide` | Hidden! In a cart! Among the sheets! Which are, I should say, not entirely clean. Press anything to climb out. |
+| `hotel.l12.spotted#0` | She has seen you! Run! Or, better, stop being in the cone. |
+| `hotel.l12.spotted#1` | Uh oh. That is the look of someone who has found a guest in a corridor. |
+| `hotel.l12.caught#0` | Housekeeping! You are in the wrong place at the wrong time. In the right hotel, though. |
+| `hotel.l12.caught#1` | Seen! Caught! Folded and put in the cupboard. |
+| `hotel.l12.caught#2` | No Do Not Disturb sign can save you now. There was never one on you. |
+| `hotel.l12.found#0` | She found you in the cart. She was looking for more sheets. You were more sheets. |
+| `hotel.l12.found#1` | The cart is hers. The cart is always hers. You were, briefly, laundry. |
+| `hotel.l12.lie#0` | Left! Always left! I have worked here for years! In a different building! |
+| `hotel.l12.lie#1` | The exit is right there! Straight on! I can see it! It is a different exit! |
+| `hotel.l12.lie#2` | Do Not Disturb signs mean they will not come in. That is what the sign says. It does not say anything about corridors. |
+| `hotel.l12.cart` | A laundry cart. Climb in. It is the only discreet thing in this hotel. |
+| `hotel.l12.done` | The stairs! Nobody saw you. Nobody ever does. It is the hotel industry's greatest strength. |
+| `hotel.l13.intro` | Level thirteen: Minibar. A quiz. The answers are in the minibars. Every minibar has a price. The price on the door is the price. Before the rest. |
+| `hotel.l13.intro2` | You have forty-five dollars. A deposit. Opening a minibar costs four. Plus the things. Hints cost nine ninety-nine. Plus the things. You can also just guess. For free. I will be so disappointed. |
+| `hotel.l13.first` | Your first minibar! It cost four dollars. And some other dollars. I will itemise later. Maybe. |
+| `hotel.l13.opened#0` | Another one! You are a high roller. A mid roller. A roller. |
+| `hotel.l13.opened#1` | Opened. The fees are delighted to meet you. |
+| `hotel.l13.declined#0` | Card declined! You have been very generous with my money. I mean yours. |
+| `hotel.l13.declined#1` | Insufficient funds. The minibar is closed. Guess like it is the nineties. |
+| `hotel.l13.declined#2` | No funds, no fridge. Statistically you were only wrong on purpose. |
+| `hotel.l13.s0` | Round one. Not a trick question. The answer is {letter}. I can say that without opening a fridge. |
+| `hotel.l13.s1` | Round two. It is {letter}. I would not charge you for the truth. Not on the first lie. |
+| `hotel.l13.s2` | Round three. Pads breathing, again. Hospitality is mostly motion. |
+| `hotel.l13.s3` | Round four! Eleven seconds! The minibar would like to remind you that opening it is free for the first second. |
+| `hotel.l13.right#0` | Correct. A fee for being correct has been added. It is small. It is my favourite fee. |
+| `hotel.l13.right#1` | Right! Do not let it go to your head. Heads are extra. |
+| `hotel.l13.right#2` | Yes! Another one. At this rate you will break even. Just kidding. You will not. |
+| `hotel.l13.right.last` | ALL FIVE. You earned it. You also paid for it. Both, in fact. To me. |
+| `hotel.l13.wrong#0` | Wrong! Please enjoy a complimentary fall. It is on the house. The fall, not the floor. |
+| `hotel.l13.wrong#1` | Incorrect! We have already added a fee for it. |
+| `hotel.l13.wrong#2` | No. The correct answer was in the minibar. You did not open the minibar. |
+| `hotel.l13.wrong.lie#0` | You believed me about the letter. Even after the minibar. Even after the FEES. |
+| `hotel.l13.wrong.lie#1` | I said {letter}. I say a lot of things. You pay for most of them. |
+| `hotel.l13.hint#0` | One wrong answer removed. Nine ninety-nine. Plus things. Worth every cent of the things. |
+| `hotel.l13.hint#1` | Done. Hint fee: reasonable. Hint fee plus the other fees: not so much. |
+| `hotel.l13.hint.none` | Only the right answer is left. We cannot sell you any more help. We tried. |
+| `hotel.l13.timeup#0` | TIME! The pads have checked out. They left a review. |
+| `hotel.l13.timeup#1` | Out of time. The clock is paid for. You are not. |
+| `hotel.l13.bill` | Your bill! Please review it. Carefully. You will be reviewing it for a while. Pick a tip. Any tip. As long as it is a good one. |
+| `hotel.l13.done` | Thank you for staying with us! We have charged you for the thank-you. |
+| `hotel.l14.intro` | Level fourteen: Hallway Loop. One corridor. Walk it. If everything is normal, keep going to the end. |
+| `hotel.l14.intro2` | If ANYTHING is different, turn around and walk back. Get it right {need} times in a row and I will let you out. Get it wrong and you start again. I will have opinions the whole way. |
+| `hotel.l14.host.same#0` | Looks normal to me. Go on. |
+| `hotel.l14.host.same#1` | Nothing different here. I would know. I live here. |
+| `hotel.l14.host.same#2` | Perfectly ordinary. Carry on. |
+| `hotel.l14.host.diff#0` | Hm. Something is different. I can feel it. Go back. |
+| `hotel.l14.host.diff#1` | I would turn around, if I were you. There is something. I will not say what. |
+| `hotel.l14.host.diff#2` | That is not how I left it. Back you go. |
+| `hotel.l14.first` | One! Right! Do not let it go to your head. You have five more. And I have all the time. |
+| `hotel.l14.right#0` | Correct! The hallway is so annoyed. |
+| `hotel.l14.right#1` | Right again! How, though? |
+| `hotel.l14.right#2` | Another one. The corridor is sweating. |
+| `hotel.l14.last` | That is all of them. All six. You did it. I am so, so angry. The way out is opening. |
+| `hotel.l14.missed#0` | There WAS something. You walked right past it. In a hallway. With one thing in it. |
+| `hotel.l14.missed#1` | Wrong! Back to zero. Look more. Blink less. |
+| `hotel.l14.missed#2` | It was RIGHT THERE. And you were so confident. I am only a little moved. |
+| `hotel.l14.paranoid#0` | There was nothing! You turned back from NOTHING. You were hallucinating. Hotels do that. |
+| `hotel.l14.paranoid#1` | It was normal. You were paranoid. That is a fair reaction to this hotel, but still wrong. |
+| `hotel.l14.paranoid#2` | Nothing was different. You imagined it. Back to zero. |
+| `hotel.l14.open` | The north end has... changed. Yes. There are stairs. They were not there a moment ago. Stairs are like that. |
+| `hotel.l14.hint.none` | Hint: nothing is different. Keep walking forward. I have, this once, no reason to lie. |
+| `hotel.l14.hint.some` | Hint: there is something different in the corridor. Turn around when you find it. I will not tell you what. Press H again if you must. |
+| `hotel.l14.hint.where` | Hint: {where} |
+| `hotel.l14.done` | Out! The hallway is still looping, for the next guest. It has a lot of patience. And a lot of paintings. |
+| `hotel.l15.intro` | Level fifteen: Window Ledge. We are outside the hotel. Eleven floors up. In a thunderstorm. Because I could not find the other door. |
+| `hotel.l15.intro2` | Window to window along the ledges. The wind will push you off the wall in gusts. Lean into the wall. The wall is the one that is solid. |
+| `hotel.l15.wind` | Gusts! They push you away from the building. Lean in. Press the key that goes toward the wall. Which is, helpfully, the one I did not say. |
+| `hotel.l15.ac` | Air conditioners! They are very stable. They are bolted to a very old wall. Do not think about the wall. |
+| `hotel.l15.crumble` | These sills have been here since eighteen ninety. They are tired. They would like to retire, now, under you. |
+| `hotel.l15.pipe` | A pipe. Balance on it. Gymnasts do it on a beam. A beam is wider. And indoors. And there is no thunderstorm. |
+| `hotel.l15.gondola` | The window cleaner's gondola! He is on his break. His break has lasted since March. Hop on when it is close. |
+| `hotel.l15.gargoyle` | Gargoyles! Lovely craftsmanship. They are not meant to be stood on. They are not meant to be stood on by you in particular. |
+| `hotel.l15.fall#0` | Eleven floors. A long way down. The shorter way is not available. |
+| `hotel.l15.fall#1` | You have left the building. Not in the way I intended. |
+| `hotel.l15.fall#2` | The wind won. The wind always wins. It is the wind. |
+| `hotel.l15.fall#3` | Splat is a word. It is also, I regret to say, the outcome. |
+| `hotel.l15.done` | The window! It is open! It is a staff closet! It has mops! It is the best room in the hotel! |
 | `hotel.complete.first` | Level one done! The marble is very proud of you. I'm... fine. |
