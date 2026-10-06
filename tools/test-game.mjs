@@ -216,8 +216,8 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
   const back = await page.evaluate(() => {
     const g = window.__trust, p = g.player;
     const calls = g.world.interactables.filter((it) => /elevator|Out of order/.test(typeof it.label === 'function' ? it.label(g) : it.label)).map((it) => it.label(g));
-    const lv3 = g.world.interactables.find((it) => /^Level 3:/.test(typeof it.label === 'function' ? it.label(g) : it.label));
-    return { z: p.z, x: p.x, calls, lv2: lv3.label(g) };
+    const lv4 = g.world.interactables.find((it) => /^Level 4:/.test(typeof it.label === 'function' ? it.label(g) : it.label));
+    return { z: p.z, x: p.x, calls, lv2: lv4.label(g) };
   });
   ok(back.z < -24 && Math.abs(back.x + 12) < 0.5, `hotel: you arrive back inside floor 1's elevator (x=${back.x.toFixed(1)}, z=${back.z.toFixed(1)})`);
   ok(/under renovation/.test(back.lv2), `hotel: levels that are not built yet are marked under renovation (${back.lv2})`);
@@ -314,6 +314,63 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
   ok(r.cleared === 1 && r.gateOpen && r.nextBoard, 'check-in: the right answer opens the gate and reveals the next question');
   ok(Math.abs(r.respawnZ - r.islandZ) < 0.6, 'check-in: reaching the next island saves your progress');
   ok(r.keptProgress, 'check-in: dying on question 2 keeps question 1 solved');
+  await page.close();
+}
+
+// ---- Hotel level 3: the escape room -----------------------------------------------------------------
+{
+  const page = await open(3, 'hotel');
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, es = w.escape, out = {};
+    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
+    const type = (c) => { for (const d of c) g.modal.key({ code: 'Digit' + d }); g.modal.key({ code: 'Enter' }); };
+    out.code = es.code; out.fake = es.fake;
+    out.countsOk = es.pallets.every((p) => p.n >= 2 && p.n <= 6) && es.order.map((c) => es.pallets.find((p) => p.col === c).n).join('') === es.code;
+    out.differs = es.code !== es.fake;
+    // the keypad takes the keyboard: walking is disabled while it is open
+    g.player.teleport(3.7, 0.001, -6.8);
+    g.keys.add('KeyW');
+    es.useKeypad(g);
+    out.modalOpen = !!g.modal;
+    g.keys.add('KeyW'); const z0 = g.player.z; for (let i = 0; i < 30; i++) g._simulate(1 / 60);
+    out.frozenWhileOpen = Math.abs(g.player.z - z0) < 0.05;
+    const shown = () => [...document.querySelectorAll('.kp-digit')].map((d) => d.textContent).join('');
+    type('0000'); out.afterWrong = shown(); out.msgWrong = document.querySelector('.kp-msg').textContent;
+    type(es.fake); out.fakeSaid = said.includes('hotel.l3.fake');
+    type('0001'); out.locked = /LOCKED/.test(document.querySelector('.kp-msg').textContent);
+    out.doorShut = !es.doorOpen;
+    g.modal.close(); g.modal = null;
+    return out;
+  });
+  ok(r.countsOk && r.differs, `lost-luggage: the code is the suitcase counts (${r.code}) and is not the host's number (${r.fake})`);
+  ok(r.modalOpen && r.frozenWhileOpen, 'lost-luggage: the keypad takes the keyboard (no walking while it is open)');
+  ok(r.afterWrong === '····' && /DENIED/.test(r.msgWrong), 'lost-luggage: a wrong code is denied and cleared');
+  ok(r.fakeSaid, 'lost-luggage: typing the host\'s fake code gets a roast');
+  ok(r.locked && r.doorShut, 'lost-luggage: three wrong tries lock the keypad for a while');
+  const r2 = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, es = w.escape, out = {};
+    // hint tiers: rule -> two digits -> whole code, all before the door is open
+    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
+    g.debug = false;
+    for (let i = 0; i < 3; i++) { g.hintCool = 0; g.useHint(); }
+    out.hints = said.filter((k) => /hotel\.l3\.hint/.test(k)).join(',');
+    // the mimic
+    g.state = 'playing';
+    const mimic = w.interactables.find((it) => it.label === 'Open suitcase' && Math.abs(it.body.x + 3.6) < 0.1);
+    mimic.onUse(g);
+    out.dead = g.state === 'dead';
+    g.state = 'playing'; g.respawnPlayer(false);
+    // right code
+    g.player.teleport(3.7, 0.001, -6.8);
+    es.useKeypad(g);
+    for (const d of es.code) g.modal.key({ code: 'Digit' + d }); g.modal.key({ code: 'Enter' });
+    return out;
+  });
+  ok(r2.hints === 'hotel.l3.hint1,hotel.l3.hint2,hotel.l3.hint3', `lost-luggage: three hint levels (${r2.hints})`);
+  ok(r2.dead, 'lost-luggage: the black suitcase is a mimic');
+  await page.waitForFunction(() => window.__trust.world.escape.doorOpen, null, { timeout: 15000 });
+  const r3 = await page.evaluate(() => { const g = window.__trust; for (let i = 0; i < 150; i++) g._simulate(1 / 60); const d = g.world.bodies.find((b) => Math.abs(b.x) < 0.01 && Math.abs(b.hx - 2) < 0.01 && Math.abs(b.hy - 2.2) < 0.01); return { open: g.world.escape.doorOpen, doorGone: !d || !d.enabled || d.y > 5, modal: !!g.modal }; });
+  ok(r3.open && !r3.modal && r3.doorGone, 'lost-luggage: the right code opens the door');
   await page.close();
 }
 

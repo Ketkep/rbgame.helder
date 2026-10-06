@@ -3,6 +3,7 @@
 
 import wetFloor from './wet-floor.js';
 import checkIn from './check-in.js';
+import lostLuggage from './lost-luggage.js';
 
 export const TIERS = [
   { floor: '1',  name: 'Mezzanine',            difficulty: 'Easy',                    short: 'EASY',       color: 0x3ddc97, blurb: 'Complimentary lies.' },
@@ -26,6 +27,6 @@ export const KIND_ICON = { parkour: '🏃', quiz: '❓', escape: '🔑', maze: '
 const planned = (name, kind, i) => ({ id: `hotel-${i + 1}`, name, kind, tier: Math.floor(i / 5), index: i, placeholder: true });
 
 export function buildHotelLevels() {
-  const BUILT = [wetFloor, checkIn];
+  const BUILT = [wetFloor, checkIn, lostLuggage];
   return ROSTER.map(([name, kind], i) => (BUILT[i] ? Object.assign(BUILT[i], { kind, tier: Math.floor(i / 5), index: i }) : planned(name, kind, i)));
 }

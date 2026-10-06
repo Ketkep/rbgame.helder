@@ -186,6 +186,7 @@ export class Game {
   _bindInput() {
     window.addEventListener('keydown', (e) => {
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+      if (this.modal) { if (!e.repeat || e.code === 'Backspace') this.modal.key(e); e.preventDefault(); return; }   // a puzzle panel (keypad…) has the keyboard
       if (e.repeat) return;
       this.keys.add(e.code);
       this.idleT = 0;
@@ -471,6 +472,7 @@ export class Game {
 
   /** `idx` is the level's index in the campaign, or -1 for a campaign hub. */
   async _loadLevelObj(level, idx) {
+    this.closeModal();
     const tok = ++this._loadTok;
     this.levelIndex = idx;
     this.level = level;
@@ -518,8 +520,11 @@ export class Game {
     try { const p = this.canvas.requestPointerLock(); if (p?.catch) p.catch(() => {}); } catch { /* handled by pointerlockerror */ }
   }
 
+  closeModal() { this.modal?.close(); this.modal = null; }
+
   pause() {
     if (this.state !== 'playing') return;
+    this.closeModal();
     this.state = 'paused';
     this.ui.showScreen('pause');
     this.ui.el['btn-restart'].classList.toggle('hidden', this.levelIndex < 0);
@@ -637,6 +642,7 @@ export class Game {
   /** reason: 'fall' | 'hazard' | 'void' | custom string */
   kill(reason = 'fall') {
     if (this.state !== 'playing') return;
+    this.closeModal();
     this.state = 'dead';
     this.deadT = 0;
     this.deaths++; this.totalDeaths++; this.save.stats.deaths++;
@@ -825,7 +831,7 @@ export class Game {
     let fwd = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
     let str = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
     if (this.mods.swapStrafe) str = -str;
-    if (this.mods.noMove) { fwd = 0; str = 0; }
+    if (this.mods.noMove || this.modal) { fwd = 0; str = 0; }
     const sy = Math.sin(this.yaw), cy = Math.cos(this.yaw);
     let wx = -sy * fwd + cy * str, wz = -cy * fwd - sy * str;
     const l = Math.hypot(wx, wz);
@@ -933,8 +939,10 @@ export class Game {
       return;
     }
     let used = false;
-    if (w.hintAction) used = !!w.hintAction(this);     // custom (e.g. quiz 50/50)
-    else {
+    // a level can answer the hint itself (quiz 50/50, puzzle clues): truthy = used it; 'trail' = use the dotted line instead
+    const custom = w.hintAction ? w.hintAction(this) : 'trail';
+    if (custom && custom !== 'trail') used = true;
+    else if (custom === 'trail') {
       const pts = this._hintPoints();
       if (!pts) { this.narrator.say('hint.none', { priority: 1 }); return; }
       w.hintTrail ||= new HintTrail(w);
@@ -947,7 +955,7 @@ export class Game {
     this.levelHints++; this.totalHints++;
     this.cs().hints = (this.cs().hints || 0) + 1;
     writeSave(this.save);
-    this.narrator.say(this.totalHints % 5 === 0 ? 'hint.many' : 'hint.use', { priority: 1 });
+    if (custom === 'trail') this.narrator.say(this.totalHints % 5 === 0 ? 'hint.many' : 'hint.use', { priority: 1 });
   }
 
   _updateHintChip() {
@@ -987,7 +995,7 @@ export class Game {
   }
 
   useFocus() {
-    if (!this.focus || this.state !== 'playing' || this.frozen) return;
+    if (!this.focus || this.state !== 'playing' || this.frozen || this.modal) return;
     this.focus.onUse?.(this);
   }
 

@@ -27,17 +27,19 @@ await page.evaluate(() => {
     const path = w.plats.filter((q) => q.o.path);
     // whatever path platform we stand on, head for the next one (handles respawns too)
     if (p.grounded && p.ground) { const k = path.findIndex((q) => q.body === p.ground); if (k >= 0) bot.i = Math.min(path.length - 1, k + 1); }
-    const tgt = path[Math.min(bot.i, path.length - 1)];
+    // levels that are not a simple platform chain (quizzes, escape rooms…) can steer the bot: w.botPlan(game) -> {body|x,z, wait?}
+    const plan = w.botPlan ? w.botPlan(g) : null;
+    const tgt = plan ? { body: plan.body || { x: plan.x, z: plan.z, hx: 0, hz: 0 } } : path[Math.min(bot.i, path.length - 1)];
     let tx = tgt.body.x, tz = tgt.body.z;
     if (window.__near) {   // hop to the nearest part of the next platform (what a human does), not its centre
       const ix = Math.max(0.15, tgt.body.hx - 0.6), iz = Math.max(0.15, tgt.body.hz - 0.6);
       tx = Math.max(tgt.body.x - ix, Math.min(tgt.body.x + ix, p.x)); tz = Math.max(tgt.body.z - iz, Math.min(tgt.body.z + iz, p.z));
     }
-    if (bot.i >= path.length - 1 && w.goalObj) { tx = w.goalObj.x; tz = w.goalObj.z; }
+    if (!plan && bot.i >= path.length - 1 && w.goalObj) { tx = w.goalObj.x; tz = w.goalObj.z; }
     // aim at the near part of the target platform to avoid over-running small ones
     const dx = tx - p.x, dz = tz - p.z, len = Math.hypot(dx, dz) || 1;
     g.yaw = Math.atan2(-dx, -dz); g.pitch = 0;
-    g.keys.clear(); g.keys.add('KeyW');
+    g.keys.clear(); if (!(plan && plan.wait)) g.keys.add('KeyW');
     // wait for lasers: don't walk into an active hazard (or one about to fire) just ahead
     for (const h of w.hazards) {
       const hb = h.body;
@@ -58,7 +60,7 @@ await page.evaluate(() => {
     // slippery marble: you can't stop or turn, so a human hops straight on (jump buffering) and steers in the air
     const gm = p.ground && (Math.abs(p.ground.dx) + Math.abs(p.ground.dz) > 1e-6);   // platform rolling away under us: go now
     const skate = p.grounded && p.ground && (((p.ground.slip > 0.8) && len < 4.4 && len > 3.0) || (gm && len < 4.4));
-    const jump = p.grounded && (!groundAhead || wallAhead || skate);
+    const jump = p.grounded && !(plan && plan.wait) && (!groundAhead || wallAhead || skate);
     if (jump) g.jumpEdge = true;
     if (!p.grounded) g.keys.add('Space'); else if (jump) g.keys.add('Space');
     g.keys.add('Space'); // hold for full jumps; releasing happens naturally when we stop pressing in-air (kept simple)

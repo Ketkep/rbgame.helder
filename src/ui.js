@@ -5,7 +5,7 @@ export class UI {
   constructor() {
     this.el = {};
     for (const id of ['hud', 'lvl-chip', 'deaths', 'deaths-n', 'baby-badge', 'timer', 'ping', 'ping-n', 'altimeter', 'alt-fill', 'alt-rec', 'alt-n',
-      'prompt', 'interact', 'interact-label', 'hint-chip', 'hint-label', 'toasts', 'achievements', 'baby-offer', 'stamp', 'subs', 'sub-shown', 'sub-rest', 'flash', 'fade', 'ov-loading', 'ld-fill', 'ld-tip',
+      'prompt', 'interact', 'interact-label', 'hint-chip', 'hint-label', 'panel', 'panel-title', 'panel-body', 'panel-foot', 'toasts', 'achievements', 'baby-offer', 'stamp', 'subs', 'sub-shown', 'sub-rest', 'flash', 'fade', 'ov-loading', 'ld-fill', 'ld-tip',
       'ov-ad', 'ad-sec', 'ov-bars', 'ov-credits', 'credits-roll', 'ov-glitch', 'pause-quip', 'btn-resume', 'btn-restart', 'btn-mercy', 'btn-quit',
       'campaigns', 'home-tag', 'home-stats', 'btn-settings-home', 'btn-settings', 'btn-settings-back', 'btn-levels-back', 'btn-reset', 'levels-grid', 'levels-eyebrow', 'levels-title', 'btn-home', 'btn-lobby', 'btn-lobby-pause', 'end-eyebrow', 'end-next', 'btn-next', 'btn-share', 'btn-again', 'set-sens', 'set-vol', 'set-music', 'set-gfx',
       'cmp-eyebrow', 'cmp-title', 'cmp-deaths', 'cmp-time', 'cmp-total', 'cmp-quip', 'end-title', 'end-deaths', 'end-time', 'end-baby', 'end-share']) {

@@ -256,3 +256,19 @@ kbd { font: 400 13px var(--display); min-width: 30px; padding: 6px 9px; text-ali
 #hint-chip { position: absolute; left: 22px; bottom: 74px; display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 12px; background: rgba(14,15,24,0.7); backdrop-filter: blur(8px); border: 1px solid rgba(102,255,204,0.55); font: 700 13px var(--body); color: #c9ffe9; }
 #hint-chip.cool { border-color: rgba(255,255,255,0.14); color: var(--muted); }
 #hint-chip kbd { min-width: 24px; padding: 4px 8px; font-size: 12px; }
+
+/* ---- puzzle panel (keypad etc.) ---- */
+#panel { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(6,6,12,0.55); backdrop-filter: blur(3px); pointer-events: none; }
+#panel.hidden { display: none; }
+.panel-card { pointer-events: auto; min-width: 320px; padding: 22px 26px 18px; border-radius: 18px; background: linear-gradient(180deg, #1b1424, #120d1a); border: 2px solid #d8a94a; box-shadow: 0 20px 80px rgba(0,0,0,0.6), 0 0 0 6px rgba(216,169,74,0.12); text-align: center; }
+.panel-card h3 { margin: 0 0 14px; font: 700 13px var(--body); letter-spacing: 0.22em; color: #d8a94a; }
+.kp-display { display: flex; gap: 10px; justify-content: center; margin-bottom: 8px; }
+.kp-digit { width: 52px; height: 68px; display: grid; place-items: center; border-radius: 10px; background: #07050a; border: 1px solid rgba(255,255,255,0.14); font: 700 38px ui-monospace, Menlo, monospace; color: #ffd890; text-shadow: 0 0 14px rgba(255,200,90,0.6); }
+.kp-digit.empty { color: rgba(255,255,255,0.18); text-shadow: none; }
+.kp-msg { min-height: 22px; margin: 6px 0 10px; font: 700 13px var(--body); color: var(--muted); }
+.kp-msg.bad { color: #ff7a85; } .kp-msg.good { color: #6cf0b2; }
+.kp-pad { display: grid; grid-template-columns: repeat(3, 58px); gap: 8px; justify-content: center; margin-bottom: 12px; }
+.kp-pad button { height: 44px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); color: #fff; font: 700 18px ui-monospace, Menlo, monospace; cursor: pointer; }
+.kp-pad button:hover { background: rgba(216,169,74,0.25); }
+#panel-foot { font: 600 12px var(--body); color: var(--muted); }
+#panel-foot kbd { margin: 0 2px; }

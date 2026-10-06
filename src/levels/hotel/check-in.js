@@ -167,6 +167,15 @@ export default {
     };
     w.hooks.onDeath = () => false;
     w.quiz = { stages, get cleared() { return cleared; }, islands };
+    // test bot: answer correctly, one island at a time
+    w.botPlan = (g) => {
+      const p = g.player, st = cur();
+      if (!st) return { x: 0, z: fin.zN + 6.5 };
+      if (p.grounded && p.ground === st.correctPad.plat.body) return { wait: true, x: p.x, z: p.z };
+      const isl = islands[st.k];
+      if (p.z > isl.zS + 0.2) return { body: isl.plat.body };
+      return { body: st.correctPad.plat.body };
+    };
     void plainMaterial; void THREE;
   },
 };

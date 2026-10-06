@@ -29,6 +29,7 @@ export class Body {
     this.enabled = true;
     this.solid = true;
     this.slip = 0; // 0..1: how slippery the top face is (scales ground accel/friction)
+    this.conv = null; // [vx, vz]: a conveyor belt – carries whatever stands on it
     this.tag = null;
   }
   get top() { return this.y + this.hy; }
@@ -91,6 +92,7 @@ export function stepPlayer(p, bodies, input, dt, opts = {}) {
   // 1. Ride the thing we are standing on.
   if (p.grounded && p.ground && p.ground.enabled) {
     p.x += p.ground.dx; p.y += p.ground.dy; p.z += p.ground.dz;
+    if (p.ground.conv) { p.x += p.ground.conv[0] * dt; p.z += p.ground.conv[1] * dt; }
   }
 
   // 2. Push out of anything that moved into us (movers, re-enabled platforms).

@@ -140,6 +140,17 @@ const run = { wx: 0, wz: -1, jumpPressed: false, jumpHeld: false };
   ok(Math.abs(b.v0) > 6.5, 'slippery ground still reaches full speed');
 }
 
+// 10. Conveyor belts carry you (and stack with your own walking)
+{
+  const belt = new Body(0, -0.5, 0, 3, 0.5, 20); belt.conv = [0, 3];
+  const p = new Mover(); p.teleport(0, 0, 0);
+  for (let i = 0; i < 120; i++) stepPlayer(p, [belt], { wx: 0, wz: 0 }, DT);        // stand still for 1s
+  ok(Math.abs(p.z - 3) < 0.15, `standing on a 3 m/s belt carries you ~3 m (z=${p.z.toFixed(2)})`);
+  const q = new Mover(); q.teleport(0, 0, 0);
+  for (let i = 0; i < 120; i++) stepPlayer(q, [belt], { wx: 0, wz: -1 }, DT);       // walk against it
+  ok(q.z < -2.5 && q.z > -4.5, `walking against the belt nets ~3.6 m/s (z=${q.z.toFixed(2)})`);
+}
+
 // reach table for level design
 for (const dh of [-3, -2, -1, 0, 0.5, 0.8, 1.0, 1.2, 1.35]) console.log(`   reach(dh=${dh}) = ${reach(dh).toFixed(2)} m`);
 

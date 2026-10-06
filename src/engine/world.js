@@ -414,6 +414,28 @@ export class World {
     return plat;
   }
 
+  /** Conveyor belt: whatever stands on it is carried at (vx, vz) m/s. Belts must run along X or Z. */
+  conveyor(plat, { vx = 0, vz = 0, color = 0x2a2d3a } = {}) {
+    plat.body.conv = [vx, vz];
+    const sp = Math.hypot(vx, vz) || 1, alongX = Math.abs(vx) > Math.abs(vz);
+    const across = alongX ? plat.o.d : plat.o.w, along = alongX ? plat.o.w : plat.o.d;
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const g = c.getContext('2d');
+    g.fillStyle = '#' + new THREE.Color(color).getHexString(); g.fillRect(0, 0, 128, 128);
+    g.strokeStyle = '#d8a94a'; g.lineWidth = 12; g.lineCap = 'round'; g.lineJoin = 'round';
+    g.beginPath(); g.moveTo(26, 78); g.lineTo(64, 36); g.lineTo(102, 78); g.stroke();   // chevron pointing up (+v)
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.anisotropy = 8;
+    tex.repeat.set(Math.max(1, Math.round(across / 2)), Math.max(1, Math.round(along / 2)));
+    this.ownTextures.push(tex);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(across - 0.2, along - 0.1), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
+    mesh.rotation.set(-Math.PI / 2, Math.atan2(-vx, -vz), 0, 'YXZ');
+    mesh.position.y = plat.o.h / 2 + 0.006; mesh.receiveShadow = true;
+    plat.group.add(mesh);
+    const cycle = along / tex.repeat.y;
+    this.updaters.push((dt) => { tex.offset.y -= (sp * dt) / cycle; });
+    return plat;
+  }
+
   /** Kill volume. `move(t)` optionally returns an offset. */
   hazard(o) {
     const { x = 0, y = 0, z = 0, w = 1, h = 1, d = 1, color = 0xff2d4d, move = null } = o;
