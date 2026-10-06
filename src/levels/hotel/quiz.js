@@ -371,7 +371,7 @@ export function quizHall(w, game, spec) {
         } else {
           if (!tm.started && pl.grounded && pl.ground === islands[st.k].plat.body && pl.z < islands[st.k].zS - 0.5) { tm.started = true; tm.clock.show(true); }
           if (tm.started) {
-            tm.left -= dt;
+            tm.left -= dt * (game.baby ? 0.65 : 1);   // baby mode: the clock runs slower
             const secs = Math.max(0, Math.ceil(tm.left));
             tm.clock.set(secs, secs <= 4);
             if (secs <= 4 && Math.floor(tm.left * 2) !== tm.beep) { tm.beep = Math.floor(tm.left * 2); game.audio.tick(); }

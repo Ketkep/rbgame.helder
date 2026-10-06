@@ -12,7 +12,7 @@ const STEEL = 0xf0f4fa;
 export default {
   id: 'hotel-6',
   name: 'Soufflé',
-  music: 'hotel',
+  music: 'hotel_kitchen',
   completeQuip: 'It rose. You rose faster. Spiritually, you are now a pastry chef.',
 
   build(w, game) {

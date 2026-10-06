@@ -15,7 +15,7 @@ const rnd = (n) => Math.floor(Math.random() * n);
 export default {
   id: 'hotel-9',
   name: 'Kitchen Maze',
-  music: 'hotel',
+  music: 'hotel_kitchen',
   completeQuip: 'You escaped the kitchen. The chef is not angry. He is disappointed, and hungry.',
 
   build(w, game) {

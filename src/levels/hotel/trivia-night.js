@@ -14,7 +14,7 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 export default {
   id: 'hotel-7',
   name: 'Trivia Night',
-  music: 'hotel',
+  music: 'hotel_ballroom',
   completeQuip: 'Six rounds. The audience is on its feet. Mostly because the chairs are bolted to a different floor.',
 
   build(w, game) {

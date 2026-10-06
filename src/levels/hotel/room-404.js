@@ -17,7 +17,7 @@ const wood = (c = 0x6a4a2a) => plainMaterial(c, { roughness: 0.55 });
 export default {
   id: 'hotel-11',
   name: 'Room 404',
-  music: 'hotel',
+  music: 'hotel_dark',
   completeQuip: 'You left Room 404. It will be there, unseen, behind you. Do not look back. It cannot move when you do.',
 
   build(w, game) {

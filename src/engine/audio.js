@@ -13,6 +13,12 @@ const SCORES = {
   // lobby lounge: Dm7 - G7 - Cmaj7 - A7, slow swing-ish plucks
   hotel: { bpm: 80, root: 50, scale: [0, 2, 3, 5, 7, 9, 10, 12, 14, 15], chords: [[0, 3, 7, 10], [-7, -3, 0, 3], [-2, 2, 5, 9], [-5, -1, 2, 5]], pad: 0.6, pluck: 0.42 },
   hotel2: { bpm: 96, root: 47, scale: [0, 3, 5, 7, 10, 12, 15, 17], chords: [[0, 3, 7, 10], [-4, 0, 3, 7], [-2, 2, 5, 9], [-7, -3, 0, 3]], pad: 0.45, pluck: 0.55 },
+  // moods for the hotel's upper floors
+  hotel_kitchen: { bpm: 118, root: 45, scale: [0, 2, 3, 5, 7, 8, 10, 12, 14, 15], chords: [[0, 3, 7], [-4, 0, 3], [-2, 2, 5], [-5, -2, 2]], pad: 0.35, pluck: 0.7 },
+  hotel_ballroom: { bpm: 84, root: 53, scale: [0, 2, 4, 7, 9, 12, 14, 16], chords: [[0, 4, 7, 11], [-5, -1, 2, 5], [-3, 0, 4, 7], [-7, -3, 0, 4]], pad: 0.6, pluck: 0.5 },
+  hotel_dance: { bpm: 128, root: 52, scale: [0, 3, 5, 7, 10, 12, 15], chords: [[0, 3, 7, 10], [-2, 2, 5, 9], [-4, 0, 3, 7], [-5, -2, 2, 5]], pad: 0.35, pluck: 0.55 },
+  hotel_dark: { bpm: 62, root: 43, scale: [0, 3, 5, 7, 10, 12], chords: [[0, 3, 7], [-1, 2, 6], [-4, 0, 3], [-6, -2, 1]], pad: 0.9, pluck: 0.1 },
+  hotel_storm: { bpm: 72, root: 41, scale: [0, 2, 3, 7, 8, 12], chords: [[0, 3, 7, 10], [-5, -2, 2, 5], [-7, -4, 0, 3], [-2, 1, 5, 8]], pad: 0.85, pluck: 0.18 },
   title: { bpm: 90, root: 48, scale: [0, 2, 4, 7, 9, 12, 14, 16], chords: [[0, 4, 7, 11], [-3, 0, 4, 7], [-7, -3, 0, 4], [-5, -1, 2, 5]], pad: 0.5, pluck: 0.4 },
 };
 

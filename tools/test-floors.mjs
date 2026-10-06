@@ -281,7 +281,8 @@ suite('dnd', async () => {
     // sight: put a maid facing the player along the entrance corridor... use the first maid, put her in the player's cell facing him
     const m = d.maids[0], wk = m.wk;
     const p = g.player;
-    const cell = [3, 3];
+    let cell = [3, 3];
+    for (let i = 0; i < d.grid.N; i++) for (let j = 0; j < d.grid.N - 1; j++) if (d.maze.nbrs(i, j).some((n) => n[0] === i && n[1] === j + 1)) cell = [i, j];   // a cell with an open passage to the north
     wk.teleport(cell); wk.route = []; wk.target = null; wk.wait = 99;     // she stands still, looking around
     p.teleport(wk.x, 0.01, wk.z - 3); wk.yaw = 0;                          // 3 m in front of her (yaw 0 faces -z)
     // a wall between you blocks her
@@ -409,7 +410,8 @@ suite('ledge', async () => {
     const wind = lg.winds[0];
     const stand = () => { g.player.teleport(corn.x, corn.y + 0.001, -corn.dep / 2); g.player.grounded = true; g.yaw = -Math.PI / 2; g.pitch = 0; g.keys.clear(); };
     const waitGust = () => { for (let i = 0; i < 60 * 12 && !wind.active; i++) g._simulate(1 / 60); };
-    waitGust(); stand(); const z0 = g.player.z; sim(1.0); out.drift = z0 - g.player.z;       // positive = pushed away from the wall
+    waitGust(); stand(); const z0 = g.player.z; sim(1.0); out.drift = z0 - g.player.z;
+    g.baby = true; waitGust(); stand(); const zb = g.player.z; sim(1.0); out.babyDrift = zb - g.player.z; g.baby = false;       // positive = pushed away from the wall
     // lean in
     waitGust(); stand(); g.keys.add('KeyD'); sim(1.0); out.leanDrift = g.player.z - (-corn.dep / 2);   // positive = toward the wall
     g.keys.clear();
@@ -421,6 +423,7 @@ suite('ledge', async () => {
   ok(r.ledges >= 24, `ledge: a long route (${r.ledges} ledges)`);
   ok(/ac/.test(r.types) && /cornice/.test(r.types) && /crumble/.test(r.types) && /gondola/.test(r.types) && /perch/.test(r.types) && /pipe/.test(r.types), `ledge: every kind of hazard is on the route (${r.types})`);
   ok(r.drift > 0.2, `ledge: a gust pushes you away from the wall (${r.drift.toFixed(2)} m in a second)`);
+  ok(r.babyDrift < r.drift * 0.75, `ledge: baby mode halves the gusts (${r.babyDrift.toFixed(2)} vs ${r.drift.toFixed(2)} m)`);
   ok(r.leanDrift > -0.2 && r.leanDrift > 0.3 - 0.6, 'ledge: leaning into the wall (D) keeps you on the ledge');
   ok(r.gondola > 1.5, `ledge: the gondola swings (${r.gondola.toFixed(1)} m)`);
   await page.close();

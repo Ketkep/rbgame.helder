@@ -14,7 +14,7 @@ const START = 45;
 export default {
   id: 'hotel-13',
   name: 'Minibar',
-  music: 'hotel',
+  music: 'hotel2',
   completeQuip: 'Thank you for staying with us. We have charged you for the thank-you.',
 
   build(w, game) {

@@ -37,7 +37,7 @@ function dish(shape, col) {
 export default {
   id: 'hotel-8',
   name: 'Dinner Is Served',
-  music: 'hotel',
+  music: 'hotel_ballroom',
   completeQuip: 'You ate nothing, served everything and were insulted twice. A five-star review.',
 
   build(w, game) {

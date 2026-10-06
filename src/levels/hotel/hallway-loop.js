@@ -18,7 +18,7 @@ function numberPlate(w, text, x, y, z, rotY, color = '#d8a94a') {
 export default {
   id: 'hotel-14',
   name: 'Hallway Loop',
-  music: 'hotel',
+  music: 'hotel_dark',
   completeQuip: 'You found the exit. The hallway is still there, looping, for the next guest. It has a lot of patience. And a lot of paintings.',
 
   build(w, game) {

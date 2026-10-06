@@ -12,7 +12,7 @@ const rnd = (n) => Math.floor(Math.random() * n);
 export default {
   id: 'hotel-15',
   name: 'Window Ledge',
-  music: 'hotel',
+  music: 'hotel_storm',
   completeQuip: 'You climbed through the open window. The room is the housekeeping closet. Somebody is going to be furious. Not at you. At the weather.',
 
   build(w, game) {
@@ -116,6 +116,7 @@ export default {
     // ---- wind: gusts along the narrow stretches (push away from the wall) ----------------------------------------------------------------
     const windy = ledges.filter((l) => l.type === 'cornice' || l.type === 'pipe' || (l.type === 'wide' && l.i > 18));
     const winds = windy.map((l, k) => w.wind({ x: l.x, y: l.y + 1.2, z: -0.8, w: l.len + 3, h: 3, d: 4, dx: 0, dz: -1, strength: 12, period: 4.8, on: 1.9, phase: k * 1.7 }));
+    let windScale = 1;   // baby mode halves the gusts (tests can also set it)
 
     // ---- rain + lightning ----------------------------------------------------------------------------------------------------------------------
     const RN = 220, rpos = new Float32Array(RN * 6), rseed = [];
@@ -126,6 +127,7 @@ export default {
     const hemiBase = w.hemi.intensity;
     w.onUpdate((dt, t) => {
       const p = game.player;
+      for (const wi of winds) wi.strength = 12 * windScale * (game.baby ? 0.5 : 1);
       for (let i = 0; i < RN; i++) {
         const [sx, sy, sz] = rseed[i];
         const rx = p.x + sx, rz = p.z + sz * 0.5 - 4, ry = p.y + 12 - ((sy + t * 18) % 24);
@@ -154,7 +156,7 @@ export default {
       if (p.x > ledges[21].x - 3) once('gargoyle');
     };
     w.hooks.onDeath = (info) => { if (info.reason !== 'hazard' && Math.random() < 0.7) { game.say('hotel.l15.fall', { priority: 1 }); return true; } return false; };
-    w.ledge = { ledges, winds, gondolas, Y0 };
+    w.ledge = { ledges, winds, gondolas, Y0, set windScale(v) { windScale = v; } };
     void rnd; void softTexture;
   },
 };

@@ -15,7 +15,7 @@ const NEON = [0xff3fa4, 0x3fd0ff, 0xffd23f, 0x7dff6a, 0xb06cff];
 export default {
   id: 'hotel-10',
   name: 'Dance Floor',
-  music: 'hotel',
+  music: 'hotel_dance',
   completeQuip: 'You danced. Technically. A judge would call it "falling with rhythm".',
 
   build(w, game) {
@@ -104,8 +104,9 @@ export default {
 
     // ---- tile logic -------------------------------------------------------------------------------------------------------------
     const mod = (a, b) => ((a % b) + b) % b;
-    const isOn = (tile, t) => mod(t + tile.phase, P) < ON;
-    const warnOff = (tile, t) => { const u = mod(t + tile.phase, P); return u > ON - 0.45 && u < ON; };
+    const onT = () => (game.baby ? ON + 0.5 : ON);   // baby mode: tiles stay lit a bit longer
+    const isOn = (tile, t) => mod(t + tile.phase, P) < onT();
+    const warnOff = (tile, t) => { const u = mod(t + tile.phase, P); return u > onT() - 0.45 && u < onT(); };
     const warnOn = (tile, t) => { const u = mod(t + tile.phase, P); return u > P - 0.4; };
     let frozen = false, freezeStart = -999, warned = false, lastBeat = -1;
     const freezeAt = (t) => { const k = Math.floor(t / FREEZE_EVERY); return t - k * FREEZE_EVERY; };   // seconds into this 15 s cycle

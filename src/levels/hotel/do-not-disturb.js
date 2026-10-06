@@ -18,7 +18,7 @@ const rnd = (n) => Math.floor(Math.random() * n);
 export default {
   id: 'hotel-12',
   name: 'Do Not Disturb',
-  music: 'hotel',
+  music: 'hotel_dark',
   completeQuip: 'Nobody saw you. Nobody ever does. It is the hotel industry\'s greatest strength.',
 
   build(w, game) {
@@ -185,7 +185,7 @@ export default {
           const ang = Math.acos(Math.max(-1, Math.min(1, (dx * fx + dz * fz) / (d || 1))));
           if (ang < HALF && d < rayWall(m.wk.x, m.wk.z, dx / (d || 1), dz / (d || 1), RANGE + 1)) visible = true;
         }
-        if (visible) m.seen = Math.min(1, m.seen + dt / 0.55); else m.seen = Math.max(0, m.seen - dt / 1.4);
+        if (visible) m.seen = Math.min(1, m.seen + dt / (game.baby ? 0.95 : 0.55)); else m.seen = Math.max(0, m.seen - dt / 1.4);
         m.bang.visible = m.seen > 0.05; m.bang.scale.setScalar(0.8 + m.seen * 1.2);
         worst = Math.max(worst, m.seen);
         if (m.seen >= 1 && game.state === 'playing') { game.say('hotel.l12.caught', { priority: 2 }); game.kill('seen'); }
