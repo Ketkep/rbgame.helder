@@ -10,6 +10,9 @@ const SCORES = {
   l3: { bpm: 74, root: 45, scale: [0, 3, 5, 7, 10, 12, 15, 17], chords: [[0, 3, 7, 10], [-4, 0, 3, 7], [-2, 2, 5, 9], [-7, -3, 0, 3]], pad: 0.7, pluck: 0.28 },
   l4: { bpm: 112, root: 47, scale: [0, 3, 5, 7, 10, 12, 15, 19], chords: [[0, 3, 7], [-2, 2, 5], [-4, 0, 3], [-5, -2, 2]], pad: 0.3, pluck: 0.7, glitch: true },
   l5: { bpm: 96, root: 48, scale: [0, 2, 4, 7, 9, 12, 14, 16], chords: [[0, 4, 7, 12], [-5, -1, 2, 7], [-3, 0, 4, 9], [-7, -3, 0, 5]], pad: 0.7, pluck: 0.45 },
+  // lobby lounge: Dm7 - G7 - Cmaj7 - A7, slow swing-ish plucks
+  hotel: { bpm: 80, root: 50, scale: [0, 2, 3, 5, 7, 9, 10, 12, 14, 15], chords: [[0, 3, 7, 10], [-7, -3, 0, 3], [-2, 2, 5, 9], [-5, -1, 2, 5]], pad: 0.6, pluck: 0.42 },
+  hotel2: { bpm: 96, root: 47, scale: [0, 3, 5, 7, 10, 12, 15, 17], chords: [[0, 3, 7, 10], [-4, 0, 3, 7], [-2, 2, 5, 9], [-7, -3, 0, 3]], pad: 0.45, pluck: 0.55 },
   title: { bpm: 90, root: 48, scale: [0, 2, 4, 7, 9, 12, 14, 16], chords: [[0, 4, 7, 11], [-3, 0, 4, 7], [-7, -3, 0, 4], [-5, -1, 2, 5]], pad: 0.5, pluck: 0.4 },
 };
 
@@ -140,6 +143,21 @@ export class GameAudio {
     for (let i = 0; i < 6; i++) this._tone({ f: 200 + Math.random() * 1400, type: 'square', dur: 0.04, vol: 0.05, when: i * 0.035 });
   }
   achievement() { [880, 1108, 1318].forEach((f, i) => this._tone({ f, type: 'triangle', dur: 0.2, vol: 0.1, when: i * 0.06 })); }
+  // ---- hotel sfx ----
+  ding() { this._tone({ f: 988, type: 'sine', dur: 1.3, vol: 0.2 }); this._tone({ f: 1480, type: 'sine', dur: 1.5, vol: 0.12, when: 0.02 }); this._tone({ f: 1976, type: 'sine', dur: 0.9, vol: 0.05, when: 0.02 }); }
+  bell() { [2093, 3135, 4186, 5274].forEach((f, i) => this._tone({ f, type: 'sine', dur: 1.6 - i * 0.25, vol: 0.12 / (i + 1), attack: 0.002 })); this._noise({ dur: 0.05, vol: 0.06, f: 6000, type: 'highpass' }); }
+  piano(semi = 0) {
+    const f = 261.6 * Math.pow(2, semi / 12);
+    this._tone({ f, type: 'triangle', dur: 1.7, vol: 0.2, attack: 0.004 });
+    this._tone({ f: f * 2, type: 'sine', dur: 1.1, vol: 0.07, attack: 0.004 });
+    this._tone({ f: f * 3.01, type: 'sine', dur: 0.6, vol: 0.03, attack: 0.004 });
+    this._noise({ dur: 0.03, vol: 0.04, f: 2200 });
+  }
+  door() { this._noise({ dur: 0.8, vol: 0.1, f: 500, slide: 180, q: 0.8 }); this._tone({ f: 70, type: 'sine', dur: 0.4, vol: 0.12, when: 0.7 }); }
+  lock() { for (let i = 0; i < 3; i++) this._tone({ f: 260 + i * 40, type: 'square', dur: 0.04, vol: 0.07, when: i * 0.07 }); }
+  rumble(len = 2) { this._noise({ dur: len, vol: 0.12, f: 140, q: 0.7, attack: 0.3 }); this._tone({ f: 52, type: 'sine', dur: len, vol: 0.08, attack: 0.3 }); }
+  chime() { [659, 784, 988].forEach((f, i) => this._tone({ f, type: 'sine', dur: 0.5, vol: 0.09, when: i * 0.09 })); }
+
   /** Narrator "voice": one short blip per spoken character. `pitch` ~ 0.8..1.3 */
   blip(pitch = 1, vol = 1) {
     const f = 170 * pitch;

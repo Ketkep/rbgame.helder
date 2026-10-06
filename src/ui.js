@@ -5,9 +5,9 @@ export class UI {
   constructor() {
     this.el = {};
     for (const id of ['hud', 'lvl-chip', 'deaths', 'deaths-n', 'baby-badge', 'timer', 'ping', 'ping-n', 'altimeter', 'alt-fill', 'alt-rec', 'alt-n',
-      'prompt', 'toasts', 'achievements', 'baby-offer', 'stamp', 'subs', 'sub-shown', 'sub-rest', 'flash', 'fade', 'ov-loading', 'ld-fill', 'ld-tip',
+      'prompt', 'interact', 'interact-label', 'hint-chip', 'hint-label', 'panel', 'panel-title', 'panel-body', 'panel-foot', 'toasts', 'achievements', 'baby-offer', 'stamp', 'subs', 'sub-shown', 'sub-rest', 'flash', 'fade', 'ov-loading', 'ld-fill', 'ld-tip',
       'ov-ad', 'ad-sec', 'ov-bars', 'ov-credits', 'credits-roll', 'ov-glitch', 'pause-quip', 'btn-resume', 'btn-restart', 'btn-mercy', 'btn-quit',
-      'campaigns', 'home-tag', 'home-stats', 'btn-settings-home', 'btn-settings', 'btn-settings-back', 'btn-levels-back', 'btn-reset', 'levels-grid', 'levels-eyebrow', 'levels-title', 'btn-home', 'end-eyebrow', 'end-next', 'btn-next', 'btn-share', 'btn-again', 'set-sens', 'set-vol', 'set-music', 'set-gfx',
+      'campaigns', 'home-tag', 'home-stats', 'btn-settings-home', 'btn-settings', 'btn-settings-back', 'btn-levels-back', 'btn-reset', 'levels-grid', 'levels-eyebrow', 'levels-title', 'btn-home', 'btn-lobby', 'btn-lobby-pause', 'end-eyebrow', 'end-next', 'btn-next', 'btn-share', 'btn-again', 'set-sens', 'set-vol', 'set-music', 'set-gfx',
       'cmp-eyebrow', 'cmp-title', 'cmp-deaths', 'cmp-time', 'cmp-total', 'cmp-quip', 'end-title', 'end-deaths', 'end-time', 'end-baby', 'end-share']) {
       this.el[id] = $(id);
     }
@@ -36,6 +36,15 @@ export class UI {
     const m = Math.floor(sec / 60), s = sec - m * 60;
     this.el.timer.textContent = `${m}:${s.toFixed(1).padStart(4, '0')}`;
   }
+  /** Shows "[E] label" under the crosshair (null hides it). */
+  setInteract(label) {
+    const el = this.el.interact;
+    if (!label) { el.classList.add('hidden'); this._interactShown = null; return; }
+    if (this._interactShown !== label) { this.el['interact-label'].textContent = label; this._interactShown = label; }
+    el.classList.remove('hidden');
+  }
+  /** In a hub (no deaths/timer) hide those counters. */
+  setHubMode(on) { this.el.hud.classList.toggle('hubmode', !!on); }
   setBaby(on) { this.el['baby-badge'].classList.toggle('hidden', !on); }
   babyOffer(on) { this.el['baby-offer'].classList.toggle('hidden', !on); }
   setAltimeter(on, y = 0, max = 50, rec = 0) {

@@ -1,4 +1,4 @@
-import { Body, Mover, stepPlayer, MOVE, reach, jumpApex } from '../src/engine/physics.js';
+import { Body, Mover, stepPlayer, MOVE, reach, jumpApex, rayAABB } from '../src/engine/physics.js';
 
 const DT = 1 / 120;
 let fails = 0;
@@ -92,6 +92,63 @@ const run = { wx: 0, wz: -1, jumpPressed: false, jumpHeld: false };
   const p = new Mover(); p.teleport(0, 120, 0);
   for (let i = 0; i < 2000; i++) stepPlayer(p, [floor], { wx: 0, wz: 0 }, 1 / 60);
   ok(p.grounded && Math.abs(p.y) < 1e-6, 'no tunnelling at terminal velocity (dt=1/60, 0.5m floor)');
+}
+
+// 7. Auto step-up (stairs) only when enabled and only up to the step height
+{
+  function walkInto(stepH, riser) {
+    const floor = new Body(0, -0.5, 0, 20, 0.5, 20);
+    const step = new Body(0, riser / 2, -6, 3, riser / 2, 2);   // top at `riser`, z in [-8,-4]
+    const p = new Mover(); p.teleport(0, 0, 0);
+    for (let i = 0; i < 110; i++) stepPlayer(p, [floor, step], { wx: 0, wz: -1 }, DT, { stepHeight: stepH });  // ~6m: standing on the step
+    return p;
+  }
+  const a = walkInto(0.5, 0.35), b = walkInto(0.5, 0.7), c = walkInto(0, 0.35);
+  ok(a.grounded && Math.abs(a.y - 0.35) < 1e-3 && a.z < -4.5, `steps up a 0.35m riser when stepHeight=0.5 (y=${a.y.toFixed(2)}, z=${a.z.toFixed(1)})`);
+  ok(b.y < 0.01 && b.z > -4, `does NOT step a 0.7m riser (y=${b.y.toFixed(2)}, z=${b.z.toFixed(1)})`);
+  ok(c.y < 0.01 && c.z > -4, 'no step-up when stepHeight is 0 (campaign 1 behaviour unchanged)');
+  // low ceiling blocks the step
+  const floor = new Body(0, -0.5, 0, 20, 0.5, 20), step = new Body(0, 0.175, -6, 3, 0.175, 2), ceil = new Body(0, 2.0, -6, 3, 0.5, 2);
+  const p = new Mover(); p.teleport(0, 0, 0);
+  for (let i = 0; i < 110; i++) stepPlayer(p, [floor, step, ceil], { wx: 0, wz: -1 }, DT, { stepHeight: 0.5 });
+  ok(p.y < 0.01 && p.z > -4, 'no step-up without headroom');
+}
+
+// 8. Ray vs box (used for interaction targeting)
+{
+  const b = new Body(0, 1, -5, 1, 1, 1);
+  ok(Math.abs(rayAABB(0, 1, 0, 0, 0, -1, b) - 4) < 1e-6, 'ray hits box front face at distance 4');
+  ok(rayAABB(0, 1, 0, 0, 0, 1, b) === Infinity, 'ray pointing away misses');
+  ok(rayAABB(5, 1, 0, 0, 0, -1, b) === Infinity, 'ray beside the box misses');
+  ok(rayAABB(0, 3, 0, 0, -0.4, -1, b) < Infinity, 'downward ray hits the top of the box');
+}
+
+// 9. Slippery ground: much longer stopping distance, same top speed in the end, momentum kept for jumps
+{
+  function stopDist(slip) {
+    const floor = new Body(0, -0.5, -20, 5, 0.5, 30); floor.slip = slip;
+    const p = new Mover(); p.teleport(0, 0, 0);
+    for (let i = 0; i < 120; i++) stepPlayer(p, [floor], { wx: 0, wz: -1 }, DT);   // get to full speed
+    const z0 = p.z, v0 = p.vz;
+    for (let i = 0; i < 480; i++) stepPlayer(p, [floor], { wx: 0, wz: 0 }, DT);    // let go of the keys
+    return { dist: z0 - p.z, v0 };
+  }
+  const a = stopDist(0), b = stopDist(0.88);
+  console.log(`   stopping distance: normal ${a.dist.toFixed(2)} m, slippery ${b.dist.toFixed(2)} m`);
+  ok(a.dist < 0.5, 'normal ground stops in < 0.5 m');
+  ok(b.dist > 0.9 && b.dist < 2.0, 'slippery ground slides ~1-2 m');
+  ok(Math.abs(b.v0) > 6.5, 'slippery ground still reaches full speed');
+}
+
+// 10. Conveyor belts carry you (and stack with your own walking)
+{
+  const belt = new Body(0, -0.5, 0, 3, 0.5, 20); belt.conv = [0, 3];
+  const p = new Mover(); p.teleport(0, 0, 0);
+  for (let i = 0; i < 120; i++) stepPlayer(p, [belt], { wx: 0, wz: 0 }, DT);        // stand still for 1s
+  ok(Math.abs(p.z - 3) < 0.15, `standing on a 3 m/s belt carries you ~3 m (z=${p.z.toFixed(2)})`);
+  const q = new Mover(); q.teleport(0, 0, 0);
+  for (let i = 0; i < 120; i++) stepPlayer(q, [belt], { wx: 0, wz: -1 }, DT);       // walk against it
+  ok(q.z < -2.5 && q.z > -4.5, `walking against the belt nets ~3.6 m/s (z=${q.z.toFixed(2)})`);
 }
 
 // reach table for level design

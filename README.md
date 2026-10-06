@@ -20,12 +20,15 @@ The home page lists **campaigns**. **Campaign 1 — Welcome to the Show** is fiv
 - **Baby Mode**: after 25 deaths the Host offers it (press **B**, or "Beg for mercy" in the pause menu): higher jumps, longer coyote time, fake checkpoints actually save, and a permanent badge on your share card.
 - Everything is telegraphed (ping turns red before a lag spike, controls announce themselves…). Annoying, not unfair.
 
+### Campaign 2 — Hotel Trust-Me *(in progress)*
+A luxe art-deco hotel with a **walkable lobby** as the level select: the five elevators are the floors (Easy / Medium / Hard / Impossible / Why-are-u-even-trying), and the elevators lie. 25 levels are planned (parkour, quizzes, escape rooms, mazes, chases, tricks); the world, hub, interaction system, hint button and **all of Floor 1 (Wet Floor, Check-In, Lost Luggage, Revolving Door, Bellhop Blues)** are built, the rest show as "under renovation". See [`docs/hotel-campaign.md`](docs/hotel-campaign.md) for the roster, status and how to add a level.
+
 ### Home page & progress
 - Home page: campaign cards with progress, a level select (levels unlock as you clear them; everything unlocks after you finish the campaign), and Settings (sensitivity, volume, music, low graphics, reset progress).
 - Progress is saved per campaign in the browser (`localStorage`). Saves from the single-campaign version are migrated automatically.
 
 ### Controls
-`WASD` move · `Space` jump (tap = hop, hold = full jump) · `Mouse` look · `R` respawn · `Esc` pause · `M` mute · `Enter` resume
+`WASD` move · `Space` jump (tap = hop, hold = full jump) · `Mouse` look · `E` / click use · `H` hint · `R` respawn · `Esc` pause · `M` mute · `Enter` resume
 
 ## Develop
 
@@ -40,6 +43,7 @@ npm run preview    # serve the build on :4173
 Handy URL params: `?debug` exposes `window.__trust` (the game object) and doesn't need pointer lock; `?debug&level=3` jumps straight into a level.
 
 ### Test tools (need `npm run preview` running + the preinstalled Chromium)
+- Hotel levels: prefix with `CAMPAIGN=hotel`, e.g. `CAMPAIGN=hotel node tools/bot.mjs 1`.
 - `node tools/check-reach.mjs` — checks every hop between consecutive path platforms is physically jumpable with the real movement numbers.
 - `node tools/bot.mjs <level>` — a waypoint bot plays the level to prove it's completable and the scripted beats fire.
 - `node tools/test-game.mjs` — in-browser rule tests (fake vs real checkpoints, baby mode, wrong door, save/continue…).

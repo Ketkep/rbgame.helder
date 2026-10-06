@@ -28,6 +28,8 @@ export class Body {
     this.dx = 0; this.dy = 0; this.dz = 0; // movement during the last substep (to carry riders)
     this.enabled = true;
     this.solid = true;
+    this.slip = 0; // 0..1: how slippery the top face is (scales ground accel/friction)
+    this.conv = null; // [vx, vz]: a conveyor belt – carries whatever stands on it
     this.tag = null;
   }
   get top() { return this.y + this.hy; }
@@ -80,7 +82,7 @@ function approach(v, target, maxDelta) {
  * @param bodies   Body[]
  * @param input    { wx, wz (world-space wish dir, length<=1), jumpPressed (edge), jumpHeld }
  * @param dt       seconds (<= ~1/60 recommended)
- * @param opts     { jumpMul, coyoteExtra, accelX, accelZ (external accel such as wind) }
+ * @param opts     { jumpMul, coyoteExtra, accelX, accelZ (external accel such as wind), stepHeight }
  */
 export function stepPlayer(p, bodies, input, dt, opts = {}) {
   const jumpMul = opts.jumpMul || 1;
@@ -90,6 +92,7 @@ export function stepPlayer(p, bodies, input, dt, opts = {}) {
   // 1. Ride the thing we are standing on.
   if (p.grounded && p.ground && p.ground.enabled) {
     p.x += p.ground.dx; p.y += p.ground.dy; p.z += p.ground.dz;
+    if (p.ground.conv) { p.x += p.ground.conv[0] * dt; p.z += p.ground.conv[1] * dt; }
   }
 
   // 2. Push out of anything that moved into us (movers, re-enabled platforms).
@@ -124,7 +127,8 @@ export function stepPlayer(p, bodies, input, dt, opts = {}) {
   const tz = input.wz * MOVE.speed;
   const hasInput = input.wx !== 0 || input.wz !== 0;
   if (p.grounded) {
-    const a = (hasInput ? MOVE.groundAccel : MOVE.groundFriction) * dt;
+    const k = p.ground && p.ground.slip ? 1 - 0.9 * p.ground.slip : 1;
+    const a = (hasInput ? MOVE.groundAccel : MOVE.groundFriction) * dt * k;
     p.vx = approach(p.vx, tx, a);
     p.vz = approach(p.vz, tz, a);
   } else {
@@ -155,10 +159,12 @@ export function stepPlayer(p, bodies, input, dt, opts = {}) {
   p.grounded = false; p.ground = null;
   const hw = MOVE.halfW;
 
+  const stepH = wasGrounded && p.vy <= 0 ? (opts.stepHeight || 0) : 0;
   p.x += p.vx * dt;
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i];
     if (!b.enabled || !b.solid || !overlapsPlayer(p, b)) continue;
+    if (stepH > 0 && tryStep(p, bodies, b, stepH)) continue;
     if (p.vx > 0) p.x = b.x - b.hx - hw; else p.x = b.x + b.hx + hw;
     p.vx = 0;
   }
@@ -166,6 +172,7 @@ export function stepPlayer(p, bodies, input, dt, opts = {}) {
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i];
     if (!b.enabled || !b.solid || !overlapsPlayer(p, b)) continue;
+    if (stepH > 0 && tryStep(p, bodies, b, stepH)) continue;
     if (p.vz > 0) p.z = b.z - b.hz - hw; else p.z = b.z + b.hz + hw;
     p.vz = 0;
   }
@@ -195,6 +202,22 @@ export function stepPlayer(p, bodies, input, dt, opts = {}) {
   if (p.grounded && !wasGrounded && impactV < -3) p.justLanded = -impactV;
 }
 
+/**
+ * Auto step-up: if a grounded player walks into a low ledge (<= stepH above their feet) and there is
+ * headroom, lift them onto it instead of blocking. Used for stairs/thresholds in interiors.
+ */
+function tryStep(p, bodies, b, stepH) {
+  const lift = b.y + b.hy - p.y;
+  if (lift <= 0 || lift > stepH) return false;
+  const oy = p.y;
+  p.y = b.y + b.hy;
+  for (let i = 0; i < bodies.length; i++) {
+    const o = bodies[i];
+    if (o.enabled && o.solid && overlapsPlayer(p, o)) { p.y = oy; return false; }
+  }
+  return true;
+}
+
 /** AABB-vs-player overlap for hazards / triggers. `shrink` forgives grazes. */
 export function playerTouches(p, b, shrink = 0) {
   const hw = MOVE.halfW - shrink;
@@ -218,6 +241,22 @@ export function groundBelow(bodies, x, z, y, r = 0.05) {
     if (t <= y + 0.05 && t > best) best = t;
   }
   return best;
+}
+
+/** Distance along a ray to a Body's box (slab method), or Infinity. Direction need not be normalised. */
+export function rayAABB(ox, oy, oz, dx, dy, dz, b, pad = 0) {
+  let t0 = 0, t1 = Infinity;
+  const mins = [b.x - b.hx - pad, b.y - b.hy - pad, b.z - b.hz - pad];
+  const maxs = [b.x + b.hx + pad, b.y + b.hy + pad, b.z + b.hz + pad];
+  const o = [ox, oy, oz], d = [dx, dy, dz];
+  for (let i = 0; i < 3; i++) {
+    if (Math.abs(d[i]) < 1e-9) { if (o[i] < mins[i] || o[i] > maxs[i]) return Infinity; continue; }
+    let a = (mins[i] - o[i]) / d[i], c = (maxs[i] - o[i]) / d[i];
+    if (a > c) { const t = a; a = c; c = t; }
+    t0 = Math.max(t0, a); t1 = Math.min(t1, c);
+    if (t0 > t1) return Infinity;
+  }
+  return t0;
 }
 
 // ---- analytic helpers for level design / validation -------------------------------------
