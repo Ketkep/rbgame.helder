@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { glowMaterial, plainMaterial } from '../../engine/materials.js';
 import { GOLD, hotelHalo } from './kit.js';
+import { palm } from './props.js';
 
 // Hotel quiz rooms: the question bank + the pieces a quiz level is made of (LED board, answer pads, gate).
 // Every question has to be answerable by ANY player standing in that room, so each one is gated by what the player
@@ -23,6 +24,13 @@ const BANK = [
   ['keys', () => ({ q: 'Which key puts you back\nat your checkpoint?', a: 'R', w: ['T', 'Delete', 'Backspace'] })],
   ['keys', () => ({ q: 'Which key says yes to\nbaby mode when I offer?', a: 'B', w: ['Y', 'Enter', 'Z'] })],
 
+  ['keys', () => ({ q: 'Which key pauses\nthe game?', a: 'Esc', w: ['P', 'Pause/Break', 'F5'] })],
+  ['keys', () => ({ q: 'Which key mutes\nthe sound?', a: 'M', w: ['N', 'Backspace', 'Mute (the key)'] })],
+  ['keys', () => ({ q: 'Which keys move you\naround?', a: 'W A S D', w: ['H J K L', 'Q W E R', 'Only the arrow keys'] })],
+  ['hotel', () => ({ q: 'How many elevators are\nin the lobby?', a: '5', w: ['3', '8', '13'] })],
+  ['hotel', () => ({ q: 'What does baby mode\ngive you?', a: 'Easier jumps', w: ['Free snacks', 'A new host', 'A refund'] })],
+  ['hotel', () => ({ q: 'What do you press at\na button to use it?', a: 'E', w: ['Q', 'Enter', 'Never'] })],
+  ['hotel', () => ({ q: 'What does the host do\nwhen asked for directions?', a: 'Lies', w: ['Tells the truth', 'Draws a map', 'Gets the car'] })],
   ['hotel', () => ({ q: 'What is the name\nof this hotel?', a: 'Hotel Trust-Me', w: ['Hotel Honest', 'Motel Truthful', 'Hostel Maybe'] })],
   ['hotel', () => ({ q: 'Who is lying to you\nthe most in here?', a: 'The host', w: ['The doorman', 'The piano', 'Nobody, I am fair'] })],
 
@@ -43,23 +51,53 @@ const BANK = [
     return { q: 'About how long did\nWet Floor take you?', a, w: TIMES.filter((t) => t !== a).slice(0, 3) };
   }],
 
+  // ---- what you did on floor 1 (only asked once those levels are cleared) ----------------------------------------
+  ['f1', (g) => !hotelBest(g, 2) ? null : { q: 'What was the mimic\nin Lost Luggage?', a: 'A black suitcase', w: ['A red suitcase', 'The desk', 'The poster'] }],
+  ['f1', (g) => !hotelBest(g, 2) ? null : { q: 'How did you work out the\nLost Luggage code?', a: 'Counted suitcases', w: ['Asked the host', 'Guessed 1337', 'Smashed the keypad'] }],
+  ['f1', (g) => !hotelBest(g, 3) ? null : { q: 'What colour was a revolving\ndoor\'s lamp when safe?', a: 'Green', w: ['Red', 'Purple', 'Plaid'] }],
+  ['f1', (g) => !hotelBest(g, 3) ? null : { q: 'Where was the maze\nin Revolving Door?', a: 'On the roof', w: ['In the basement', 'In the lobby', 'In the pool'] }],
+  ['f1', (g) => !hotelBest(g, 4) ? null : { q: 'What chased you in\nBellhop Blues?', a: 'A giant bell', w: ['A giant suitcase', 'A swarm of bees', 'The manager'] }],
+  ['f1', (g) => !hotelBest(g, 4) ? null : { q: 'Where did Bellhop Blues\nend?', a: 'A service elevator', w: ['A swimming pool', 'The roof', 'Nowhere'] }],
+  ['f1', (g) => !hotelBest(g, 1) ? null : { q: 'How many questions were\nin Check-In?', a: '4', w: ['9', '12', '40'] }],
+  ['f1', (g) => !hotelBest(g, 0) ? null : { q: 'What was on the wet floor\nin Wet Floor?', a: 'Yellow signs', w: ['Green signs', 'Fish', 'Nothing at all'] }],
+  ['dyn2', (g) => {   // your deadliest level so far (only when there is a clear winner)
+    const names = ['Wet Floor', 'Check-In', 'Lost Luggage', 'Revolving Door', 'Bellhop Blues'];
+    const rows = names.map((n, i) => [n, hotelBest(g, i)?.deaths]).filter(([, d]) => d !== undefined);
+    if (rows.length < 4) return null;
+    rows.sort((a, b) => b[1] - a[1]);
+    if (rows[0][1] === rows[1][1]) return null;
+    return { q: 'Which Floor 1 level\nkilled you the most?', a: rows[0][0], w: rows.slice(1).map((r) => r[0]) };
+  }],
+  ['dyn2', (g) => {
+    const b = hotelBest(g, 4); if (!b) return null;
+    const a = b.deaths, w = [...new Set([a + 3, a + 1, Math.max(0, a - 2), a + 8].filter((n) => n !== a && n >= 0))].slice(0, 3);
+    return { q: 'How many times did the\nbell get you in Bellhop Blues?', a: String(a), w: w.map(String) };
+  }],
+
   ['pilot', (g) => !pilotDone(g, 0) ? null : { q: 'What was the first level\nof Campaign 1 called?', a: 'The Tutorial', w: ['The Tower', 'Checkpoint Island', 'The Real Ending'] }],
   ['pilot', (g) => !pilotDone(g, 1) ? null : { q: 'In Checkpoint Island,\nwhat did the fake\ncheckpoints do?', a: 'Absolutely nothing', w: ['Saved you', 'Gave you a hat', 'Tidied up'] }],
   ['pilot', (g) => !pilotDone(g, 2) ? null : { q: 'What was Level 3\nof Campaign 1 called?', a: 'The Tower', w: ['The Tutorial', 'The Real Ending', 'Checkpoint Island'] }],
   ['pilot', (g) => !pilotDone(g, 4) ? null : { q: 'How did Campaign 1\nend?', a: 'With a door. Two doors.', w: ['A boss fight', 'A long elevator ride', 'It never ended'] }],
 ];
 
-/** Pick one question from the first non-empty pool in `pools` (e.g. ['pilot','dyn']). Always 3 answers, correct one shuffled in. */
-export function pickQuestion(game, pools, rnd = Math.random) {
+/**
+ * Pick one question from the first non-empty pool in `pools` (e.g. ['pilot','dyn']). `n` answers (default 3), the correct
+ * one shuffled in. `used` (a Set) keeps a level from asking the same thing twice.
+ */
+export function pickQuestion(game, pools, { rnd = Math.random, n = 3, used = null } = {}) {
   for (const pool of [].concat(pools)) {
-    const opts = shuffle(BANK.filter(([p]) => p === pool), rnd).map(([, make]) => make(game)).filter(Boolean);
-    if (!opts.length) continue;
-    const q = opts[0];
-    const wrong = shuffle(q.w, rnd).slice(0, 2);
-    const answers = shuffle([{ text: q.a, correct: true }, ...wrong.map((text) => ({ text, correct: false }))], rnd);
-    return { q: q.q, answers };
+    const idx = shuffle(BANK.map((e, i) => i).filter((i) => BANK[i][0] === pool && !(used && used.has(i))), rnd);
+    for (const i of idx) {
+      const q = BANK[i][1](game);
+      if (!q || q.w.length < n - 1) continue;
+      used?.add(i);
+      const wrong = shuffle(q.w, rnd).slice(0, n - 1);
+      const answers = shuffle([{ text: q.a, correct: true }, ...wrong.map((text) => ({ text, correct: false }))], rnd);
+      return { q: q.q, answers };
+    }
   }
-  return null;
+  // everything in these pools was already asked: repeat one rather than build a broken level
+  return used ? pickQuestion(game, pools, { rnd, n }) || pickQuestion(game, ['keys', 'hotel'], { rnd, n }) : null;
 }
 
 // ================================================================================================
@@ -185,4 +223,180 @@ export function makeGate(w, { x = 0, y0 = -10, y1 = 13, z, width = 28, label = '
   gate.close = () => { gate.isOpen = false; body.enabled = true; gate.t = 0; recolor(1.0, 0.25, 0.3); grp.visible = true; grp.position.y = 0; };
   gate.update = (dt) => { if (gate.isOpen && gate.t < 1) { gate.t = Math.min(1, gate.t + dt * 1.6); grp.position.y = gate.t * 12.5; if (gate.t >= 1) grp.visible = false; } };
   return gate;
+}
+
+// ================================================================================================
+//  A quiz hall: a string of stage islands, each with a question board, a row of answer pads and a gate.
+//  Used by Check-In, Trivia Night, Minibar and Pop Quiz. Per-stage gimmicks: 'honest' | 'lie' | 'breathe' | 'slide' | 'timer'.
+// ================================================================================================
+const LETTERS = ['A', 'B', 'C', 'D', 'E'];
+
+/** A little scoreboard that shows a number (the countdown). */
+function clockMesh(w, x, y, z) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 160;
+  const g = c.getContext('2d');
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; w.ownTextures.push(tex);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 2.0), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+  m.position.set(x, y, z); w.add(m);
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(3.5, 2.3, 0.2), plainMaterial(GOLD, { metalness: 1, roughness: 0.3 })); frame.position.set(x, y, z - 0.12); w.add(frame);
+  let last = -1;
+  const set = (n, hot = false) => {
+    if (n === last) return; last = n;
+    g.fillStyle = '#0c0810'; g.fillRect(0, 0, 256, 160);
+    g.fillStyle = hot ? '#ff4a58' : '#ffd890'; g.font = `110px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.shadowColor = hot ? '#ff2030' : '#ffb040'; g.shadowBlur = 16;
+    g.fillText(n < 0 ? '--' : String(n), 128, 86); g.shadowBlur = 0;
+    g.font = `26px ${FONT}`; g.fillStyle = '#d8a94a'; g.fillText('SECONDS', 128, 142);
+    tex.needsUpdate = true;
+  };
+  set(-1);
+  m.visible = frame.visible = false;
+  return { set, show: (on) => { m.visible = frame.visible = on; } };
+}
+
+export function quizHall(w, game, spec) {
+  const { Z0 = 4, period = 16, islandD = 7, finalD = 12, stages: specs, lines, hallW = 19 } = spec;
+  const N = specs.length;
+  const zEnd = Z0 - N * period - 5;
+  const islands = [];
+  const island = (zN, depth = islandD) => {
+    const zc = zN + depth / 2;
+    const p = w.plat({ x: 0, y: 0, z: zc, w: hallW, d: depth, h: 1.4, tex: 'carpet', color: spec.carpet ?? 0xffffff, roughness: 0.92, radius: 0.05, trim: GOLD });
+    w.box({ x: 0, y: -0.7, z: zc, w: hallW + 0.4, h: 0.12, d: depth + 0.4, color: GOLD, metal: 1, rough: 0.3, shadow: false });
+    for (const sx of [-1, 1]) palm(w, sx * (hallW / 2 - 1.3), zc, 1.0);
+    islands.push({ zN, zS: zN + depth, zc, plat: p });
+    return p;
+  };
+  island(Z0);
+  for (let k = 1; k < N; k++) island(Z0 - k * period);
+  island(zEnd, finalD);
+  const fin = islands[N];
+
+  // ---- the stages -------------------------------------------------------------------------------------
+  const stages = specs.map((sp, k) => {
+    const isl = islands[k], q = sp.q, n = q.answers.length;
+    const moving = sp.gimmick === 'breathe', sliding = sp.gimmick === 'slide';
+    const padZ = isl.zN - (moving ? 4.8 : 4.4);
+    const pads = q.answers.map((a, i) => {
+      const pad = makePad(w, { x: (i - (n - 1) / 2) * 4.6, z: padZ, letter: LETTERS[i], text: a.text, correct: a.correct });
+      const phase = (i / n) * Math.PI * 2;
+      pad.fallY = 0;
+      w.mover(pad.plat, (t) => ({ y: pad.fallY, z: moving ? Math.sin(t * 1.15 + phase) * 0.6 : 0, x: sliding ? Math.sin(t * 1.0 + k) * 1.2 : 0 }));
+      return pad;
+    });
+    const gate = makeGate(w, { z: isl.zN - 8.4 });
+    const board = boardMesh(w, { x: 0, y: 6.6, z: isl.zN - 8.9, width: 12, height: 3.6, header: sp.header || `QUESTION ${k + 1} OF ${N}`, text: q.q });
+    const correctPad = pads.find((p) => p.correct), wrongPads = pads.filter((p) => !p.correct);
+    const st = { k, spec: sp, pads, gate, q, board, correctPad, wrongPads, lieLetter: null, timer: null };
+    if (sp.gimmick === 'lie') st.lieLetter = sp.lieLetter || wrongPads[Math.floor(Math.random() * wrongPads.length)].letter;
+    if (sp.gimmick === 'timer') {
+      const clock = clockMesh(w, 8.2, 6.6, isl.zN - 8.9);
+      st.timer = { limit: sp.limit || 12, left: sp.limit || 12, started: false, clock, downT: 0 };
+    }
+    return st;
+  });
+
+  // ---- state ----------------------------------------------------------------------------------------------
+  let cleared = 0;
+  const reveal = () => stages.forEach((st) => { const on = st.k <= cleared; st.board.visible = on; st.pads.forEach((p) => { p.tag.visible = on; }); if (st.timer && !on) st.timer.clock.show(false); });
+  reveal();
+  const cur = () => stages[cleared];
+  const resetPad = (pad) => {
+    pad.set('idle'); pad.lockT = 0; pad.dropT = 0; pad.fallY = 0; pad.vy = 0; pad.eliminated = false; pad.falling = false;
+    pad.plat.setEnabled(true); pad.plat.group.scale.setScalar(1);
+  };
+  const resetTimer = (st) => { if (st.timer) { st.timer.left = st.timer.limit; st.timer.started = false; st.timer.downT = 0; st.timer.clock.set(-1); st.timer.clock.show(st.k <= cleared); } };
+  w.onRespawn(() => { for (let k = cleared; k < N; k++) { stages[k].pads.forEach(resetPad); resetTimer(stages[k]); } });
+  stages.forEach((st) => st.timer && resetTimer(st));
+
+  const resolve = (st, pad) => {
+    if (pad.correct) {
+      pad.set('right'); st.gate.open(); cleared = st.k + 1; reveal();
+      if (st.timer) st.timer.clock.show(false);
+      game.audio.ding(); game.ui.toast('✔ Correct', 'gold');
+      game.say(st.k === N - 1 ? lines.rightLast : lines.right, { priority: 2 });
+    } else {
+      pad.set('wrong'); pad.dropT = 0; game.audio.buzzer();
+      game.say(st.lieLetter && pad.letter === st.lieLetter ? lines.wrongLie : lines.wrong, { priority: 2 });
+    }
+  };
+
+  w.onUpdate((dt, t) => {
+    for (const s of stages) s.gate.update(dt);
+    const pl = game.player;
+    for (const st of stages) {
+      for (const pad of st.pads) {
+        pad.pulse(t);
+        if (pad.falling) {
+          pad.vy -= 26 * dt; pad.fallY += pad.vy * dt;
+          if (pad.fallY < -2.5) pad.plat.body.enabled = false;
+          if (pad.fallY < -14) { pad.plat.setEnabled(false); pad.falling = false; }
+          continue;
+        }
+        if (st.k !== cleared) continue;
+        if (pad.state === 'wrong') { pad.dropT += dt; if (pad.dropT > 0.35) { pad.plat.body.enabled = false; pad.falling = true; pad.vy = 0; } continue; }
+        if (pad.state !== 'idle' && pad.state !== 'lock') continue;
+        const on = game.state === 'playing' && pl.grounded && pl.ground === pad.plat.body;
+        if (on) {
+          if (pad.state === 'idle') { pad.set('lock'); game.audio.tick(); }
+          pad.lockT += dt;
+          if (pad.lockT >= pad.dwell) resolve(st, pad);
+        } else if (pad.state === 'lock') { pad.lockT = 0; pad.set('idle'); }
+      }
+      // the countdown (starts once you set foot on this stage's island)
+      const tm = st.timer;
+      if (tm && st.k === cleared && game.state === 'playing') {
+        if (tm.downT > 0) {          // pads are gone; bring them back after a moment
+          tm.downT -= dt;
+          if (tm.downT <= 0) { st.pads.forEach(resetPad); resetTimer(st); }
+        } else {
+          if (!tm.started && pl.grounded && pl.ground === islands[st.k].plat.body && pl.z < islands[st.k].zS - 0.5) { tm.started = true; tm.clock.show(true); }
+          if (tm.started) {
+            tm.left -= dt;
+            const secs = Math.max(0, Math.ceil(tm.left));
+            tm.clock.set(secs, secs <= 4);
+            if (secs <= 4 && Math.floor(tm.left * 2) !== tm.beep) { tm.beep = Math.floor(tm.left * 2); game.audio.tick(); }
+            if (tm.left <= 0) {
+              st.pads.forEach((p) => { if (p.state !== 'gone') { p.set('gone'); p.plat.body.enabled = false; p.falling = true; p.vy = 0; } });
+              tm.downT = 3.4; game.say(lines.timeUp, { priority: 2 });
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // the respawn point follows you up the hall (no flag, just a quiet save)
+  for (let k = 1; k <= N; k++) {
+    const isl = islands[k];
+    w.trigger({ x: 0, y: 1.5, z: isl.zN + 3, w: hallW - 2, h: 3, d: isl.zS - isl.zN - 1.5, once: true, onEnter: () => {
+      w.respawn = { x: 0, y: 0, z: isl.zN + 3.5, yaw: 0 };
+      if (k < N && lines.stage) { const r = lines.stage(k, stages[k]); if (r) game.say(r[0], { priority: 1, vars: r[1] }); }
+    } });
+  }
+
+  // ---- 50/50 hint: the host removes one wrong answer ----------------------------------------------------------
+  const hintAction = (g) => {
+    const st = cur(); if (!st || cleared >= N) return false;
+    const standing = (p) => g.player.grounded && g.player.ground === p.plat.body;
+    const cand = st.wrongPads.filter((p) => !p.eliminated && !standing(p) && p.state === 'idle');
+    if (!cand.length) { g.say(lines.hintNone, { priority: 1 }); return false; }
+    const pad = cand[Math.floor(Math.random() * cand.length)];
+    pad.eliminated = true; pad.plat.body.enabled = false; pad.set('gone'); pad.falling = true; pad.vy = 0;
+    g.say(lines.hint, { priority: 1 });
+    return true;
+  };
+  w.hintAction = hintAction;
+
+  // ---- test bot: answer correctly, one island at a time ----------------------------------------------------------
+  w.botPlan = (g) => {
+    const p = g.player, st = cur();
+    if (!st) return { x: 0, z: fin.zN + 6.5 };
+    if (p.grounded && p.ground === st.correctPad.plat.body) return { wait: true, x: p.x, z: p.z };
+    const isl = islands[st.k];
+    if (st.timer && st.timer.downT > 0) return { wait: true, x: p.x, z: p.z };
+    if (p.z > isl.zS + 0.2) return { body: isl.plat.body };
+    return { body: st.correctPad.plat.body };
+  };
+  w.quiz = { stages, get cleared() { return cleared; }, islands };
+  return { stages, islands, fin, cur, get cleared() { return cleared; }, N };
 }

@@ -59,6 +59,47 @@ suite('souffle', async () => {
   await page.close();
 });
 
+// ---- level 7: Trivia Night ------------------------------------------------------------------------------------
+suite('trivia', async () => {
+  const page = await open(7);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, qz = w.quiz, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    const stand = (pad) => { const b = pad.plat.body; g.player.teleport(b.x, b.top + 0.001, b.z); g.player.grounded = true; g.player.ground = b; };
+    out.rounds = qz.stages.length; out.pads = qz.stages.map((s) => s.pads.length).join(',');
+    // round 2: the host's number is wrong; round 6 asks for exactly that letter
+    const s2 = qz.stages[1], s6 = qz.stages[5];
+    out.lieIsWrong = !!s2.lieLetter && s2.wrongPads.some((p) => p.letter === s2.lieLetter);
+    out.finalAsksForLie = s6.correctPad.letter === s2.lieLetter && s6.correctPad.text === s2.lieLetter;
+    out.lieMatches = w.trivia.lieLetter === s2.lieLetter;
+    // round 3: the pads slide
+    const s3 = qz.stages[2]; const x0 = s3.pads[0].plat.body.x;
+    let moved = 0; for (let i = 0; i < 60 * 6; i++) { g._simulate(1 / 60); moved = Math.max(moved, Math.abs(s3.pads[0].plat.body.x - x0)); }
+    out.slides = moved > 0.8;
+    // clear rounds 1-3 properly (stand on the right pad, then be on the next island)
+    for (let k = 0; k < 3; k++) { stand(qz.stages[k].correctPad); sim(1.2); }
+    out.cleared3 = qz.cleared === 3;
+    g.player.teleport(0, 0.001, qz.islands[3].zN + 3); sim(0.4);
+    // round 4: the clock starts when you are on the island, runs out and takes the pads away, then they come back
+    const s4 = qz.stages[3], tm = s4.timer;
+    out.clockStarted = tm.started;
+    sim(13); out.padsGone = s4.pads.every((p) => p.state === 'gone'); out.downT = tm.downT > 0;
+    sim(4); out.padsBack = s4.pads.every((p) => p.state === 'idle' && p.plat.body.enabled);
+    // round 5 has four answers
+    out.fourPads = qz.stages[4].pads.length === 4;
+    return out;
+  });
+  ok(r.rounds === 6 && r.pads === '3,3,3,3,4,3', `trivia: six rounds with 3/3/3/3/4/3 answers (${r.pads})`);
+  ok(r.lieIsWrong && r.lieMatches, 'trivia: in round 2 the host picks a WRONG letter');
+  ok(r.finalAsksForLie, 'trivia: the final round\'s right answer is the letter the host lied with');
+  ok(r.slides, 'trivia: round 3 pads slide');
+  ok(r.cleared3, 'trivia: rounds 1-3 clear in order');
+  ok(r.clockStarted && r.padsGone && r.downT, 'trivia: round 4: the 12-second clock removes the pads at zero');
+  ok(r.padsBack, 'trivia: ...and they come back so you can try again');
+  ok(r.fourPads, 'trivia: round 5 has four pads');
+  await page.close();
+});
+
 const names = Object.keys(suites).filter((n) => n.includes(filter));
 for (const n of names) { console.log(`\n== ${n}`); await suites[n](); }
 await browser.close();
