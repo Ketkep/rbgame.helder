@@ -143,6 +143,49 @@ suite('dinner', async () => {
   await page.close();
 });
 
+// ---- level 9: Kitchen Maze ---------------------------------------------------------------------------------------
+suite('kitchen', async () => {
+  const page = await open(9);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, m = w.maze, ch = m.chef, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    out.solved = m.solve([0, 0]).length > 14;
+    out.ice = m.ice.size; out.slippery = w.bodies.filter((b) => b.slip > 0.5).length;
+    out.doors = m.doors.length;
+    // the chef waits at the entrance for his head start, then walks toward you through the maze
+    out.chefAtStart = ch.cell.join() === '0,0';
+    g.player.teleport(m.cx(5), 0.01, m.cz(5));
+    sim(5); out.waits = ch.cell.join() === '0,0';
+    sim(10);
+    const d0 = Math.hypot(ch.x - g.player.x, ch.z - g.player.z);
+    out.chases = ch.moving || ch.cell.join() !== '0,0';
+    // he does not walk through walls: his cell changes by one step at a time
+    let prev = ch.cell.slice(), legal = true;
+    for (let i = 0; i < 60 * 12 && g.state === 'playing'; i++) { g._simulate(1 / 60); const c = ch.cell; if (c[0] !== prev[0] || c[1] !== prev[1]) { if (!m.maze.nbrs(prev[0], prev[1]).some((n) => n[0] === c[0] && n[1] === c[1])) legal = false; prev = c.slice(); } }
+    out.legal = legal;
+    // he eventually catches a player who stands still
+    for (let i = 0; i < 60 * 80 && g.state === 'playing'; i++) g._simulate(1 / 60);
+    out.caught = g.state === 'dead';
+    g.state = 'playing'; g.respawnPlayer(false);
+    out.chefReset = ch.cell.join() === '0,0';
+    // one-way doors: you can go through them the right way, and not back
+    const d = m.doors[0]; g.state = 'playing';
+    g.player.teleport(d.mx - d.dirx * 2, 0.01, d.mz - d.dirz * 2); sim(0.1);
+    const before = d.body.enabled;
+    g.player.teleport(d.mx + d.dirx * 1.6, 0.01, d.mz + d.dirz * 1.6); sim(0.1);
+    const after = d.body.enabled;
+    out.oneWay = !before && after;
+    return out;
+  });
+  ok(r.solved && r.ice >= 3 && r.slippery >= 3, `kitchen: a solvable maze with icy freezer cells (${r.ice} of them)`);
+  ok(r.doors === 3, 'kitchen: three one-way doors');
+  ok(r.oneWay, 'kitchen: a one-way door lets you through and shuts behind you');
+  ok(r.chefAtStart && r.waits, 'kitchen: the chef starts at the entrance and waits for his head start');
+  ok(r.chases && r.legal, 'kitchen: then he hunts you through the corridors (never through walls)');
+  ok(r.caught && r.chefReset, 'kitchen: he catches you if you stall, and starts over after a death');
+  await page.close();
+});
+
 const names = Object.keys(suites).filter((n) => n.includes(filter));
 for (const n of names) { console.log(`\n== ${n}`); await suites[n](); }
 await browser.close();

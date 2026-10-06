@@ -290,6 +290,15 @@ Object.assign(SCRIPT, {
   'hotel.l8.hint1': 'Hint: the menu on the wall describes each course in a riddle. They are in the order to serve them. Not the order I said.',
   'hotel.l8.hint2': 'Hint: first the {a}, then the {b}. After that you are on your own. Which is the usual arrangement.',
   'hotel.l8.hint3': 'Hint: the order is {all}. I am not lying. Obviously I would say that if I were.',
+  'hotel.l9.intro': 'Level nine: Kitchen Maze. Walk-in freezers, one-way doors, and a chef. He is not here yet. Do not wait for him to arrive.',
+  'hotel.l9.intro2': 'A different maze every time. The freezers are slippery. The chef is not. Dead ends are a bad idea. I mention it as a courtesy.',
+  'hotel.l9.go': 'He has noticed you. Chefs notice everything. Especially texture.',
+  'hotel.l9.near': ['He is right behind you. He has a very large knife and a very small sense of humour.', 'Can you hear that? That is the sound of professional commitment.'],
+  'hotel.l9.oneway': 'One-way doors! Hygiene regulations. Cross-contamination, you see. Of you. Into the rest of the building.',
+  'hotel.l9.ice': 'The freezers. Slippery. That is for food safety. Not yours.',
+  'hotel.l9.lie': ['Left. It is definitely left. I used to work here.', 'Straight on! The exit is straight on! I am looking at a different kitchen, but still.', 'Take the next right. A chef told me. Not this one.'],
+  'hotel.l9.caught': ['Chopped. Julienned, even.', 'You have been served. By the chef. To himself.', 'Tonight\'s special: you. Medium rare.', 'He caught you. He is not even out of breath. He is out of patience.'],
+  'hotel.l9.done': 'The loading dock! You escaped the kitchen. The chef is not angry. He is disappointed. And hungry.',
   'hotel.complete.first': 'Level one done! The marble is very proud of you. I\'m... fine.',
 });
 

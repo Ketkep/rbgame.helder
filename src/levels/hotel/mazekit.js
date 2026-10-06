@@ -56,9 +56,9 @@ export function mazeGrid({ N, C = 4.4, T = 0.8, WH = 3.6, Z0 = 8, X0 = null }) {
 }
 
 /** Builds the wall runs (merged slabs). `entrance`/`exit` are the column indices of the gaps in the south/north walls. */
-export function buildMazeWalls(w, maze, g, { tex = 'hedge', color = 0xffffff, roughness = 0.95, radius = 0.1, entrance = 0, exit = maze.N - 1, slab = null } = {}) {
+export function buildMazeWalls(w, maze, g, { tex = 'hedge', color = 0xffffff, roughness = 0.95, radius = 0.1, metalness = undefined, entrance = 0, exit = maze.N - 1, slab = null } = {}) {
   const { N, C, T, WH, X0, Z0 } = g;
-  const make = slab || ((x, z, ww, dd) => w.plat({ x, y: WH, z, w: ww, d: dd, h: WH, tex, color, roughness, radius }));
+  const make = slab || ((x, z, ww, dd) => w.plat({ x, y: WH, z, w: ww, d: dd, h: WH, tex, color, roughness, radius, metalness }));
   for (let j = 0; j <= N; j++) {                       // horizontal lines (z = Z0 - j*C)
     const present = (ii) => (j === 0 ? ii !== entrance : j === N ? ii !== exit : !maze.north[ii][j - 1]);
     let i = 0;
