@@ -100,6 +100,49 @@ suite('trivia', async () => {
   await page.close();
 });
 
+// ---- level 8: Dinner Is Served --------------------------------------------------------------------------------
+suite('dinner', async () => {
+  const page = await open(8);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, dn = w.dinner, out = {};
+    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    out.six = dn.cloches.length === 6 && new Set(dn.order.map((c) => c.name)).size === 6;
+    // hints: three levels of clue, then (door open) the trail
+    g.debug = false; for (let i = 0; i < 3; i++) { g.hintCool = 0; g.useHint(); }
+    out.hints = said.filter((k) => /l8\.hint/.test(k)).join(',');
+    // serve the WRONG course first: a cake falls where you stand; the shadow warns you first
+    g.player.teleport(0, 0.001, 0);
+    const wrong = dn.cloches.find((c) => c.c !== dn.order[0]);
+    dn.serve(wrong);
+    out.progressReset = dn.served === 0; out.trapSprang = dn.trapBusy;
+    sim(0.5); out.warnFirst = g.state === 'playing';
+    sim(1.2); out.cakeKills = g.state === 'dead';
+    g.state = 'playing'; g.respawnPlayer(false); sim(2.5);
+    out.trapOver = !dn.trapBusy;
+    // dodge: step away while the shadow grows
+    g.player.teleport(0, 0.001, 0); dn.serve(wrong); sim(0.3); g.player.teleport(6, 0.001, 0); sim(2.5);
+    out.dodged = g.state === 'playing';
+    // serve all six in order: the door opens
+    for (const c of dn.order) dn.serve(dn.cloches.find((r) => r.c === c));
+    out.opened = dn.doorOpen && dn.served === 6;
+    sim(2);
+    out.barrels = dn.barrels.length;
+    // a barrel in the aisle hurts
+    g.player.teleport(0, 0.001, -30); const b = dn.barrels[0];
+    g.player.teleport(b.body.x, 0.001, b.body.z); g._simulate(1 / 60); out.barrelKills = g.state === 'dead';
+    return out;
+  });
+  ok(r.six, 'dinner: six different courses');
+  ok(r.hints === 'hotel.l8.hint1,hotel.l8.hint2,hotel.l8.hint3', `dinner: three hint levels (${r.hints})`);
+  ok(r.progressReset && r.trapSprang, 'dinner: a wrong course resets the meal and springs the dessert trolley');
+  ok(r.warnFirst && r.cakeKills, 'dinner: the cake gives a warning, then flattens you if you stay');
+  ok(r.trapOver && r.dodged, 'dinner: ...and you can dodge it');
+  ok(r.opened, 'dinner: all six courses in the menu\'s order open the kitchen door');
+  ok(r.barrels >= 5 && r.barrelKills, `dinner: ${r.barrels} barrels roll down the cellar and hurt`);
+  await page.close();
+});
+
 const names = Object.keys(suites).filter((n) => n.includes(filter));
 for (const n of names) { console.log(`\n== ${n}`); await suites[n](); }
 await browser.close();
