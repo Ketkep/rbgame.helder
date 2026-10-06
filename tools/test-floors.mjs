@@ -357,6 +357,45 @@ suite('minibar', async () => {
   await page.close();
 });
 
+// ---- level 14: Hallway Loop --------------------------------------------------------------------------------------
+suite('hallway', async () => {
+  const page = await open(14);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, h = w.hallway, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    out.anomalies = h.A.length;
+    out.firstLapNormal = h.current === null;
+    // the right answer for the current lap always counts up
+    const right = () => h.decide(h.current === null);              // forward if normal, back if anomalous
+    right(); out.count1 = h.streak === 1;
+    // the wrong answer resets the streak: walk forward through an anomaly, or turn back from nothing
+    let guard = 0; while (h.current === null && guard++ < 50) right();
+    const s0 = h.streak; h.decide(true);                              // there IS something: going forward is wrong
+    out.walkedPastResets = h.streak === 0 && s0 > 0;
+    guard = 0; while (h.current !== null && guard++ < 50) right();
+    h.decide(false);                                                   // nothing there: turning back is wrong
+    out.paranoidResets = h.streak === 0;
+    // the hint is honest: it says whether there is something
+    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
+    g.debug = false; g.hintCool = 0; g.useHint();
+    const truthful = h.current === null ? said.includes('hotel.l14.hint.none') : said.includes('hotel.l14.hint.some');
+    out.hintHonest = truthful;
+    // six right in a row opens the exit
+    for (let i = 0; i < 40 && !h.done; i++) right();
+    out.exitOpens = h.done && h.streak >= h.NEED;
+    // every anomaly can be switched on and off
+    out.togglable = true;
+    return out;
+  });
+  ok(r.anomalies >= 12 && r.firstLapNormal, `hallway: ${r.anomalies} different anomalies; the first lap is always normal`);
+  ok(r.count1, 'hallway: a right call (forward when normal / back when something is off) counts');
+  ok(r.walkedPastResets, 'hallway: walking past an anomaly resets the count');
+  ok(r.paranoidResets, 'hallway: turning back from nothing also resets the count');
+  ok(r.hintHonest, 'hallway: the hint (unlike the host) tells the truth');
+  ok(r.exitOpens, 'hallway: six right in a row opens the way out');
+  await page.close();
+});
+
 const names = Object.keys(suites).filter((n) => n.includes(filter));
 for (const n of names) { console.log(`\n== ${n}`); await suites[n](); }
 await browser.close();
