@@ -116,7 +116,7 @@ export default {
       s.t += dt;
       if (s.stage === 'wait' && s.t > 1.4) {
         s.stage = 'credits'; g.say('l5.intro');
-        g.ui.creditsStart(CREDITS, g.save.completed ? 420 : 78);
+        g.ui.creditsStart(CREDITS, g.cs().completed ? 420 : 78);
       }
       if (s.stage === 'curtainWait') {
         s.fadeWait -= dt;

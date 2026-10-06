@@ -187,3 +187,59 @@ kbd { font: 400 13px var(--display); min-width: 30px; padding: 6px 9px; text-ali
 .settings .hint kbd { min-width: 0; padding: 2px 6px; font-size: 10px; }
 #fatal { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); z-index: 99; padding: 24px; text-align: center; }
 #fatal .panel { width: min(460px, 92vw); }
+
+/* ---------- home page ---------- */
+#scr-home { background: radial-gradient(ellipse at 50% 40%, rgba(10,11,20,0.25), rgba(8,9,16,0.86)); backdrop-filter: blur(3px); place-items: stretch; }
+#scr-home.show { display: block; overflow-y: auto; }
+.home { min-height: 100%; display: flex; flex-direction: column; padding: 18px clamp(16px, 4vw, 56px) 14px; }
+.home-top { display: flex; justify-content: space-between; align-items: center; }
+.brand { font: 400 20px var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: #fff; text-shadow: 0 3px 0 rgba(0,0,0,0.35); }
+.brand em, .logo em { font-style: normal; color: var(--gold); }
+.home-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 8px 0 18px; }
+.home .logo { font-size: clamp(54px, 9.5vw, 128px); }
+.home .tag { margin: 18px 0 24px; min-height: 1.4em; }
+.campaigns { display: grid; grid-template-columns: repeat(3, minmax(0, 320px)); gap: 18px; justify-content: center; width: 100%; }
+.card { text-align: left; display: flex; flex-direction: column; gap: 8px; padding: 20px 20px 18px; border-radius: 20px; background: rgba(18,19,30,0.84); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s; }
+.card .eyebrow { margin: 0; font-size: 11px; }
+.card h3 { margin: 0; font: 400 24px/1.1 var(--display); }
+.card .blurb { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; flex: 1; }
+.card.playable { border-color: rgba(255,200,61,0.55); box-shadow: 0 14px 44px rgba(255,200,61,0.12); }
+.card.playable:hover { transform: translateY(-4px); box-shadow: 0 18px 52px rgba(255,200,61,0.2); }
+.card.soon { opacity: 0.62; filter: saturate(0.5); border-style: dashed; }
+.card.soon h3 { letter-spacing: 0.2em; }
+.soon-badge { align-self: flex-start; margin-top: 4px; font: 600 12px var(--body); letter-spacing: 0.08em; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.08); color: var(--muted); }
+.pips { display: flex; gap: 6px; margin-top: 4px; }
+.pip { flex: 1; height: 8px; border-radius: 6px; background: rgba(255,255,255,0.12); }
+.pip.done { background: var(--teal); }
+.pip.open { background: transparent; box-shadow: inset 0 0 0 2px var(--gold); }
+.card-stats { margin: 2px 0 6px; font: 600 13px var(--body); color: #dfe2f5; }
+.card-btns { display: flex; gap: 10px; }
+.card-btns .btn { padding: 12px 16px; font-size: 14px; }
+.card-btns .btn.primary { flex: 1; }
+.home .keys { margin-top: 26px; }
+.home-foot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; color: #7d8099; font-size: 12px; padding-top: 8px; }
+.btn.small { padding: 8px 14px; font-size: 12px; border-radius: 10px; }
+.btn.danger { background: transparent; border-color: rgba(255,77,94,0.5); color: #ff9aa4; font-size: 13px; }
+.btn.danger:hover { background: rgba(255,77,94,0.16); }
+
+.levels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 6px 0 20px; }
+.tile { text-align: left; display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); color: var(--ink); cursor: pointer; font-family: var(--body); transition: transform 0.12s, background 0.12s; }
+.tile .n { font: 400 20px var(--display); color: var(--gold); }
+.tile b { font: 700 14px var(--body); }
+.tile small { color: var(--muted); font-size: 11px; }
+.tile.done .n { color: var(--teal); }
+.tile:not(:disabled):hover { background: rgba(255,255,255,0.12); transform: translateY(-2px); }
+.tile.locked { opacity: 0.45; cursor: not-allowed; }
+.settings.flat { margin-top: 14px; padding-top: 0; border-top: 0; }
+.panel .btns.col { margin-top: 18px; }
+
+@media (max-width: 980px) {
+  .campaigns { grid-template-columns: minmax(0, 420px); }
+  .home-main { justify-content: flex-start; }
+}
+
+@media (max-height: 820px) {
+  .home .logo { font-size: clamp(44px, 11vh, 96px); }
+  .home .tag { margin: 10px 0 16px; }
+  .home .keys { margin-top: 16px; }
+}

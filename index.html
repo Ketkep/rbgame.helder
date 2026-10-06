@@ -68,24 +68,55 @@
     <div id="ov-glitch" class="hidden"></div>
 
     <!-- screens -->
-    <section id="scr-title" class="screen show">
-      <div class="title-inner">
-        <h1 class="logo"><span class="l1">TRUST</span><span class="l2">ME<em>…</em></span></h1>
-        <p class="tag">A game show where you can trust me completely.</p>
-        <div class="btns">
-          <button id="btn-play" class="btn primary">Play</button>
-          <button id="btn-continue" class="btn hidden">Continue</button>
-          <button id="btn-chapters" class="btn ghost hidden">Chapters</button>
+    <section id="scr-home" class="screen show">
+      <div class="home">
+        <header class="home-top">
+          <div class="brand">TRUST ME<em>…</em></div>
+          <button id="btn-settings-home" class="btn small ghost">Settings</button>
+        </header>
+        <main class="home-main">
+          <h1 class="logo"><span class="l1">TRUST</span><span class="l2">ME<em>…</em></span></h1>
+          <p class="tag" id="home-tag">A game show where you can trust me completely.</p>
+          <div id="campaigns" class="campaigns"></div>
+          <div class="keys">
+            <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span>
+            <span><kbd>Space</kbd> jump</span>
+            <span><kbd>Mouse</kbd> look</span>
+            <span><kbd>R</kbd> respawn</span>
+            <span><kbd>Esc</kbd> pause</span>
+          </div>
+        </main>
+        <footer class="home-foot">
+          <span>A Helder Labs game · desktop, keyboard + mouse · contains falling, lying, and brief flashing glitch effects</span>
+          <span id="home-stats"></span>
+        </footer>
+      </div>
+    </section>
+
+    <section id="scr-levels" class="screen">
+      <div class="panel wide">
+        <p class="eyebrow" id="levels-eyebrow">CAMPAIGN 1</p>
+        <h2 id="levels-title">Welcome to the Show</h2>
+        <p class="quip">Pick a level to start a fresh run from there.</p>
+        <div id="levels-grid" class="levels-grid"></div>
+        <div class="btns"><button id="btn-levels-back" class="btn ghost">Back</button></div>
+      </div>
+    </section>
+
+    <section id="scr-settings" class="screen">
+      <div class="panel">
+        <h2>Settings</h2>
+        <div class="settings flat">
+          <label>Mouse sensitivity <input id="set-sens" type="range" min="0.3" max="2.5" step="0.05" value="1" /></label>
+          <label>Volume <input id="set-vol" type="range" min="0" max="1" step="0.05" value="0.8" /></label>
+          <label class="check"><input id="set-music" type="checkbox" checked /> Music</label>
+          <label class="check"><input id="set-gfx" type="checkbox" /> Low graphics (faster)</label>
+          <p class="hint">Can't re-capture the mouse after Esc? Press <kbd>Enter</kbd> or click Resume.</p>
         </div>
-        <div id="chapters" class="chapters hidden"></div>
-        <div class="keys">
-          <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span>
-          <span><kbd>Space</kbd> jump</span>
-          <span><kbd>Mouse</kbd> look</span>
-          <span><kbd>R</kbd> respawn</span>
-          <span><kbd>Esc</kbd> pause</span>
+        <div class="btns col">
+          <button id="btn-settings-back" class="btn primary">Back</button>
+          <button id="btn-reset" class="btn danger">Reset all progress</button>
         </div>
-        <p class="fine">Desktop &amp; keyboard + mouse. Contains falling, lying, a narrator who is not your friend, and brief flashing glitch effects in Level 4.</p>
       </div>
     </section>
 
@@ -97,14 +128,8 @@
           <button id="btn-resume" class="btn primary">Resume</button>
           <button id="btn-restart" class="btn">Restart level</button>
           <button id="btn-mercy" class="btn">Beg for mercy</button>
-          <button id="btn-quit" class="btn ghost">Quit to title</button>
-        </div>
-        <div class="settings">
-          <label>Mouse sensitivity <input id="set-sens" type="range" min="0.3" max="2.5" step="0.05" value="1" /></label>
-          <label>Volume <input id="set-vol" type="range" min="0" max="1" step="0.05" value="0.8" /></label>
-          <label class="check"><input id="set-music" type="checkbox" checked /> Music</label>
-          <label class="check"><input id="set-gfx" type="checkbox" /> Low graphics (faster)</label>
-          <p class="hint">Can't re-capture the mouse after Esc? Press <kbd>Enter</kbd> or click Resume.</p>
+          <button id="btn-settings" class="btn">Settings</button>
+          <button id="btn-quit" class="btn ghost">Quit to home</button>
         </div>
       </div>
     </section>
@@ -132,7 +157,7 @@
 
     <section id="scr-end" class="screen">
       <div class="panel wide">
-        <p class="eyebrow">THE END (FOR REAL THIS TIME)</p>
+        <p class="eyebrow" id="end-eyebrow">CAMPAIGN 1 COMPLETE</p>
         <h2 id="end-title">You trusted no one. You win.</h2>
         <div class="stats">
           <div><b id="end-deaths">0</b><span>deaths</span></div>
@@ -140,9 +165,11 @@
           <div><b id="end-baby">No</b><span>baby mode</span></div>
         </div>
         <pre id="end-share" class="share"></pre>
+        <p id="end-next" class="quip"></p>
         <div class="btns">
           <button id="btn-share" class="btn primary">Copy result</button>
-          <button id="btn-again" class="btn">Play again</button>
+          <button id="btn-home" class="btn">Back to home</button>
+          <button id="btn-again" class="btn ghost">Play again</button>
         </div>
       </div>
     </section>
