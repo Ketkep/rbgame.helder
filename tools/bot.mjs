@@ -41,14 +41,30 @@ await page.evaluate(() => {
     g.yaw = Math.atan2(-dx, -dz); g.pitch = 0;
     g.keys.clear(); if (!(plan && plan.wait)) g.keys.add('KeyW');
     // wait for lasers: don't walk into an active hazard (or one about to fire) just ahead
-    let hop = false;
+    let hop = false, hold = false;
+    const T = w.t, ux = dx / len, uz = dz / len;
     for (const h of w.hazards) {
       const hb = h.body;
       if (Math.max(hb.hx, hb.hz) > 4) continue;   // floor-sized hazards (wet floor, lava…) aren't lasers to wait for
-      const ahead = (hb.x - p.x) * (dx / len) + (hb.z - p.z) * (dz / len);
+      const ahead = (hb.x - p.x) * ux + (hb.z - p.z) * uz;
       if (h.jumpable) { if (ahead > 0.2 && ahead < 2.7 && Math.abs(hb.y - p.y) < 2 && Math.hypot(hb.x - p.x, hb.z - p.z) < 3.6) hop = true; continue; }   // low carts: hop them
-      if (ahead > -0.5 && ahead < 2.6 && Math.abs(hb.y - p.y) < 2 && (h.enabled || (h.group.visible))) { g.keys.delete('KeyW'); break; }
+      if (!p.grounded) continue;
+      if (ahead < -2.5 || ahead > 7) continue;
+      // would it hurt on the way over in the next second? (levels can give a hazard .predict(t) -> bool; moving ones are replayed from .move)
+      let bad = false;
+      for (const tau of [0.15, 0.4, 0.65]) {
+        let hx = hb.x, hy = hb.y, hz = hb.z;
+        if (h.move) { const o = h.move(T + tau), b0 = h.base; hx = b0.x + (o.x || 0); hy = b0.y + (o.y || 0); hz = b0.z + (o.z || 0); }
+        const en = h.predict ? h.predict(T + tau) : (h.enabled || h.group.visible);
+        if (!en) continue;
+        const rx = hx - p.x, rz = hz - p.z, al = rx * ux + rz * uz, lat = Math.abs(rx * uz - rz * ux);
+        const r = Math.max(hb.hx, hb.hz);
+        if (Math.hypot(rx, rz) < r + 0.4) continue;                       // already standing in its footprint: keep moving, do not freeze
+        if (al > -1.0 && al < Math.min(len, 6) + 1 && lat < r + 0.7 && Math.abs(hy - p.y) < hb.hy + 2.4) bad = true;
+      }
+      if (bad) { hold = true; break; }
     }
+    if (hold) g.keys.delete('KeyW');
     // look-ahead: is there ground (or wall) ahead?
     const ax = p.x + (dx / len) * 0.55, az = p.z + (dz / len) * 0.55;
     let groundAhead = false, wallAhead = false;
@@ -62,7 +78,12 @@ await page.evaluate(() => {
     // slippery marble: you can't stop or turn, so a human hops straight on (jump buffering) and steers in the air
     const gm = p.ground && (Math.abs(p.ground.dx) + Math.abs(p.ground.dz) > 1e-6);   // platform rolling away under us: go now
     const skate = p.grounded && p.ground && (((p.ground.slip > 0.8) && len < 4.4 && len > 3.0) || (gm && len < 4.4));
-    const jump = p.grounded && !(plan && plan.wait) && (!groundAhead || wallAhead || skate || hop);
+    // do not leap with momentum pointing the wrong way (a human brakes and turns first); give up waiting after 0.35 s
+    const vproj = (p.vx * dx + p.vz * dz) / len;
+    if (!p.grounded) bot.turn = 0;
+    const edge = !groundAhead || wallAhead;
+    const edgeOk = !edge || vproj > 2.5 || (bot.turn = (bot.turn || 0) + dt) > 0.35;
+    const jump = p.grounded && !(plan && plan.wait) && !hold && ((edge && edgeOk) || skate || hop);
     if (jump) g.jumpEdge = true;
     if (!p.grounded) g.keys.add('Space'); else if (jump) g.keys.add('Space');
     g.keys.add('Space'); // hold for full jumps; releasing happens naturally when we stop pressing in-air (kept simple)
@@ -75,6 +96,7 @@ await page.evaluate(() => {
 });
 
 if (process.env.TRACE) await page.evaluate((t) => { window.__trace = t; }, +process.env.TRACE);
+if (process.env.PRE) await page.evaluate(process.env.PRE);   // e.g. PRE='window.__trust.world.souffle.scale=0.3' to take the time pressure off a level and test its hazards
 let done = false, lastLog = 0;
 while (!done) {
   const r = await page.evaluate(() => {
