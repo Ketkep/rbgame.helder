@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { plainMaterial, glowMaterial, softTexture } from '../../engine/materials.js';
 import { hotelHalo, citySkyline, GOLD } from './kit.js';
 import { palm } from './props.js';
+import { generateMaze, solveMaze, mazeGrid, buildMazeWalls, edgeKey as edgeKeyN } from './mazekit.js';
 
 // Hotel level 4 — "Revolving Door" (Easy · Mezzanine). The rooftop garden maze: a fresh random hedge maze every
 // attempt. Revolving doors block some passages on a schedule (green lamp = go), housekeeping carts patrol the corridors
@@ -11,47 +12,10 @@ const N = 7;                 // maze is N x N cells
 const C = 4.4;               // cell size
 const T = 0.8;               // hedge thickness
 const WH = 3.6;              // hedge height
-const X0 = -(N * C) / 2, Z0 = 8;   // south-west corner of the maze
-const cx = (i) => X0 + (i + 0.5) * C;
-const cz = (j) => Z0 - (j + 0.5) * C;
+const Z0 = 8;                // south-west corner of the maze
+const grid = mazeGrid({ N, C, T, WH, Z0 });
+const { X0, cx, cz } = grid;
 const rnd = (n) => Math.floor(Math.random() * n);
-const pick = (a) => a[rnd(a.length)];
-
-function generate() {
-  const east = Array.from({ length: N }, () => Array(N).fill(false));    // (i,j)–(i+1,j) open
-  const north = Array.from({ length: N }, () => Array(N).fill(false));   // (i,j)–(i,j+1) open
-  const seen = Array.from({ length: N }, () => Array(N).fill(false));
-  const stack = [[0, 0]]; seen[0][0] = true;
-  while (stack.length) {
-    const [i, j] = stack[stack.length - 1];
-    const nb = [];
-    if (i + 1 < N && !seen[i + 1][j]) nb.push([i + 1, j]);
-    if (i - 1 >= 0 && !seen[i - 1][j]) nb.push([i - 1, j]);
-    if (j + 1 < N && !seen[i][j + 1]) nb.push([i, j + 1]);
-    if (j - 1 >= 0 && !seen[i][j - 1]) nb.push([i, j - 1]);
-    if (!nb.length) { stack.pop(); continue; }
-    const [a, b] = pick(nb);
-    if (a > i) east[i][j] = true; else if (a < i) east[a][j] = true; else if (b > j) north[i][j] = true; else north[i][b] = true;
-    seen[a][b] = true; stack.push([a, b]);
-  }
-  const open = (i, j, a, b) => (a > i ? east[i][j] : a < i ? east[a][j] : b > j ? north[i][j] : north[i][b]);
-  const nbrs = (i, j) => [[i + 1, j], [i - 1, j], [i, j + 1], [i, j - 1]].filter(([a, b]) => a >= 0 && b >= 0 && a < N && b < N && open(i, j, a, b));
-  return { east, north, nbrs, open };
-}
-
-function solve(nbrs, from, to = [N - 1, N - 1]) {
-  const key = (c) => c[0] * N + c[1];
-  const prev = new Map([[key(from), null]]);
-  const q = [from];
-  while (q.length) {
-    const c = q.shift();
-    if (c[0] === to[0] && c[1] === to[1]) break;
-    for (const n of nbrs(c[0], c[1])) if (!prev.has(key(n))) { prev.set(key(n), c); q.push(n); }
-  }
-  const out = []; let c = to;
-  while (c) { out.unshift(c); c = prev.get(key(c)); }
-  return out;
-}
 
 export default {
   id: 'hotel-4',
@@ -74,7 +38,8 @@ export default {
     w.stepHeight = 0;
     citySkyline(w);
 
-    const maze = generate();
+    const maze = generateMaze(N);
+    const solve = (nbrs, from) => solveMaze(maze, from);
     const path = solve(maze.nbrs, [0, 0]);
     const pathIdx = new Map(path.map((c, k) => [c[0] * N + c[1], k]));
 
@@ -94,27 +59,7 @@ export default {
     }
 
     // ---- walls (merged into long hedge runs) ---------------------------------------------------------
-    const hedge = (x, z, ww, dd) => w.plat({ x, y: WH, z, w: ww, d: dd, h: WH, tex: 'hedge', color: 0xffffff, roughness: 0.95, radius: 0.1 });
-    for (let j = 0; j <= N; j++) {                       // horizontal lines (z = Z0 - j*C)
-      let i = 0;
-      while (i < N) {
-        const present = (ii) => (j === 0 ? ii !== 0 : j === N ? ii !== N - 1 : !maze.north[ii][j - 1]);
-        if (!present(i)) { i++; continue; }
-        let k = i; while (k + 1 < N && present(k + 1)) k++;
-        hedge(X0 + ((i + k + 1) * C) / 2, Z0 - j * C, (k - i + 1) * C + T, T);
-        i = k + 1;
-      }
-    }
-    for (let i = 0; i <= N; i++) {                       // vertical lines (x = X0 + i*C)
-      let j = 0;
-      while (j < N) {
-        const present = (jj) => (i === 0 || i === N ? true : !maze.east[i - 1][jj]);
-        if (!present(j)) { j++; continue; }
-        let k = j; while (k + 1 < N && present(k + 1)) k++;
-        hedge(X0 + i * C, Z0 - ((j + k + 1) * C) / 2, T, (k - j + 1) * C + T);
-        j = k + 1;
-      }
-    }
+    buildMazeWalls(w, maze, grid, { tex: 'hedge', color: 0xffffff, roughness: 0.95, radius: 0.1 });
     // little lanterns on the hedge corners + a warm pool of light in every cell
     for (let i = 0; i <= N; i += 1) for (let j = 0; j <= N; j += 1) if ((i + j) % 2 === 0) {
       w.box({ x: X0 + i * C, y: WH + 0.35, z: Z0 - j * C, w: 0.22, h: 0.5, d: 0.22, glow: 0xffd8a0, glowIntensity: 1.6, shadow: false });
@@ -167,7 +112,7 @@ export default {
     const LAMP = { go: glowMaterial(0x40ff88, 1.8), stop: glowMaterial(0xff3a46, 1.8) };
     const isDoorOpen = (t, d) => { const u = (((t + d.phase) % P) + P) % P / P; return u > 0.28 && u < 0.72; };
     // 4 on the way out, 2-3 on the way to nowhere
-    const edgeKey = (a, b) => `${Math.min(a[0] * N + a[1], b[0] * N + b[1])}-${Math.max(a[0] * N + a[1], b[0] * N + b[1])}`;
+    const edgeKey = (a, b) => edgeKeyN(N, a, b);
     const onPath = new Set(); for (let k = 0; k < path.length - 1; k++) onPath.add(edgeKey(path[k], path[k + 1]));
     const doorEdges = new Set();
     for (const f of [0.2, 0.4, 0.6, 0.8]) {

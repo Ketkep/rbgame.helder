@@ -10,9 +10,11 @@
 | Walkable hub with 5 elevators as the level select | ✅ built |
 | Interaction system (look at things, press **E** / click) | ✅ built |
 | Hint button (**H**) — dotted trail / quiz 50/50 / puzzle clues | ✅ built |
-| Building blocks: slippery marble, rolling platforms, conveyor belts, quiz pads + gates, keypad, hedge maze, chasers | ✅ built |
-| **Floor 1 — Mezzanine (levels 1–5)** | ✅ playable |
-| Floors 2, 3, 4 and 13 (levels 6–25) | ⏳ "under renovation" (named, listed, locked in the elevators) |
+| **Floor 1 — Mezzanine (Easy, levels 1–5)** | ✅ playable |
+| **Floor 2 — Restaurant & Ballroom (Medium, levels 6–10)** | ✅ playable |
+| **Floor 3 — Guest Rooms (Hard, levels 11–15)** | ✅ playable |
+| Floor 4 — Penthouse (Impossible, levels 16–20) | ⏳ "under renovation" |
+| Floor 13 — Management (Why are u even trying, levels 21–25) | ⏳ "under renovation" |
 
 ## How it works
 
@@ -35,18 +37,18 @@ Types: 🏃 parkour/traps · ❓ quiz · 🔑 escape room · 🌀 maze/chase · 
 5. 🏃 **Bellhop Blues** ✅ — a gigantic angry service bell chases you down the back-of-house corridor: belts, wet marble, stairs, a runaway luggage gondola. Baby mode slows it down.
 
 **Floor 2 — Restaurant & Ballroom (Medium).** The soup is a trap.
-6. 🏃 **Soufflé** — kitchen parkour: ovens, steam vents, swinging pans, a fake "EXIT" fire door.
-7. ❓ **Trivia Night** — ballroom quiz show; 6 rounds; the host cheats and the answer pads move.
-8. 🔑 **Dinner Is Served** — dining-room escape: set the table in the right order, wine-cellar valves; wrong course = dessert trap.
-9. 🌀 **Kitchen Maze** — walk-in freezers, one-way doors, a chef who chases.
-10. 🏃 **Dance Floor** — disco tiles: only the lit ones are safe, on the beat.
+6. 🏃 **Soufflé** ✅ — a kitchen climb above a soufflé that rises 0.58 m/s: sliding trays, crumbling cookie sheets, hot plates, steam jets, swinging pans, and a fake EXIT door that is an oven.
+7. ❓ **Trivia Night** ✅ — six rounds in the ballroom: honest · the host lies · sliding pads · a 12-second clock · four answers · "which answer did I swear was right in round 2?" (the lie).
+8. 🔑 **Dinner Is Served** ✅ — serve six courses in the order the menu's riddles describe (the host says dessert first). Wrong course = a dessert trolley lands on you (a shadow warns you, you can dodge). Then the wine cellar: rolling barrels and spilled Merlot.
+9. 🌀 **Kitchen Maze** ✅ — a random maze of walk-in freezers (ice floors), one-way swing doors, and a chef who hunts you cell by cell after a head start.
+10. 🏃 **Dance Floor** ✅ — tiles blink on the beat (hop while they are lit), VIP booths to rest on, and every 15 s the DJ yells **FREEZE**: moving is fatal.
 
 **Floor 3 — Guest Rooms (Hard).** Do not disturb. Seriously.
-11. 🔑 **Room 404** — the room can't be found; furniture rearranges when you look away.
-12. 🌀 **Do Not Disturb** — stealth/chase around a housekeeping patrol; hide in laundry carts.
-13. ❓ **Minibar** — you pay for answers; the prices lie; there's a surprise fee screen.
-14. 🌀 **Hallway Loop** — an endless corridor; spot the one thing that's different each lap.
-15. 🏃 **Window Ledge** — outside the building, in the wind, on a window-cleaner's platform.
+11. 🔑 **Room 404** ✅ — three digits hidden in furniture that moves when you are not looking, a wardrobe that walks toward you when you are not looking, and blackouts. The armchair holds a lie (404).
+12. 🌀 **Do Not Disturb** ✅ — stealth in a random corridor maze: two housekeepers with wall-clipped vision cones; hide in laundry carts in the dead ends (and hope she does not walk in).
+13. ❓ **Minibar** ✅ — the answers are locked in minibars: open one for a (lying) price, hints cost money, you start with $45, and checkout has a tip you cannot refuse.
+14. 🌀 **Hallway Loop** ✅ — one corridor; if anything is different walk back, otherwise keep going; six right in a row. The host's opinion is wrong more often than not; the hint is honest.
+15. 🏃 **Window Ledge** ✅ — outside in a thunderstorm: wide sills, a cornice, AC units, crumbling sills, a pipe, a gondola and gargoyle perches, with gusts that push you off the wall (lean in with D).
 
 **Floor 4 — Penthouse (Impossible).** The view is not worth it.
 16. 🏃 **Chandelier** — precision hops on swinging chandeliers.
@@ -65,17 +67,26 @@ Types: 🏃 parkour/traps · ❓ quiz · 🔑 escape room · 🌀 maze/chase · 
 ## The rage-bait toolbox
 Lying elevators · locked front doors · fake exits · decoy buttons · quiz answers that change · rooms that rearrange · looping corridors · queues that never move · T&C scroll walls · "renovating" floors · a host who comments on everything. Campaign 1's UI tricks (fake loading screens, swapped controls, lag spikes, fake crashes, ads) can be reused.
 
+More building blocks added for floors 2 and 3: `quiz.js: quizHall` (the quiz-level runner: islands, boards, pads, gates, 50/50 hint, countdown, locked answers), `mazekit.js` (random mazes, wall runs, `Walker` NPCs that patrol or chase), `engine/view.js: inView` (is it on screen right now), `engine/bill.js` (itemised bill + tip modal), `world.onDispose`, `hz.predict(t)` (so the test bot can read a hazard's timing), and `tools/test-floors.mjs` for the level-specific tests.
+
 ## Building a hotel level
 1. Create `src/levels/hotel/<name>.js` exporting `{ id, name, music, build(w, game) }` (see `wet-floor.js`).
 2. Use `hotelEnv(w)` + `lobbyShell(w)` for the lobby look, or the pieces in `kit.js` / `props.js`.
 3. Replace the matching placeholder in `roster.js` (`buildHotelLevels()`), keeping its tier/index.
 4. Tag your main-path platforms `path: true` and run `CAMPAIGN=hotel node tools/check-reach.mjs <n>` and `CAMPAIGN=hotel node tools/bot.mjs <n>`.
 
+## Testing quickly (any level, any time)
+Levels normally unlock in order. For play-testing, add `?debug` to the URL: everything unlocks and you can jump straight into a level, e.g. `https://trustme.helderlabs.com/?debug&campaign=hotel&level=11` (level numbers are 1–15; no `level` = the lobby). In debug mode the game does not grab your mouse automatically — **click the canvas once** to capture it. Note: debug runs are saved like normal ones (finishing a level this way marks it cleared in your save), so use a normal run when you want to test the unlock order.
+
+Smoke/monkey tests for all hotel levels: `node tools/smoke-hotel.mjs` and `node tools/monkey-hotel.mjs` (need `npm run preview` running).
+
 ## Building blocks (what's in the engine now)
 - `world.plat({ slippery })` — low-friction marble. `world.rollaway(plat, …)` — rolls away after you step on it. `world.conveyor(plat, { vx, vz })` — belts that carry you. `plat.attach(mesh)` — scenery that travels with a platform.
 - `engine/keypad.js` — modal keypad (`game.modal` takes the keyboard). `engine/hint.js` — the dotted hint trail; a level can set `w.hintFn` (custom points), `w.hintFlat` or `w.hintAction` (return `'trail'` to fall back to the dotted line).
 - `levels/hotel/quiz.js` — question bank (gated by what the player has seen), LED board, answer pads, gate. `levels/hotel/kit.js: roomShell` — a generic grand hall for level rooms.
 - Test hooks: a level can expose `w.botPlan(game)` so `tools/bot.mjs` can solve quiz/escape/maze levels (set `NEAR=1` for the hop-to-the-near-edge style used on the hotel levels).
+
+More building blocks added for floors 2 and 3: `quiz.js: quizHall` (the quiz-level runner: islands, boards, pads, gates, 50/50 hint, countdown, locked answers), `mazekit.js` (random mazes, wall runs, `Walker` NPCs that patrol or chase), `engine/view.js: inView` (is it on screen right now), `engine/bill.js` (itemised bill + tip modal), `world.onDispose`, `hz.predict(t)` (so the test bot can read a hazard's timing), and `tools/test-floors.mjs` for the level-specific tests.
 
 ## Building a hotel level
 1. Create `src/levels/hotel/<name>.js` exporting `{ id, name, music, build(w, game) }` (see `wet-floor.js`).
@@ -85,5 +96,6 @@ Lying elevators · locked front doors · fake exits · decoy buttons · quiz ans
 
 ## Build plan
 - **Phase 1:** world + hub + elevators + interaction system + Level 1. ✅
-- **Phase 2:** hints, building blocks, and the rest of Floor 1 (levels 2–5). ✅ *(you are here — play-test Floor 1 and tell me what to change)*
-- **Phase 3–5:** Floors 2, 3 and 4, then Floor 13. You play-test each floor before the next.
+- **Phase 2:** hints, building blocks, and the rest of Floor 1 (levels 2–5). ✅
+- **Phase 3:** Floors 2 and 3 (levels 6–15). ✅ *(you are here — play-test them and tell me what to change)*
+- **Phase 4–5:** Floor 4 (Impossible), then Floor 13 (the trick levels).

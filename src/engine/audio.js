@@ -13,6 +13,12 @@ const SCORES = {
   // lobby lounge: Dm7 - G7 - Cmaj7 - A7, slow swing-ish plucks
   hotel: { bpm: 80, root: 50, scale: [0, 2, 3, 5, 7, 9, 10, 12, 14, 15], chords: [[0, 3, 7, 10], [-7, -3, 0, 3], [-2, 2, 5, 9], [-5, -1, 2, 5]], pad: 0.6, pluck: 0.42 },
   hotel2: { bpm: 96, root: 47, scale: [0, 3, 5, 7, 10, 12, 15, 17], chords: [[0, 3, 7, 10], [-4, 0, 3, 7], [-2, 2, 5, 9], [-7, -3, 0, 3]], pad: 0.45, pluck: 0.55 },
+  // moods for the hotel's upper floors
+  hotel_kitchen: { bpm: 118, root: 45, scale: [0, 2, 3, 5, 7, 8, 10, 12, 14, 15], chords: [[0, 3, 7], [-4, 0, 3], [-2, 2, 5], [-5, -2, 2]], pad: 0.35, pluck: 0.7 },
+  hotel_ballroom: { bpm: 84, root: 53, scale: [0, 2, 4, 7, 9, 12, 14, 16], chords: [[0, 4, 7, 11], [-5, -1, 2, 5], [-3, 0, 4, 7], [-7, -3, 0, 4]], pad: 0.6, pluck: 0.5 },
+  hotel_dance: { bpm: 128, root: 52, scale: [0, 3, 5, 7, 10, 12, 15], chords: [[0, 3, 7, 10], [-2, 2, 5, 9], [-4, 0, 3, 7], [-5, -2, 2, 5]], pad: 0.35, pluck: 0.55 },
+  hotel_dark: { bpm: 62, root: 43, scale: [0, 3, 5, 7, 10, 12], chords: [[0, 3, 7], [-1, 2, 6], [-4, 0, 3], [-6, -2, 1]], pad: 0.9, pluck: 0.1 },
+  hotel_storm: { bpm: 72, root: 41, scale: [0, 2, 3, 7, 8, 12], chords: [[0, 3, 7, 10], [-5, -2, 2, 5], [-7, -4, 0, 3], [-2, 1, 5, 8]], pad: 0.85, pluck: 0.18 },
   title: { bpm: 90, root: 48, scale: [0, 2, 4, 7, 9, 12, 14, 16], chords: [[0, 4, 7, 11], [-3, 0, 4, 7], [-7, -3, 0, 4], [-5, -1, 2, 5]], pad: 0.5, pluck: 0.4 },
 };
 
@@ -128,6 +134,8 @@ export class GameAudio {
   click() { this._tone({ f: 900, type: 'square', dur: 0.04, vol: 0.08 }); }
   confirm() { this._tone({ f: 520, type: 'triangle', dur: 0.1, vol: 0.14 }); this._tone({ f: 780, type: 'triangle', dur: 0.16, vol: 0.14, when: 0.07 }); }
   tick() { this._tone({ f: 1500, type: 'square', dur: 0.025, vol: 0.05 }); }
+  kick() { this._tone({ f: 150, slide: 42, type: 'sine', dur: 0.2, vol: 0.2 }); }
+  hat() { this._noise({ dur: 0.04, vol: 0.04, f: 7000, type: 'highpass' }); }
   crumble() { this._noise({ dur: 0.35, vol: 0.14, f: 900, slide: 250, q: 0.6 }); }
   fall(len = 1.2) { this._tone({ f: 700, slide: 90, type: 'sine', dur: len, vol: 0.1 }); }
   whoosh() { this._noise({ dur: 0.5, vol: 0.12, f: 400, slide: 2400, type: 'bandpass', q: 0.8 }); }

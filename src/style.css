@@ -272,3 +272,13 @@ kbd { font: 400 13px var(--display); min-width: 30px; padding: 6px 9px; text-ali
 .kp-pad button:hover { background: rgba(216,169,74,0.25); }
 #panel-foot { font: 600 12px var(--body); color: var(--muted); }
 #panel-foot kbd { margin: 0 2px; }
+.kp-info { margin: -2px 0 12px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.05); font: 600 12px var(--body); color: #ffd890; letter-spacing: 0.04em; }
+.bill-lines { text-align: left; margin-bottom: 10px; }
+.bill-row { display: flex; justify-content: space-between; gap: 22px; padding: 5px 2px; font: 600 13px var(--body); color: #e8e4f0; border-bottom: 1px dashed rgba(255,255,255,0.1); }
+.bill-row b { font-family: ui-monospace, Menlo, monospace; color: #ffd890; }
+.bill-sub { color: var(--muted); } .bill-total { font-size: 15px; border-bottom: none; color: #fff; } .bill-total b { color: #ff7a85; font-size: 17px; }
+.bill-tips { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
+.bill-tip { padding: 9px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.06); color: #fff; font: 700 14px var(--body); cursor: pointer; }
+.bill-tip.on { background: rgba(216,169,74,0.35); border-color: #d8a94a; }
+#money-chip { position: fixed; left: 22px; bottom: 124px; z-index: 5; padding: 8px 14px; border-radius: 12px; background: rgba(14,15,24,0.75); backdrop-filter: blur(8px); border: 1px solid rgba(216,169,74,0.6); font: 700 13px var(--body); color: #ffd890; pointer-events: none; }
+#money-chip.neg { color: #ff7a85; border-color: rgba(255,90,100,0.6); }

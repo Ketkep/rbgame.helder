@@ -275,12 +275,18 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
     const mid = labels();
     c.levelBest[4] = { deaths: 0, time: 10 };
     const after = labels();
-    return { before: before.filter((l) => /Floor 2|Out of order/.test(l)).length, mid: mid.filter((l) => /Call elevator/.test(l)).length, after: after.filter((l) => /Call elevator/.test(l)), l5: after.find((l) => /^Level 5:/.test(l)), l6: after.find((l) => /^Level 6:/.test(l)) };
+    for (let i = 5; i < 10; i++) c.levelBest[i] = { deaths: 0, time: 10 };       // floor 2 done too
+    const after2 = labels();
+    for (let i = 10; i < 15; i++) c.levelBest[i] = { deaths: 0, time: 10 };      // and floor 3
+    const after3 = labels();
+    return { before: before.filter((l) => /Floor 2|Out of order/.test(l)).length, mid: mid.filter((l) => /Call elevator/.test(l)).length, after: after.filter((l) => /Call elevator/.test(l)), l5: after.find((l) => /^Level 5:/.test(l)), l6: after.find((l) => /^Level 6:/.test(l)), calls2: after2.filter((l) => /Call elevator/.test(l)).length, l11: after2.find((l) => /^Level 11:/.test(l)), calls3: after3.filter((l) => /Call elevator/.test(l)).length, l16: after3.find((l) => /^Level 16:/.test(l)) };
   });
   ok(r.mid === 1, 'hotel: with floor 1 unfinished only the first elevator works');
   ok(r.after.length === 2, `hotel: clearing all of floor 1 opens floor 2's elevator (${r.after.join(' | ')})`);
   ok(/Bellhop Blues/.test(r.l5) && !/locked|renovation/.test(r.l5), `hotel: level 5 is playable (${r.l5})`);
-  ok(/under renovation/.test(r.l6), `hotel: floor 2's first level is still under renovation (${r.l6})`);
+  ok(/Soufflé/.test(r.l6) && !/locked|renovation/.test(r.l6), `hotel: floor 2's first level is playable (${r.l6})`);
+  ok(r.calls2 === 3 && /Room 404/.test(r.l11) && !/locked|renovation/.test(r.l11), `hotel: clearing floor 2 opens floor 3's elevator (${r.calls2} elevators, ${r.l11})`);
+  ok(r.calls3 === 4 && /under renovation/.test(r.l16), `hotel: floor 4 is next and still under renovation (${r.l16})`);
   await page.close();
 }
 

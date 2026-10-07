@@ -12,7 +12,7 @@ const BELL_W = 7.2, BELL_H = 3.8, BELL_D = 3.4;
 export default {
   id: 'hotel-5',
   name: 'Bellhop Blues',
-  music: 'hotel',
+  music: 'hotel2',
   completeQuip: 'The bell is still outside. It is not angry. It is patient. There is a difference. It is worse.',
 
   build(w, game) {

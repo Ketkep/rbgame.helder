@@ -1,12 +1,13 @@
 // A modal keypad: type digits, Enter to submit, Backspace to delete, E / Esc to step away.
 // While it is open the game ignores movement keys (game.modal). Mouse buttons work too once the cursor is free.
 
-export function openKeypad(game, { title = 'KEYPAD', digits = 4, onSubmit }) {
+export function openKeypad(game, { title = 'KEYPAD', digits = 4, onSubmit, info = null }) {
   const el = game.ui.el;
   let code = '', lockTimer = null, locked = false, closed = false;
   const body = el['panel-body'];
   el['panel-title'].textContent = title;
-  body.innerHTML = '<div class="kp-display"></div><div class="kp-msg"></div><div class="kp-pad"></div>';
+  body.innerHTML = '<div class="kp-display"></div><div class="kp-msg"></div><div class="kp-pad"></div>' + (info ? '<div class="kp-info"></div>' : '');
+  if (info) body.querySelector('.kp-info').textContent = typeof info === 'function' ? info() : info;
   el['panel-foot'].innerHTML = '<kbd>0–9</kbd> type &nbsp; <kbd>Enter</kbd> submit &nbsp; <kbd>⌫</kbd> delete &nbsp; <kbd>E</kbd> leave';
   const disp = body.querySelector('.kp-display'), msg = body.querySelector('.kp-msg'), pad = body.querySelector('.kp-pad');
   const render = () => {

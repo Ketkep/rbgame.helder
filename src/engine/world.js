@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Body, playerTouches, groundBelow } from './physics.js';
-import { surfaceMaterial, plainMaterial, glowMaterial, boxGeometry, edgeGeometry, textTexture, softTexture } from './materials.js';
+import { surfaceMaterial, plainMaterial, glowMaterial, boxGeometry, edgeGeometry, textTexture, softTexture, disposeGeometryCaches } from './materials.js';
 
 const V3 = THREE.Vector3;
 
@@ -69,6 +69,7 @@ export class World {
     this.timers = [];
     this.updaters = [];
     this.respawnHooks = [];
+    this.disposers = [];
     this.ownTextures = [];
     this.t = 0;
     this.spawn = { x: 0, y: 0, z: 0, yaw: 0 };
@@ -485,6 +486,8 @@ export class World {
   after(sec, fn) { this.timers.push({ t: this.t + sec, fn }); }
   onUpdate(fn) { this.updaters.push(fn); }
   onRespawn(fn) { this.respawnHooks.push(fn); }
+  /** Run when the level is unloaded (remove DOM overlays etc.). */
+  onDispose(fn) { this.disposers.push(fn); }
 
   // ---- composite pieces ------------------------------------------------------------------
   checkpoint(o) {
@@ -709,13 +712,16 @@ export class World {
   }
 
   dispose() {
+    for (const f of this.disposers) { try { f(); } catch { /* best effort */ } }
     this._envRT?.dispose();
     for (const t of this.ownTextures) t.dispose();
     this.scene.traverse((o) => {
       if (o.isMesh || o.isLine || o.isPoints) {
-        // geometries/materials from caches are shared; only free the unique ones we know about
-        if (o.userData.ownGeometry) o.geometry.dispose();
+        // free every geometry this level made (cached box shapes are cleared below, so nothing else shares them)
+        o.geometry?.dispose();
+        if (o.isInstancedMesh) o.dispose();
       }
     });
+    disposeGeometryCaches();   // the next level rebuilds the box shapes it needs
   }
 }
