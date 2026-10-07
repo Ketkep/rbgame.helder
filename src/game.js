@@ -11,6 +11,8 @@ import { GameAudio } from './engine/audio.js';
 import { UI } from './ui.js';
 import { Narrator } from './narrator.js';
 import { TouchControls, detectTouch } from './touch.js';
+import { Backdrop } from './backdrop.js';
+import { HomeFX } from './home.js';
 import { CAMPAIGNS, getCampaign, isLevelUnlocked } from './campaigns.js';
 
 const FIXED = 1 / 120;
@@ -112,12 +114,14 @@ export class Game {
     document.body.classList.toggle('touch', this.touch);
     this.touchMove = { x: 0, y: 0 };
     this.touchCtl = null;
+    this.backdrop = new Backdrop(this);                                          // the home screen's channel-surfing background
     if (this.touch) {
       this.ui.touch = true; this.narrator.touch = true;
       this.touchCtl = new TouchControls(this);
       if (this.save.settings.gfxChosen !== true) this.setQuality(true, false);      // phones start on Low graphics; the pause menu can undo it
     }
     this._refreshHome();
+    this.home = new HomeFX(this);                                                  // the host, the counters, the gags
     if (this.debug) window.__trust = this;
 
     this.last = performance.now();
@@ -332,6 +336,11 @@ export class Game {
   _campaignCard(c) {
     const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
     const card = mk('article', 'card ' + (c.status === 'playable' ? 'playable' : 'soon'));
+    card.dataset.fx = c.status !== 'playable' ? 'soon' : c.hub ? 'hotel' : 'pilot';
+    const art = mk('div', 'card-art art-' + (c.status !== 'playable' ? 'soon' : c.id));
+    art.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < 4; i++) art.appendChild(mk('i'));
+    card.appendChild(art);
     card.appendChild(mk('p', 'eyebrow', `CAMPAIGN ${c.number}`));
     card.appendChild(mk('h3', '', c.title));
     card.appendChild(mk('p', 'blurb', c.tagline));
@@ -372,11 +381,14 @@ export class Game {
     else line = `${c.levels.length} levels · ${c.eta}`;
     card.appendChild(mk('p', 'card-stats', line));
     const play = mk('button', 'btn primary', inProgress ? 'Continue' : cs.completed ? 'Play again' : 'Play');
+    play.dataset.fx = 'play';
     play.addEventListener('click', () => { this.audio.init(); this.audio.click(); inProgress ? this.continueGame(c.id) : this.newGame(0, c.id); });
     const lv = mk('button', 'btn ghost', 'Levels');
+    lv.dataset.fx = 'levels';
     lv.addEventListener('click', () => { this.audio.init(); this.audio.click(); this.openLevels(c.id); });
     btns.append(play, lv);
     card.appendChild(btns);
+    if (c.id === 'pilot') { const skip = mk('button', 'skip-chip', 'Skip tutorial'); skip.dataset.fx = 'skip'; card.appendChild(skip); }
     return card;
   }
 
@@ -487,7 +499,8 @@ export class Game {
   }
 
   /** `idx` is the level's index in the campaign, or -1 for a campaign hub. */
-  async _loadLevelObj(level, idx) {
+  async _loadLevelObj(level, idx, opts = {}) {
+    if (!opts.backdrop) this.backdrop.stop();
     this.closeModal();
     const tok = ++this._loadTok;
     this.levelIndex = idx;
@@ -525,8 +538,7 @@ export class Game {
     this.ui.setAltimeter(false); this.ui.setPing(false); this.ui.loading(false); this.ui.ad(false); this.ui.bars(false); this.ui.glitch(false); this.ui.creditsStop();
     this.ui.promptClear(); this.ui.babyOffer(false);
     this.narrator.clear();
-    this.audio.playMusic(level.music || 'l1');
-    this.audio.setWind(0);
+    if (!opts.backdrop) { this.audio.playMusic(level.music || 'l1'); this.audio.setWind(0); }       // the home screen keeps its own music
     this.last = performance.now();
     return true;
   }
@@ -580,7 +592,7 @@ export class Game {
     this._refreshHome();
     this.ui.showScreen('home');
     this.audio.playMusic('title');
-    this.loadLevel(0).then((ok) => { if (ok) { this.state = 'title'; this.ui.hud(false); } });
+    this.backdrop.enter().then((ok) => { if (ok) { this.state = 'title'; this.ui.hud(false); } });
   }
 
   async restartLevel() {
@@ -1049,18 +1061,13 @@ export class Game {
 
     if (this.state !== 'paused') this.narrator.update(dt);
     if (!this.manual && this.ui._creditsOn && this.state === 'playing') { if (this.ui.creditsUpdate(dt)) w.hooks.onCreditsEnd?.(); }
-    if (!this.manual) w.hooks.frame?.(dt, this);
+    if (!this.manual && this.state !== 'title') w.hooks.frame?.(dt, this);
 
     // ---- camera ----
     const p = this.player;
     if (this.state === 'title') {
       this.titleT += dt;
-      const a = this.titleT * 0.08;
-      const tc = this.level.titleCam || { center: [0, 2, -12], radius: 12, height: 5 };
-      cam.position.set(tc.center[0] + Math.sin(a) * tc.radius, tc.center[1] + tc.height, tc.center[2] + Math.cos(a) * tc.radius);
-      cam.lookAt(tc.center[0], tc.center[1] + 1, tc.center[2] - 8);
-      this.fakePlayer = { x: tc.center[0], y: tc.center[1], z: tc.center[2] };
-      w.frame(dt, this.fakePlayer, cam);
+      this.backdrop.frame(dt, cam);
     } else {
       this.landDip = Math.max(0, this.landDip - dt * 1.6);
       this.fovKick = Math.max(0, this.fovKick - dt * 5);

@@ -1,7 +1,7 @@
 # Trust Me…
 
 A first-person rage-bait platformer where the game-show host narrating your run is **absolutely** not your friend.
-Plays in the browser: best on a computer (keyboard + mouse); phones and tablets get touch controls for The Tutorial (Campaign 1) — the hotel is still desktop-only. Live at **https://trustme.helderlabs.com**.
+The home page is a live TV channel: its background keeps cutting between the game's levels (the lobby and the stormy window ledge too, on desktop) while a smug host comments on everything. Plays in the browser: best on a computer (keyboard + mouse); phones and tablets get touch controls for The Tutorial (Campaign 1) — the hotel is still desktop-only. Live at **https://trustme.helderlabs.com**.
 
 > "Welcome to TRUST ME… the game show where you can trust me completely."
 
@@ -45,6 +45,7 @@ npm run preview    # serve the build on :4173
 Handy URL params: `?debug` exposes `window.__trust` (the game object) and doesn't need pointer lock; `?debug&level=3` jumps straight into a level.
 
 ### Test tools (need `npm run preview` running + the preinstalled Chromium)
+- Home page: `node tools/test-home.mjs` checks the channel-surfing backdrop (every shot builds, cuts cycle cleanly, GPU memory stays bounded), the host and his gags, the hand-off to a real level, and the phone layout (`SHOTS=dir` saves screenshots). Shots live in `src/backdrop.js` (add a level there to put it on the home screen); the host's lines are in `src/home.js`.
 - Touch controls (phones/tablets, Campaign 1 only): `node tools/test-touch.mjs` emulates a phone and drives the stick, look-drag and buttons with real multi-touch events (`SHOTS=dir` saves screenshots). `?touch` forces touch mode on a desktop for testing, `?notouch` forces it off.
 - Hotel levels: prefix with `CAMPAIGN=hotel`, e.g. `CAMPAIGN=hotel NEAR=1 node tools/bot.mjs 1`. `node tools/test-leak.mjs` bounces between the lobby and a level and fails if GPU memory grows. `node tools/test-floors.mjs [name]` runs the level-specific logic tests for floors 2–3 plus the lobby (`lobby`: every elevator can be walked into and ridden).
 - `node tools/check-reach.mjs` — checks every hop between consecutive path platforms is physically jumpable with the real movement numbers.

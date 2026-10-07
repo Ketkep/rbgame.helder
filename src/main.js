@@ -13,7 +13,8 @@ try {
   document.body.appendChild(d);
   throw err;
 }
-game.loadLevel(0).then((ok) => {
+game.state = 'title';
+game.backdrop.enter({ first: true }).then((ok) => {
   if (!ok) return;
   game.state = 'title';
   game.audio.playMusic('title'); // no-ops until the first click unlocks audio

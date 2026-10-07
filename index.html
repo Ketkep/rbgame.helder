@@ -57,6 +57,7 @@
 
     <div id="flash"></div>
     <div id="fade"></div>
+    <div id="bd-cut"></div>
 
     <!-- level-4 style gags -->
     <div id="ov-loading" class="hidden"><div class="ld-card"><div class="spinner"></div><h3>LOADING…</h3><div class="ld-bar"><div id="ld-fill"></div></div><p id="ld-tip">Reticulating splines</p></div></div>
@@ -81,12 +82,52 @@
       <div class="home">
         <header class="home-top">
           <div class="brand">TRUST ME<em>…</em></div>
-          <button id="btn-settings-home" class="btn small ghost">Settings</button>
+          <div class="home-top-r">
+            <span id="online" class="pill">🟢 1 player online <small>(you)</small></span>
+            <button id="btn-settings-home" class="btn small ghost">Settings</button>
+          </div>
         </header>
         <main class="home-main">
-          <h1 class="logo"><span class="l1">TRUST</span><span class="l2">ME<em>…</em></span></h1>
-          <p class="tag" id="home-tag">A game show where you can trust me completely.</p>
+          <div class="hero">
+            <div class="hero-l">
+              <h1 class="logo" id="logo"><span class="l1">TRUST</span><span class="l2">ME<em>…</em></span></h1>
+              <p class="tag" id="home-tag">A game show where you can trust me completely.</p>
+            </div>
+            <div class="host-wrap" id="host-wrap" aria-hidden="true">
+              <div class="bubble" id="host-bubble"><span id="host-text"></span><i class="caret"></i></div>
+              <svg id="host" class="host" viewBox="0 0 220 220">
+                <defs>
+                  <radialGradient id="hg" cx="40%" cy="32%" r="78%"><stop offset="0" stop-color="#ffe681"/><stop offset="1" stop-color="#ffb21f"/></radialGradient>
+                  <linearGradient id="jg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34306a"/><stop offset="1" stop-color="#171636"/></linearGradient>
+                </defs>
+                <path d="M16 222 C22 176 62 158 110 158 C158 158 198 176 204 222 Z" fill="url(#jg)"/>
+                <path d="M110 160 L84 222 M110 160 L136 222" stroke="#ffc83d" stroke-width="3" fill="none"/>
+                <path d="M110 176 L92 166 L92 190 Z M110 176 L128 166 L128 190 Z" fill="#ff4d5e"/><circle cx="110" cy="177" r="6" fill="#c4263a"/>
+                <rect x="95" y="140" width="30" height="26" rx="9" fill="#f0a91a"/>
+                <circle cx="110" cy="92" r="65" fill="url(#hg)" stroke="#e59a12" stroke-width="3"/>
+                <path d="M50 80 C46 34 96 18 132 28 C162 35 176 58 170 84 C152 60 122 50 96 56 C76 60 60 68 50 80 Z" fill="#2a1a3a"/>
+                <path d="M92 52 C112 34 148 34 164 54" stroke="#5a4482" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <circle cx="66" cy="114" r="10" fill="#ff8a6a" opacity=".32"/><circle cx="154" cy="114" r="10" fill="#ff8a6a" opacity=".32"/>
+                <ellipse cx="86" cy="92" rx="15" ry="17" fill="#fff"/><ellipse cx="134" cy="92" rx="15" ry="17" fill="#fff"/>
+                <g id="pup"><circle class="pup" cx="86" cy="94" r="7.5" fill="#1a1230"/><circle class="pup" cx="134" cy="94" r="7.5" fill="#1a1230"/>
+                  <circle class="pup" cx="89" cy="90" r="2.2" fill="#fff"/><circle class="pup" cx="137" cy="90" r="2.2" fill="#fff"/></g>
+                <ellipse class="lid" id="lidL" cx="86" cy="92" rx="16.5" ry="18.5" fill="url(#hg)"/><ellipse class="lid" id="lidR" cx="134" cy="92" rx="16.5" ry="18.5" fill="url(#hg)"/>
+                <path class="brow brow-l" d="M66 70 Q86 62 105 72" stroke="#2a1a3a" stroke-width="6" fill="none" stroke-linecap="round"/>
+                <path class="brow brow-r" d="M117 60 Q137 50 156 66" stroke="#2a1a3a" stroke-width="6" fill="none" stroke-linecap="round"/>
+                <path class="mouth" d="M80 126 Q108 144 144 114" stroke="#7a2a14" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+                <path class="dimple" d="M144 114 q7 -1 9 -9" stroke="#7a2a14" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+                <path class="tooth" d="M121 133 l7 -3 l-1 8 z" fill="#fff"/>
+                <ellipse class="mouth-o" cx="110" cy="132" rx="10" ry="13" fill="#6a2410"/>
+              </svg>
+            </div>
+          </div>
           <div id="campaigns" class="campaigns"></div>
+          <div class="chips" id="home-chips">
+            <span class="chip">☠ <b id="chip-deaths">1,284,303</b> deaths today</span>
+            <span class="chip">🏆 <b>0</b> winners this week</span>
+            <span class="chip">🤥 <b id="chip-lies">99,999,999</b> lies told</span>
+            <span class="chip">⭐ 4.9 <small>(reviews written by the host)</small></span>
+          </div>
           <div class="keys">
             <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span>
             <span><kbd>Space</kbd> jump</span>
@@ -97,10 +138,19 @@
             <span><kbd>Esc</kbd> pause</span>
           </div>
         </main>
+        <div id="bd-cap" class="bd-cap"><span class="bd-live">● NOW SHOWING</span><b id="bd-tag"></b><span id="bd-quip"></span></div>
+        <div class="ribbon" aria-hidden="true"><div class="ribbon-track">
+          <span>NEW! Now with 40% more lies*</span><span>*lies not included</span><span>FREE TO PLAY (pain not included)</span><span>Voted "Most Likely To Say It's Fine" three years running</span><span>Please do not trust the host</span><span>As seen on a screen near you</span>
+          <span>NEW! Now with 40% more lies*</span><span>*lies not included</span><span>FREE TO PLAY (pain not included)</span><span>Voted "Most Likely To Say It's Fine" three years running</span><span>Please do not trust the host</span><span>As seen on a screen near you</span>
+        </div></div>
         <footer class="home-foot">
           <span>A Helder Labs game · desktop, keyboard + mouse · contains falling, lying, and brief flashing glitch effects</span>
           <span id="home-stats"></span>
         </footer>
+        <div id="cookie" class="cookie hidden">
+          <p>🍪 We use cookies. And your trust. Mostly your trust.</p>
+          <div><button class="btn small" id="cookie-a">Accept</button><button class="btn small ghost" id="cookie-b">Accept (also)</button></div>
+        </div>
       </div>
     </section>
 

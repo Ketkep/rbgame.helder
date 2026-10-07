@@ -577,6 +577,15 @@ export class World {
   // =========================================================================================
   /** Fixed substep: only things that interact physically with the player. */
   step(dt) {
+    this._motion(dt);
+    for (let i = this.timers.length - 1; i >= 0; i--) {
+      if (this.t >= this.timers[i].t) { const f = this.timers[i].fn; this.timers.splice(i, 1); f(); }
+    }
+    for (const u of this.updaters) u(dt, this.t);
+  }
+
+  /** Platforms and hazards moving along their paths (the part of step() you can see). */
+  _motion(dt) {
     this.t += dt;
     for (const m of this.movers) {
       const o = m.fn(this.t);
@@ -590,10 +599,15 @@ export class World {
         h.group.position.set(h.body.x, h.body.y, h.body.z);
       }
     }
-    for (let i = this.timers.length - 1; i >= 0; i--) {
-      if (this.t >= this.timers[i].t) { const f = this.timers[i].fn; this.timers.splice(i, 1); f(); }
-    }
-    for (const u of this.updaters) u(dt, this.t);
+  }
+
+  /**
+   * For the home-screen backdrop: things move, nothing happens. No timers (so no narrator lines or sounds fire) and, unless the level
+   * is known to be safe (`updaters`), none of its update hooks either.
+   */
+  stepVisual(dt, updaters = false) {
+    this._motion(dt);
+    if (updaters) for (const u of this.updaters) u(dt, this.t);
   }
 
   /** After physics: kill volumes, triggers, wind. */
