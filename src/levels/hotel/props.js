@@ -209,27 +209,32 @@ export function elevatorBank(w, tiers, { cars = true } = {}) {
     // indicator plate above the doors
     w.sign({ text: `${t.floor}`, x: ex, y: 5.3, z: L.z0 + 0.18, w: 1.2, h: 0.9, bg: '#0c0c10', color: '#ffe3a0', border: '#d8a94a', size: 70, tw: 256 });
     w.sign({ text: t.short, x: ex, y: 6.15, z: L.z0 + 0.18, w: 3.0, h: 0.55, bg: '#0c0c10', color: '#' + t.color.toString(16).padStart(6, '0'), border: '#d8a94a', size: 40, tw: 512 });
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10), glowMaterial(0xff4040, 2.6)); lamp.position.set(ex + 2.3, 1.4, L.z0 + 0.2); w.add(lamp);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10), glowMaterial(0xff4040, 2.6)); lamp.position.set(ex + 2.3, 1.4, L.z0 + 0.42); w.add(lamp);
     // arch of little lights
     for (let k = 0; k < 7; k++) {
       const a = Math.PI * (0.15 + k / 6 * 0.7);
       const b = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), glowMaterial(0xffd890, 2.2)); b.position.set(ex + Math.cos(a) * 1.5, 4.3 + Math.sin(a) * 0.7, L.z0 + 0.2); w.add(b);
     }
     // call panel
-    w.box({ x: ex + 2.3, y: 1.5, z: L.z0 + 0.12, w: 0.34, h: 0.7, d: 0.1, color: GOLD, metal: 1, rough: 0.3, shadow: false });
-    const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.06, 14), glowMaterial(0xffd890, 2.4)); btn.rotation.x = Math.PI / 2; btn.position.set(ex + 2.3, 1.62, L.z0 + 0.2); w.add(btn);
+    w.box({ x: ex + 2.3, y: 1.5, z: L.z0 + 0.32, w: 0.34, h: 0.7, d: 0.1, color: GOLD, metal: 1, rough: 0.3, shadow: false });
+    const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.06, 14), glowMaterial(0xffd890, 2.4)); btn.rotation.x = Math.PI / 2; btn.position.set(ex + 2.3, 1.62, L.z0 + 0.4); w.add(btn);
     out.push({ x: ex, leafL, leafR, lamp, lampMat: lamp.material, tier: t, car: null });
   });
-  // shaft filler between/around cars so the back is solid and dark
-  const cz0 = L.z0 - 1, cz1 = L.z0 - 5.2;
-  w.plat({ x: 0, y: 5, z: (cz0 + cz1) / 2 - 0.4, w: 46, d: 5.2, h: 6, tex: 'panel', color: 0x444444, roughness: 0.8, collide: false });
+  // without cars, a dark slab behind the doors stands in for the shaft (with cars it would hide their insides)
+  if (!cars) {
+    const cz0 = L.z0 - 1, cz1 = L.z0 - 5.2;
+    w.plat({ x: 0, y: 5, z: (cz0 + cz1) / 2 - 0.4, w: 46, d: 5.2, h: 6, tex: 'panel', color: 0x444444, roughness: 0.8, collide: false });
+  }
   if (cars) out.forEach((e) => { e.car = buildCar(w, e.x, tiers[out.indexOf(e)]); });
   return out;
 }
 
 function buildCar(w, ex, t) {
   const zf = L.z0 - 1.0, zb = L.z0 - 5.0, zc = (zf + zb) / 2, wid = 3.2, hgt = 3.9;
-  w.plat({ x: ex, y: 0, z: zc, w: wid + 0.6, d: zf - zb + 0.4, h: 2, tex: 'marble', color: 0xffffff, roughness: 0.12 });
+  // the car floor runs all the way out to the lobby floor (z0), so the doorway has no gap to drop into
+  const zFloorF = L.z0, zFloorB = zb - 0.2;
+  w.plat({ x: ex, y: 0, z: (zFloorF + zFloorB) / 2, w: wid + 0.6, d: zFloorF - zFloorB, h: 2, tex: 'marble', color: 0xffffff, roughness: 0.12 });
+  w.box({ x: ex, y: 0.012, z: L.z0 - 0.5, w: wid, h: 0.024, d: 0.16, color: GOLD, metal: 1, rough: 0.3, shadow: false });
   for (const sx of [-1, 1]) w.plat({ x: ex + sx * (wid / 2 + 0.15), y: hgt + 0.4, z: zc, w: 0.3, d: zf - zb + 0.4, h: hgt + 0.4, tex: 'wood', color: 0xffffff, roughness: 0.35 });
   w.plat({ x: ex, y: hgt + 0.4, z: zb - 0.15, w: wid + 0.6, d: 0.3, h: hgt + 0.4, tex: 'wood', color: 0xffffff, roughness: 0.35 });
   w.plat({ x: ex, y: hgt + 0.5, z: zc, w: wid + 0.6, d: zf - zb + 0.4, h: 0.5, tex: 'wood', color: 0xffffff, roughness: 0.35 });

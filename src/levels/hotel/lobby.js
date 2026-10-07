@@ -53,12 +53,12 @@ export default {
     const tierUnlocked = (t) => game.isUnlocked(t * 5);
     E.forEach((e, i) => {
       e.open = 0; e.target = 0;
-      w.mover(e.leafL, () => ({ x: -e.open * 1.5 }));
-      w.mover(e.leafR, () => ({ x: e.open * 1.5 }));
+      w.mover(e.leafL, () => ({ x: -e.open * 1.7 }));
+      w.mover(e.leafR, () => ({ x: e.open * 1.7 }));
       const ok = tierUnlocked(i);
       // outside call button
       w.interactable({
-        x: e.x + 2.3, y: 1.5, z: L.z0 + 0.3, w: 0.7, h: 0.9, d: 0.8,
+        x: e.x + 2.3, y: 1.5, z: L.z0 + 0.4, w: 0.7, h: 0.9, d: 0.8,
         label: () => (!tierUnlocked(i) ? 'Out of order' : e.target ? 'Doors open' : `Call elevator · Floor ${tiers[i].floor}`),
         onUse: (g) => {
           if (!tierUnlocked(i)) { g.audio.buzzer(); g.say('hotel.out_of_order', { priority: 2 }); return; }

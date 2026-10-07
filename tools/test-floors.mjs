@@ -1,4 +1,4 @@
-// In-browser logic tests for the hotel's floors 2 and 3 (needs `vite preview` on :4173). Usage: node tools/test-floors.mjs [name-filter]
+// In-browser logic tests for the hotel's lobby hub and floors 2 and 3 (needs `vite preview` on :4173). Usage: node tools/test-floors.mjs [name-filter]
 import { chromium } from 'playwright-core';
 
 const base = process.env.BASE || 'http://localhost:4173/';
@@ -426,6 +426,45 @@ suite('ledge', async () => {
   ok(r.babyDrift < r.drift * 0.75, `ledge: baby mode halves the gusts (${r.babyDrift.toFixed(2)} vs ${r.drift.toFixed(2)} m)`);
   ok(r.leanDrift > -0.2 && r.leanDrift > 0.3 - 0.6, 'ledge: leaning into the wall (D) keeps you on the ledge');
   ok(r.gondola > 1.5, `ledge: the gondola swings (${r.gondola.toFixed(1)} m)`);
+  await page.close();
+});
+
+// ---- the lobby hub: every elevator can be called, walked into (no gap in the floor) and ridden --------------------
+suite('lobby', async () => {
+  const page = await browser.newPage({ viewport: { width: 320, height: 180 } });
+  page.on('pageerror', (e) => errs.push(e.message));
+  await page.goto(`${base}?debug&campaign=hotel`, { waitUntil: 'load' });
+  await page.waitForFunction(() => window.__trust && window.__trust.world && window.__trust.state === 'playing', null, { timeout: 60000 });
+  await page.evaluate(() => { window.__trust.manual = true; });
+  const r = await page.evaluate(() => {
+    const g = window.__trust, out = [];
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    for (const ex of [-12, -6, 0, 6, 12]) {
+      g.player.teleport(ex + 1.6, 0, -21.4); g.yaw = Math.atan2(-0.7, 2.3); g.pitch = 0.05; sim(0.1); g._updateFocus();
+      const call = g.focus && typeof g.focus.label === 'function' ? g.focus.label(g) : null;
+      g.useFocus(); sim(2.5);
+      g.player.teleport(ex, 0, -20); g.yaw = 0; g.pitch = 0; sim(0.1);
+      g.keys.add('KeyW');
+      let minY = 0, airFrames = 0;
+      for (let i = 0; i < 60 * 4; i++) { g._simulate(1 / 60); minY = Math.min(minY, g.player.y); if (!g.player.grounded) airFrames++; }
+      g.keys.delete('KeyW');
+      out.push({ ex, call, z: g.player.z, minY, airFrames, state: g.state });
+    }
+    return out;
+  });
+  for (const e of r) {
+    ok(/^Call elevator/.test(e.call || ''), `lobby: the call button of elevator ${e.ex} can be targeted (${e.call})`);
+    ok(e.state === 'playing' && e.minY > -0.1 && e.airFrames === 0 && e.z < -28, `lobby: walking into elevator ${e.ex} never leaves the floor (z ${e.z.toFixed(2)}, lowest y ${e.minY.toFixed(2)}, ${e.airFrames} airborne frames)`);
+  }
+  // ride the middle elevator's first button, from the car, all the way into level 1 (Wet Floor)
+  await page.evaluate(() => {
+    const g = window.__trust; g.player.teleport(-12, 0, -27); g.yaw = 0;
+    const btn = g.world.interactables.find((i) => typeof i.label === 'function' && /^Level 1:/.test(i.label(g)));
+    btn.onUse(g);
+    for (let i = 0; i < 60 * 5; i++) g._simulate(1 / 60);
+  });
+  await page.waitForFunction(() => window.__trust.levelIndex === 0 && window.__trust.state === 'playing' && !window.__trust.inHub, null, { timeout: 60000 });
+  ok(true, 'lobby: riding the elevator loads level 1');
   await page.close();
 });
 
