@@ -182,6 +182,7 @@ export function lobbyShell(w) {
 
   // ---- outside ---------------------------------------------------------------------------------
   w.city = lobbyCity(w);
+  windowGlass(w, WW, WY0, WY1, winZ);
   // moonlight through the side windows, as bright panes on the floor
   const patch = windowPatchMaterial();
   w.onDispose(() => { patch.map.dispose(); patch.dispose(); });
@@ -349,6 +350,17 @@ export function citySkyline(w) {
   }
 }
 
+// ---- window glass: a faint reflection of the room, strongest at a slant (as real glass is) -----------------
+// Black, additive and glossy, so it adds only the reflected room (the scene's env map) and never dims the view outside.
+function windowGlass(w, WW, y0, y1, winZ) {
+  const mat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.03, metalness: 0, envMap: w.scene.environment, envMapIntensity: 1.5, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+  w.onDispose(() => mat.dispose());
+  const geo = new THREE.PlaneGeometry(WW, y1 - y0);
+  const put = (x, z, ry) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, (y0 + y1) / 2, z); m.rotation.y = ry; m.renderOrder = 3; w.add(m); };
+  for (const c of winZ) { put(L.x0 - 0.45, c, Math.PI / 2); put(L.x1 + 0.45, c, -Math.PI / 2); }
+  for (const c of [-16, -9, 9, 16]) put(c, L.z1 + 0.45, Math.PI);
+}
+
 // ---- moonlight on the floor ------------------------------------------------------------------------
 // The window's panes projected onto the floor along a fixed moon direction (additive, so it brightens whatever it falls on).
 function windowPatchMaterial() {
@@ -400,7 +412,7 @@ function ceilingMural(w) {
   const mat = new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color(0.82, 0.82, 0.82), polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   w.onDispose(() => { tex.dispose(); mat.dispose(); });
   const m = new THREE.Mesh(new THREE.CircleGeometry(10, 64), mat);
-  m.rotation.x = Math.PI / 2; m.rotation.z = Math.PI; m.position.set(0, L.H - 0.03, -4); m.matrixAutoUpdate = false; m.updateMatrix(); w.add(m);
+  m.rotation.x = Math.PI / 2; m.rotation.z = 0; m.position.set(0, L.H - 0.03, -4); m.matrixAutoUpdate = false; m.updateMatrix(); w.add(m);
 }
 
 // ================================================================================================
