@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { glowMaterial, plainMaterial } from '../../engine/materials.js';
 import { hotelEnv, lobbyShell, L, ELEV_X, GOLD } from './kit.js';
+import { lobbyDecor } from './decor.js';
 import { sofa, armchair, coffeeTable, rug, palm, piano, reception, luggageCart, elevatorBank } from './props.js';
 
 // The hub: a walkable art-deco lobby. Its five elevators are the level select (one elevator per floor/tier).
@@ -21,6 +22,7 @@ export default {
     const tiers = camp.tiers;
 
     lobbyShell(w);
+    lobbyDecor(w, game);
 
     // ---- furnishings -----------------------------------------------------------------------------
     // east lounge
@@ -115,7 +117,7 @@ export default {
       w.after(0.9, () => { E[arr].target = 1; game.audio.ding(); game.say('hotel.return', { priority: 1 }); });
       if (cs.levelBest[0] && !cs.sawFirstClear) { cs.sawFirstClear = true; w.after(5, () => game.say('hotel.complete.first', { priority: 1 })); }
     } else {
-      w.spawn = { x: 0, y: 0, z: 13, yaw: 0 };
+      w.spawn = { x: 0, y: 0, z: 9.5, yaw: 0 };   // well clear of the revolving door's sweep (z 12.3+), or its glass wings pass through the camera
       w.after(1.6, () => { game.say('hotel.welcome'); game.say('hotel.welcome2'); });
     }
     w.respawn = { ...w.spawn };

@@ -56,6 +56,8 @@ export class Plat {
   }
 }
 
+const MAP_KEYS = ['map', 'alphaMap', 'emissiveMap', 'normalMap', 'roughnessMap', 'metalnessMap', 'bumpMap', 'lightMap', 'aoMap'];
+
 export class World {
   constructor(game) {
     this.game = game;
@@ -166,6 +168,7 @@ export class World {
     this.scene.environment = this._envRT.texture;
     this.scene.environmentIntensity = cfg.intensity ?? 0.7;
     pm.dispose();
+    sc.traverse((o) => { o.geometry?.dispose(); o.material?.dispose(); });      // the little bake scene is not needed again
   }
 
   _makeClouds(cfg) {
@@ -716,10 +719,14 @@ export class World {
     this._envRT?.dispose();
     for (const t of this.ownTextures) t.dispose();
     this.scene.traverse((o) => {
-      if (o.isMesh || o.isLine || o.isPoints) {
+      if (o.isLight) o.shadow?.dispose?.();            // the shadow map is a big render target
+      if (o.isMesh || o.isLine || o.isPoints || o.isSprite) {
         // free every geometry this level made (cached box shapes are cleared below, so nothing else shares them)
         o.geometry?.dispose();
         if (o.isInstancedMesh) o.dispose();
+        // ... and every texture its materials hold: canvases and clones made by level code are not in ownTextures. The shared cached
+        // textures go too; three.js simply uploads them again the next time something uses them.
+        for (const m of [].concat(o.material || [])) for (const k of MAP_KEYS) if (m[k]?.isTexture) m[k].dispose();
       }
     });
     disposeGeometryCaches();   // the next level rebuilds the box shapes it needs

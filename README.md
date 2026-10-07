@@ -43,7 +43,7 @@ npm run preview    # serve the build on :4173
 Handy URL params: `?debug` exposes `window.__trust` (the game object) and doesn't need pointer lock; `?debug&level=3` jumps straight into a level.
 
 ### Test tools (need `npm run preview` running + the preinstalled Chromium)
-- Hotel levels: prefix with `CAMPAIGN=hotel`, e.g. `CAMPAIGN=hotel NEAR=1 node tools/bot.mjs 1`. `node tools/test-floors.mjs [name]` runs the level-specific logic tests for floors 2–3 plus the lobby (`lobby`: every elevator can be walked into and ridden).
+- Hotel levels: prefix with `CAMPAIGN=hotel`, e.g. `CAMPAIGN=hotel NEAR=1 node tools/bot.mjs 1`. `node tools/test-leak.mjs` bounces between the lobby and a level and fails if GPU memory grows. `node tools/test-floors.mjs [name]` runs the level-specific logic tests for floors 2–3 plus the lobby (`lobby`: every elevator can be walked into and ridden).
 - `node tools/check-reach.mjs` — checks every hop between consecutive path platforms is physically jumpable with the real movement numbers.
 - `node tools/bot.mjs <level>` — a waypoint bot plays the level to prove it's completable and the scripted beats fire.
 - `node tools/test-game.mjs` — in-browser rule tests (fake vs real checkpoints, baby mode, wrong door, save/continue…).

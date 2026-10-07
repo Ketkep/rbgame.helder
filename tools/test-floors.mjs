@@ -456,6 +456,16 @@ suite('lobby', async () => {
     ok(/^Call elevator/.test(e.call || ''), `lobby: the call button of elevator ${e.ex} can be targeted (${e.call})`);
     ok(e.state === 'playing' && e.minY > -0.1 && e.airFrames === 0 && e.z < -28, `lobby: walking into elevator ${e.ex} never leaves the floor (z ${e.z.toFixed(2)}, lowest y ${e.minY.toFixed(2)}, ${e.airFrames} airborne frames)`);
   }
+  // the spawn point is clear of the revolving door (its glass wings sweep z >= 12.3; inside them they pass through the camera)
+  const look = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, c = w.city;
+    return { spawnZ: w.spawn.z, blimp: !!(c && c.blimp), boards: c ? c.adMats.length : 0, vac: !!(c && c.vacMat) };
+  });
+  ok(look.spawnZ <= 10.5, `lobby: you spawn well clear of the revolving door (z ${look.spawnZ})`);
+  ok(look.blimp && look.boards >= 8 && look.vac, `lobby: the window view is built (blimp, ${look.boards} billboards, vacancy sign)`);
+  // the gags run without throwing while time passes (departures board, portraits, clock, city)
+  const ran = await page.evaluate(() => { const g = window.__trust; try { g.player.teleport(0, 0, 9.5); g.yaw = Math.PI; for (let i = 0; i < 60 * 12; i++) g._simulate(1 / 60); g.yaw = 0; for (let i = 0; i < 60 * 12; i++) g._simulate(1 / 60); return true; } catch (e) { return String(e); } });
+  ok(ran === true, `lobby: 24 s of gags (looking at the portraits, then away) run clean (${ran})`);
   // ride the middle elevator's first button, from the car, all the way into level 1 (Wet Floor)
   await page.evaluate(() => {
     const g = window.__trust; g.player.teleport(-12, 0, -27); g.yaw = 0;
