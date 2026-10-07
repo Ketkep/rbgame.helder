@@ -2,10 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Trust Me…" />
   <title>Trust Me…</title>
   <meta name="description" content="Trust Me… — a first-person game show where the host is absolutely not your friend. Play free in your browser." />
   <meta name="theme-color" content="#12131c" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta property="og:title" content="Trust Me…" />
   <meta property="og:description" content="A first-person rage game. The host says you can trust him. You can't." />
   <meta property="og:type" content="website" />
@@ -183,12 +189,8 @@
       </div>
     </section>
 
-    <section id="scr-mobile" class="screen">
-      <div class="panel small">
-        <h2>Desktop only</h2>
-        <p class="quip">Trust Me… needs a keyboard and a mouse. Open it on a computer. I'll be here. Lying.</p>
-      </div>
-    </section>
+    <!-- phones held upright: cover everything until they turn it -->
+    <div id="scr-rotate"><div class="panel small"><h2>Turn your phone</h2><p class="quip">Landscape, please. I can't lie to you sideways.</p></div></div>
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>

@@ -21,13 +21,17 @@ export default {
   pauseTroll(game) {
     const b = game.ui.el['btn-resume'];
     let dodges = 0;
-    game.ui.el['pause-quip'].textContent = '“Resume? Just click it. Come on. Right there.”';
+    game.ui.el['pause-quip'].textContent = game.touch ? '“Resume? Just tap it. Come on. Right there.”' : '“Resume? Just click it. Come on. Right there.”';
     game.say('l4.pause', { priority: 2 });
+    const off = () => { b.removeEventListener('mouseenter', b._h); b.removeEventListener('touchstart', b._p); b._h = null; b._p = null; };
     b._h = () => {
-      if (dodges < 6) { dodges++; b.style.transform = `translate(${rand(-190, 190)}px, ${rand(-130, 130)}px)`; game.audio.tick(); }
-      else { b.style.transform = ''; game.say('l4.pause.fine', { priority: 2 }); b.removeEventListener('mouseenter', b._h); b._h = null; }
+      if (dodges < 6) { dodges++; b.style.transform = `translate(${rand(-190, 190)}px, ${rand(-130, 130)}px)`; game.audio.tick(); return true; }
+      b.style.transform = ''; game.say('l4.pause.fine', { priority: 2 }); off(); return false;
     };
     b.addEventListener('mouseenter', b._h);
+    // a finger has no hover, so on touch the button dodges the moment it is touched; cancelling touchstart also cancels the click
+    b._p = (e) => { e.preventDefault(); b._h(); };
+    b.addEventListener('touchstart', b._p, { passive: false });
   },
 
   build(w, game) {

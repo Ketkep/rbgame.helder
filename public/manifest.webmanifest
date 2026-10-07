@@ -1,0 +1,15 @@
+{
+  "name": "Trust Me…",
+  "short_name": "Trust Me…",
+  "description": "A first-person rage game. The host says you can trust him. You can't.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#12131c",
+  "theme_color": "#12131c",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

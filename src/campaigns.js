@@ -15,8 +15,8 @@ export const CAMPAIGNS = [
   {
     id: 'pilot',
     number: 1,
-    title: 'Welcome to the Show',
-    tagline: 'Five levels. The host swears every one of them is fair.',
+    title: 'The Tutorial',
+    tagline: 'Five basic levels to get used to the controls. The host swears every one of them is fair.',
     eta: '~20 min',
     status: 'playable',
     levels: [level1, level2, level3, level4, level5],

@@ -10,6 +10,7 @@ import { HintTrail } from './engine/hint.js';
 import { GameAudio } from './engine/audio.js';
 import { UI } from './ui.js';
 import { Narrator } from './narrator.js';
+import { TouchControls, detectTouch } from './touch.js';
 import { CAMPAIGNS, getCampaign, isLevelUnlocked } from './campaigns.js';
 
 const FIXED = 1 / 120;
@@ -106,7 +107,16 @@ export class Game {
     this._bindInput();
     this._bindUI();
 
-    if (matchMedia('(pointer: coarse)').matches && !matchMedia('(pointer: fine)').matches) this.ui.showScreen('mobile');
+    // phones and tablets: touch controls (Campaign 1); everything else is unchanged
+    this.touch = detectTouch();
+    document.body.classList.toggle('touch', this.touch);
+    this.touchMove = { x: 0, y: 0 };
+    this.touchCtl = null;
+    if (this.touch) {
+      this.ui.touch = true; this.narrator.touch = true;
+      this.touchCtl = new TouchControls(this);
+      if (this.save.settings.gfxChosen !== true) this.setQuality(true, false);      // phones start on Low graphics; the pause menu can undo it
+    }
     this._refreshHome();
     if (this.debug) window.__trust = this;
 
@@ -180,6 +190,7 @@ export class Game {
     this.composer.setPixelRatio(this.pixelRatio);
     this.composer.setSize(w, h);
     this.camera.aspect = w / h;
+    if (this.touch && h > w && this.state === 'playing') this.pause();               // portrait: the 'rotate your phone' cover is up, so stop the clock
     this.camera.updateProjectionMatrix();
   }
 
@@ -262,7 +273,7 @@ export class Game {
     el['set-sens'].addEventListener('input', (e) => { this.sens = +e.target.value; this._saveSettings(); });
     el['set-vol'].addEventListener('input', (e) => { this.audio.setVolume(+e.target.value); this._saveSettings(); });
     el['set-music'].addEventListener('change', (e) => { this.audio.setMusicEnabled(e.target.checked); this._saveSettings(); });
-    el['set-gfx'].addEventListener('change', (e) => this.setQuality(e.target.checked));
+    el['set-gfx'].addEventListener('change', (e) => { this.save.settings.gfxChosen = true; this.setQuality(e.target.checked); });
     let armed = null;
     el['btn-reset'].addEventListener('click', () => {
       if (!armed) {
@@ -330,6 +341,11 @@ export class Game {
     }
     const cs = this.cs(c.id);
     const hub = !!c.hub;
+    if (hub && this.touch && !this.debug) {                       // the hotel is not on touch yet
+      card.classList.remove('playable'); card.classList.add('soon');
+      card.appendChild(mk('div', 'soon-badge', '🖥 Desktop only for now'));
+      return card;
+    }
     const pips = mk('div', 'pips' + (hub ? ' grouped' : ''));
     c.levels.forEach((lv, i) => {
       const done = !!cs.levelBest[i];
@@ -516,6 +532,7 @@ export class Game {
   }
 
   _lock() {
+    if (this.touch) { this.touchCtl?.immersive(); return; }          // no mouse to capture on a touch screen
     if (this.debug) return;
     try { const p = this.canvas.requestPointerLock(); if (p?.catch) p.catch(() => {}); } catch { /* handled by pointerlockerror */ }
   }
@@ -543,6 +560,7 @@ export class Game {
     this.audio.init(); this.audio.click();
     const rb = this.ui.el['btn-resume'];
     if (rb._h) { rb.removeEventListener('mouseenter', rb._h); rb._h = null; }
+    if (rb._p) { rb.removeEventListener('touchstart', rb._p); rb._p = null; }
     rb.style.transform = '';
     this.ui.hideScreens();
     this.state = 'playing';
@@ -649,6 +667,7 @@ export class Game {
     this.ui.setDeaths(this._deathText(), true);
     this.world.hintTrail?.hide();
     this.ui.flash();
+    if (this.touch) navigator.vibrate?.(60);
     this.ui.stamp(['WRONG!', 'NOPE', 'OOF', 'SPLAT', 'BZZT', 'NEXT!', 'OUT'][Math.floor(Math.random() * 7)]);
     this.audio.death();
     this.shake = 0.35;
@@ -830,6 +849,8 @@ export class Game {
     const k = this.keys;
     let fwd = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
     let str = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
+    fwd += this.touchMove.y; str += this.touchMove.x;
+    fwd = Math.max(-1, Math.min(1, fwd)); str = Math.max(-1, Math.min(1, str));
     if (this.mods.swapStrafe) str = -str;
     if (this.mods.noMove || this.modal) { fwd = 0; str = 0; }
     const sy = Math.sin(this.yaw), cy = Math.cos(this.yaw);
@@ -1009,6 +1030,7 @@ export class Game {
     const cam = this.camera, w = this.world;
     if (!w) return;
     this._fpsWatch(dt);
+    this.touchCtl?.sync();
 
     if (this.state === 'playing') {
       if (!this.frozen && !this.manual) this._simulate(dt);

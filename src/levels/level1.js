@@ -86,7 +86,7 @@ export default {
     w.sign({ text: 'LONGER →', x: 0, y: 0.03, z: -72.8, w: 4.6, h: 1.4, rotX: FLOOR, color: '#2dd4bf', double: false, tw: 512 });
     w.sign({ text: 'EASY', x: 0, y: 0.03, z: -81.4, w: 3.6, h: 1.4, rotX: FLOOR, color: '#2dd4bf', double: false, tw: 512 });
     w.sign({ text: 'SAFE ✔', x: 0, y: 0.03, z: p4.body.z, w: 4.4, h: 1.6, rotX: FLOOR, color: '#44e08a', stroke: '#0c4a2a', double: false, tw: 512 });
-    w.sign({ text: 'WASD to move · SPACE to jump', x: 0, y: 3.2, z: -2, w: 9, h: 0.9, color: '#ffffff', glow: 1.05, tw: 1024, size: 56 });
+    w.sign({ text: game.touch ? 'LEFT thumb to move · JUMP to jump' : 'WASD to move · SPACE to jump', x: 0, y: 3.2, z: -2, w: 9, h: 0.9, color: '#ffffff', glow: 1.05, tw: 1024, size: 56 });
     w.sign({ text: 'EXIT', x: 0, y: EY + 6.6, z: -171.4, w: 5, h: 1.6, bg: '#12131c', color: '#ffc83d', border: '#ffc83d', size: 100, tw: 512 });
     const bigSign = w.sign({ text: 'TRUST ME…', x: 0, y: 28, z: -230, w: 90, h: 20, color: '#ffffff', glow: 1.45, glowColor: '#ffc83d', tw: 2048, size: 330, stroke: '#ff8a3d', strokeWidth: 12 });
     void bigSign;
