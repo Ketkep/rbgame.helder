@@ -42,7 +42,7 @@ export default {
     luggageCart(w, 7.8, 12.2, 0);
     luggageCart(w, -7.4, 12.8, 0);
     // greenery
-    for (const [x, z, s] of [[-20.2, 14.2, 1.1], [20.2, 14.2, 1.1], [-20.4, -21.6, 1.15], [20.4, -21.6, 1.15], [-7.5, -21.8, 0.9], [7.5, -21.8, 0.9], [20.4, 6.2, 0.9]]) palm(w, x, z, s);
+    for (const [x, z, s] of [[-20.2, 14.2, 1.1], [20.2, 14.2, 1.1], [-20.4, -21.6, 1.15], [20.4, -21.6, 1.15], [20.4, 6.2, 0.9]]) palm(w, x, z, s);
 
     entrance(w);
     w.sign({ text: 'ELEVATORS', x: 0, y: 9.6, z: L.z0 + 0.2, w: 11, h: 1.9, color: '#ffe3a0', glow: 1.5, glowColor: '#d8a94a', tw: 1024 });

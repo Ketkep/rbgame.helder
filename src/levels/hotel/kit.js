@@ -274,15 +274,29 @@ export function sconce(w, x, y, z, side, withLight = false) {
 
 // ---- floor dressing ------------------------------------------------------------------------------
 function carpetRunner(w) {
-  const tex = getTexture('carpet').clone();
-  tex.repeat.set(5.4 / 2, 38.5 / 2); tex.needsUpdate = true;
-  const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 38.5), mat);
-  m.rotation.x = -Math.PI / 2; m.position.set(0, 0.014, -4.2); m.receiveShadow = true; m.matrixAutoUpdate = false; m.updateMatrix(); w.add(m);
+  // The main runner from the doors to the elevator bank, which ends in a crossbar in front of all five elevators (a T).
+  const Zs = 15.05, Ze = -20.5, len = Zs - Ze, zc = (Zs + Ze) / 2;
+  const piece = (cw, cd, x, z, offU, offV) => {
+    const tex = getTexture('carpet').clone();
+    tex.repeat.set(cw / 2, cd / 2); tex.offset.set(offU, offV); tex.needsUpdate = true;       // the offsets line the lattice up across the join
+    const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(cw, cd), mat);
+    m.rotation.x = -Math.PI / 2; m.position.set(x, 0.014, z); m.receiveShadow = true; m.matrixAutoUpdate = false; m.updateMatrix(); w.add(m);
+  };
+  const strip = (sw, sd, x, z, thin = false) => add(w, new THREE.BoxGeometry(sw, 0.03, sd), gold(), x, thin ? 0.021 : 0.02, z, { cast: false });
+  piece(5.4, len, 0, zc, 0, 0);
+  for (const sx of [-1, 1]) { strip(0.14, len, sx * 2.78, zc); strip(0.06, len, sx * 2.5, zc, true); }
+
+  const X1 = 15.4, Zn = -23.7, Zf = Ze, cwid = 2 * X1, cdep = Zf - Zn, czc = (Zf + Zn) / 2;
+  piece(cwid, cdep, 0, czc, 0.65, 0.775);
+  strip(cwid + 0.3, 0.14, 0, Zn - 0.08); strip(cwid, 0.06, 0, Zn + 0.28, true);                    // along the wall
   for (const sx of [-1, 1]) {
-    add(w, new THREE.BoxGeometry(0.14, 0.03, 38.5), gold(), sx * 2.78, 0.02, -4.2, { cast: false });
-    add(w, new THREE.BoxGeometry(0.06, 0.03, 38.5), gold(), sx * 2.5, 0.02, -4.2, { cast: false });
+    const w0 = X1 - 2.85, mx = sx * (2.85 + w0 / 2);
+    strip(w0, 0.14, mx, Zf + 0.08);                                                                  // the near edge, open where the main runner joins
+    strip(0.14, cdep + 0.3, sx * (X1 + 0.08), czc); strip(0.06, cdep, sx * (X1 - 0.28), czc, true); // the ends
   }
+  // the floor numbers, worked into the carpet in front of each door
+  ['1', '2', '3', '4', '13'].forEach((n, i) => w.sign({ text: n, x: ELEV_X[i], y: 0.045, z: czc, w: 1.3, h: 1.3, rotX: -Math.PI / 2, color: '#e8c673', opacity: 0.85, tw: 256 }));
 }
 
 function medallion(w, x, z) {
