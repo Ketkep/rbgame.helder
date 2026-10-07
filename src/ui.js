@@ -8,7 +8,7 @@ export class UI {
       'prompt', 'interact', 'interact-label', 'hint-chip', 'hint-label', 'panel', 'panel-title', 'panel-body', 'panel-foot', 'toasts', 'achievements', 'baby-offer', 'stamp', 'subs', 'sub-shown', 'sub-rest', 'flash', 'fade', 'ov-loading', 'ld-fill', 'ld-tip',
       'ov-ad', 'ad-sec', 'ov-bars', 'ov-credits', 'credits-roll', 'ov-glitch', 'pause-quip', 'btn-resume', 'btn-restart', 'btn-mercy', 'btn-quit',
       'campaigns', 'home-tag', 'home-stats', 'btn-settings-home', 'btn-settings', 'btn-settings-back', 'btn-levels-back', 'btn-reset', 'levels-grid', 'levels-eyebrow', 'levels-title', 'btn-home', 'btn-lobby', 'btn-lobby-pause', 'end-eyebrow', 'end-next', 'btn-next', 'btn-share', 'btn-again', 'set-sens', 'set-vol', 'set-music', 'set-gfx',
-      'cmp-eyebrow', 'cmp-title', 'cmp-deaths', 'cmp-time', 'cmp-total', 'cmp-quip', 'end-title', 'end-deaths', 'end-time', 'end-baby', 'end-share']) {
+      'bd-cut', 'cmp-eyebrow', 'cmp-title', 'cmp-deaths', 'cmp-time', 'cmp-total', 'cmp-quip', 'end-title', 'end-deaths', 'end-time', 'end-baby', 'end-share']) {
       this.el[id] = $(id);
     }
     this.screens = {
@@ -82,6 +82,12 @@ export class UI {
     s.textContent = text; s.classList.remove('go'); void s.offsetWidth; s.classList.add('go');
   }
   flash() { const f = this.el.flash; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
+  /** A burst of TV static: the home page's backdrop cuts between channels behind it. */
+  cutFlash(on, ms = 160) {
+    const f = this.el['bd-cut']; if (!f) return;
+    f.style.transition = `opacity ${ms}ms`;
+    f.classList.toggle('on', !!on);
+  }
   fade(on, ms = 350) { const f = this.el.fade; f.style.transition = `opacity ${ms}ms`; f.style.opacity = on ? '1' : '0'; }
 
   // ---- tutorial prompt -------------------------------------------------------------------
