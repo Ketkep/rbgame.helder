@@ -30,16 +30,18 @@ export class Narrator {
 
   /** Resolve a script key (or literal text) to { text, id }. */
   resolve(keyOrText, vars = {}) {
-    const entry = SCRIPT[keyOrText];
+    // on a touch screen a line may have a '.touch' twin that talks about thumbs instead of keys
+    const key = this.touch && SCRIPT[keyOrText + '.touch'] !== undefined ? keyOrText + '.touch' : keyOrText;
+    const entry = SCRIPT[key];
     let text = keyOrText, id = null;
     if (entry !== undefined) {
       if (Array.isArray(entry)) {
         let i = Math.floor(Math.random() * entry.length);
-        const last = this.history.get(keyOrText);
+        const last = this.history.get(key);
         if (entry.length > 1 && i === last) i = (i + 1 + Math.floor(Math.random() * (entry.length - 1))) % entry.length;
-        this.history.set(keyOrText, i);
-        text = entry[i]; id = `${keyOrText}#${i}`;
-      } else { text = entry; id = keyOrText; }
+        this.history.set(key, i);
+        text = entry[i]; id = `${key}#${i}`;
+      } else { text = entry; id = key; }
     }
     text = text.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? vars[k] : ''));
     return { text, id };

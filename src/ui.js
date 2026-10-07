@@ -12,7 +12,7 @@ export class UI {
       this.el[id] = $(id);
     }
     this.screens = {
-      home: $('scr-home'), levels: $('scr-levels'), settings: $('scr-settings'), pause: $('scr-pause'), click: $('scr-click'), complete: $('scr-complete'), end: $('scr-end'), mobile: $('scr-mobile'),
+      home: $('scr-home'), levels: $('scr-levels'), settings: $('scr-settings'), pause: $('scr-pause'), click: $('scr-click'), complete: $('scr-complete'), end: $('scr-end'),
     };
     this._subHideT = null;
     this._creditsY = 0; this._creditsSpeed = 0; this._creditsOn = false;
@@ -86,6 +86,12 @@ export class UI {
 
   // ---- tutorial prompt -------------------------------------------------------------------
   prompt(keys, label) {
+    if (this.touch) {                       // the tutorial speaks keyboard; say the touch version instead
+      const first = keys[0]?.label;
+      if (first === 'MOUSE') { keys = [{ label: 'DRAG' }]; label = 'on the right side to look around'; }
+      else if (first === 'W') { keys = [{ label: 'STICK' }]; label = 'on the left side to move'; }
+      else if (first === 'SPACE') { keys = [{ label: 'JUMP' }]; label = 'to jump (tap = hop, hold = full jump)'; }
+    }
     const p = this.el.prompt;
     p.classList.remove('hidden', 'done');
     p.innerHTML = '<span class="caps"></span><span class="lbl"></span>';

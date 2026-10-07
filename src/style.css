@@ -282,3 +282,86 @@ kbd { font: 400 13px var(--display); min-width: 30px; padding: 6px 9px; text-ali
 .bill-tip.on { background: rgba(216,169,74,0.35); border-color: #d8a94a; }
 #money-chip { position: fixed; left: 22px; bottom: 124px; z-index: 5; padding: 8px 14px; border-radius: 12px; background: rgba(14,15,24,0.75); backdrop-filter: blur(8px); border: 1px solid rgba(216,169,74,0.6); font: 700 13px var(--body); color: #ffd890; pointer-events: none; }
 #money-chip.neg { color: #ff7a85; border-color: rgba(255,90,100,0.6); }
+
+/* =====================================================================================================
+   Touch (phones and tablets): thumb stick, look drag, buttons. Everything below only applies to body.touch.
+   ===================================================================================================== */
+body.touch { -webkit-touch-callout: none; touch-action: none; overscroll-behavior: none; }
+body.touch * { -webkit-tap-highlight-color: transparent; }
+body.touch #scr-home.show { touch-action: pan-y; }
+body.touch .screen { touch-action: pan-y; }
+body.touch { height: 100dvh; }
+
+#touch { position: absolute; inset: 0; z-index: 9; display: none; pointer-events: none; touch-action: none; }
+#touch.show { display: block; }
+#t-look { position: absolute; top: 0; right: 0; width: 56%; height: 100%; pointer-events: auto; touch-action: none; }
+#t-stick { position: absolute; top: 0; left: 0; width: 44%; height: 100%; pointer-events: auto; touch-action: none; }
+#t-ring { position: absolute; left: calc(env(safe-area-inset-left, 0px) + 36px); bottom: 34px; width: 112px; height: 112px; margin: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,0.28); background: rgba(18,19,30,0.28); display: grid; place-items: center; opacity: 0.55; pointer-events: none; transition: opacity 0.15s; }
+#t-ring.on { opacity: 1; transform: translate(-50%, -50%); border-color: rgba(255,200,61,0.8); }
+#t-ring:not(.on) { transform: none; }
+#t-knob { width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.35); border: 2px solid rgba(255,255,255,0.7); }
+#t-ring.on #t-knob { background: rgba(255,200,61,0.55); border-color: var(--gold); }
+.t-btn { position: absolute; pointer-events: auto; touch-action: none; border-radius: 50%; border: 2px solid rgba(255,255,255,0.42); background: rgba(18,19,30,0.5); color: #fff; font: 400 15px var(--display); letter-spacing: 0.06em; display: grid; place-items: center; padding: 0; backdrop-filter: blur(4px); user-select: none; }
+.t-btn.on { background: rgba(255,200,61,0.55); border-color: var(--gold); transform: scale(0.94); }
+#t-jump { right: calc(env(safe-area-inset-right, 0px) + 30px); bottom: 30px; width: 94px; height: 94px; font-size: 17px; border-color: rgba(255,200,61,0.7); }
+#t-reset { right: calc(env(safe-area-inset-right, 0px) + 140px); bottom: 26px; width: 56px; height: 56px; font-size: 24px; }
+#t-use { right: calc(env(safe-area-inset-right, 0px) + 42px); bottom: 140px; width: 74px; height: 74px; border-color: rgba(255,200,61,0.9); }
+#t-pause { top: calc(env(safe-area-inset-top, 0px) + 8px); left: 50%; margin-left: -22px; width: 44px; height: 44px; font-size: 14px; }
+.t-btn.small { opacity: 0.85; }
+
+body.touch #crosshair { opacity: 0.6; }
+body.touch #hint-chip, body.touch #money-chip { display: none !important; }
+body.touch #hud-left { top: calc(env(safe-area-inset-top, 0px) + 8px); left: calc(env(safe-area-inset-left, 0px) + 12px); gap: 5px; }
+body.touch #hud-right { top: calc(env(safe-area-inset-top, 0px) + 8px); right: calc(env(safe-area-inset-right, 0px) + 12px); gap: 5px; }
+body.touch #lvl-chip { font-size: 10px; padding: 5px 10px; }
+body.touch #deaths, body.touch #timer { font-size: 17px; padding: 3px 10px; }
+body.touch #deaths .skull { font-size: 15px; }
+body.touch #baby-badge { font-size: 10px; padding: 4px 8px; }
+body.touch #toasts { top: 58px; }
+body.touch .toast { font-size: 13px; padding: 8px 14px; }
+body.touch #subs { bottom: 10px; width: calc(100vw - 410px); max-width: 600px; padding: 8px 12px; gap: 10px; border-radius: 12px; }
+body.touch #subs .line { font-size: 14px; line-height: 1.35; }
+body.touch #subs .who { font-size: 9px; padding: 4px 7px; }
+body.touch #prompt { bottom: 128px; font-size: 14px; padding: 8px 14px; }
+body.touch #interact { top: calc(50% + 28px); font-size: 13px; padding: 7px 12px; }
+body.touch #baby-offer { left: 50%; top: 62px; bottom: auto; transform: translateX(-50%); pointer-events: auto; font-size: 13px; padding: 9px 14px; z-index: 10; }
+body.touch #achievements { top: 58px; bottom: auto; right: calc(env(safe-area-inset-right, 0px) + 12px); }
+body.touch .ach { max-width: 240px; padding: 8px 12px; }
+body.touch #altimeter { right: calc(env(safe-area-inset-right, 0px) + 10px); }
+body.touch .alt-track { height: 30vh; }
+body.touch .ad-card { width: min(520px, 70vw); padding: 18px 22px; }
+body.touch #stamp { font-size: clamp(40px, 12vh, 80px); }
+
+/* the "turn your phone" cover */
+#scr-rotate { position: absolute; inset: 0; z-index: 70; display: none; place-items: center; background: rgba(8,9,16,0.97); }
+@media (orientation: portrait) { body.touch #scr-rotate { display: grid; } }
+
+/* screens on a short, wide display */
+@media (max-height: 520px) {
+  body.touch .screen { overflow-y: auto; place-items: start center; padding: 10px 0; }
+  body.touch .panel { padding: 16px 20px; border-radius: 16px; width: min(520px, 92vw); }
+  body.touch .panel.wide { width: min(640px, 94vw); }
+  body.touch .panel h2 { font-size: 24px; margin-bottom: 4px; }
+  body.touch .quip { margin-bottom: 10px; font-size: 13px; min-height: 0; }
+  body.touch .stats { margin: 8px 0; gap: 18px; }
+  body.touch .stats b { font-size: 22px; }
+  body.touch .btn { padding: 12px 22px; font-size: 14px; }
+  body.touch .btns.col { margin-top: 10px; gap: 8px; }
+  body.touch .btns.col .btn { padding: 10px 18px; }
+  body.touch .levels-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 4px 0 12px; }
+  body.touch .tile { padding: 10px; }
+  body.touch .tile b { font-size: 12px; }
+  body.touch .settings { gap: 8px; }
+  body.touch .home { padding: 8px 16px 8px; }
+  body.touch .home .logo { font-size: clamp(34px, 13vh, 64px); }
+  body.touch .home .tag { margin: 6px 0 10px; font-size: 13px; }
+  body.touch .home-main { padding: 2px 0 6px; justify-content: flex-start; }
+  body.touch .campaigns { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  body.touch .card { padding: 12px 12px 10px; gap: 5px; border-radius: 14px; }
+  body.touch .card h3 { font-size: 16px; }
+  body.touch .card .blurb { font-size: 11px; line-height: 1.35; }
+  body.touch .card-btns .btn { padding: 10px 12px; font-size: 12px; }
+  body.touch .home .keys { margin-top: 10px; gap: 12px; font-size: 11px; }
+  body.touch .home-foot { font-size: 10px; }
+  body.touch .panel-card { min-width: 0; padding: 14px 16px; }
+}

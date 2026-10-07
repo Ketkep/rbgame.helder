@@ -6,7 +6,7 @@ Lines without a file keep working with subtitles + the synthesised voice blips.
 
 `{n}`, `{m}`, `{letter}`, `{text}`, `{fake}`, `{a}`, `{b}`, `{code}` in a line are filled in at runtime (death count, metres fallen, the answer letter, a code digit…); record those lines with a generic read, or reword them in `src/script.js`.
 
-456 lines.
+462 lines.
 
 | ID | Line |
 |----|------|
@@ -68,6 +68,11 @@ Lines without a file keep working with subtitles + the synthesised voice blips.
 | `l1.welcome2` | I'm your host. I'll be guiding you through today's course. I have never once lied to a contestant. |
 | `l1.look` | First: look around. Move your mouse. Go on. See? Everything is perfectly safe. |
 | `l1.move` | Now walk. W, A, S, D. The letters. On your keyboard. Take your time. |
+| `l1.look.touch` | First: look around. Drag your finger across the right side of the screen. Go on. See? Everything is perfectly safe. |
+| `l1.move.touch` | Now walk. Put your left thumb on the left side and push. Gently. Take your time. |
+| `l1.gap.intro.touch` | Time to jump! Tap the JUMP button. Tap for a hop, hold for the full jump. You're welcome. |
+| `baby.offer.touch` | You've died {n} times. Here's a deal: BABY MODE. Higher jumps, longer coyote time, checkpoints that actually work. A permanent badge of shame. Tap the pink button to accept — or keep suffering. |
+| `baby.offer.again.touch` | Still suffering, I see. Baby Mode is still on the table. Tap the pink button. No one is judging. I am. But no one else. |
 | `l1.walk` | Wow. Natural. See the finish gate up ahead? Just walk right on in. |
 | `l1.gate.1` | Hm. The finish gate seems to have... moved. |
 | `l1.gate.2` | Construction. Totally normal. Keep walking! |
@@ -125,6 +130,7 @@ Lines without a file keep working with subtitles + the synthesised voice blips.
 | `l4.ad.skip` | Skip in five. You can't. That's not a button. |
 | `l4.counter` | Your death counter looks off. I'm sure it's fine. |
 | `l4.pause` | Resume? Just click it. Come on. Right there. |
+| `l4.pause.touch` | Resume? Just tap it. Come on. Right there. |
 | `l4.pause.fine` | Fine. Fine. You can have it. |
 | `l4.complete` | Level four done. The engineers have been told. They're fine. Everyone is fine. |
 | `l5.intro` | You did it! Congratulations, contestant! Roll the credits! |

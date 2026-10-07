@@ -1,13 +1,13 @@
 # Trust Me…
 
 A first-person rage-bait platformer where the game-show host narrating your run is **absolutely** not your friend.
-Plays in the browser (desktop, keyboard + mouse). Live at **https://trustme.helderlabs.com**.
+Plays in the browser: best on a computer (keyboard + mouse); phones and tablets get touch controls for The Tutorial (Campaign 1) — the hotel is still desktop-only. Live at **https://trustme.helderlabs.com**.
 
 > "Welcome to TRUST ME… the game show where you can trust me completely."
 
 ## The game
 
-The home page lists **campaigns**. **Campaign 1 — Welcome to the Show** is five short levels, each with a different way to betray you (more campaigns are planned; the home page has "coming soon" slots for them):
+The home page lists **campaigns**. **Campaign 1 — The Tutorial** is five basic levels to get used to the controls, each with a different way to betray you (more campaigns are planned; the home page has "coming soon" slots for them):
 
 | # | Level | Gimmick |
 |---|-------|---------|
@@ -30,6 +30,8 @@ A luxe art-deco hotel with a **walkable lobby** as the level select: the five el
 ### Controls
 `WASD` move · `Space` jump (tap = hop, hold = full jump) · `Mouse` look · `E` / click use · `H` hint · `R` respawn · `Esc` pause · `M` mute · `Enter` resume
 
+**Touch (phones/tablets, landscape):** left thumb = move (a floating stick) · drag on the right half = look · **JUMP** (tap = hop, hold = full jump) · **↺** respawn · **❚❚** pause · tap the pink banner to accept Baby Mode. Low graphics is on by default. On an iPhone, "Add to Home Screen" gives you full screen (Safari can't do it in a tab); Android Chrome goes full screen when you start playing.
+
 ## Develop
 
 ```bash
@@ -43,6 +45,7 @@ npm run preview    # serve the build on :4173
 Handy URL params: `?debug` exposes `window.__trust` (the game object) and doesn't need pointer lock; `?debug&level=3` jumps straight into a level.
 
 ### Test tools (need `npm run preview` running + the preinstalled Chromium)
+- Touch controls (phones/tablets, Campaign 1 only): `node tools/test-touch.mjs` emulates a phone and drives the stick, look-drag and buttons with real multi-touch events (`SHOTS=dir` saves screenshots). `?touch` forces touch mode on a desktop for testing, `?notouch` forces it off.
 - Hotel levels: prefix with `CAMPAIGN=hotel`, e.g. `CAMPAIGN=hotel NEAR=1 node tools/bot.mjs 1`. `node tools/test-leak.mjs` bounces between the lobby and a level and fails if GPU memory grows. `node tools/test-floors.mjs [name]` runs the level-specific logic tests for floors 2–3 plus the lobby (`lobby`: every elevator can be walked into and ridden).
 - `node tools/check-reach.mjs` — checks every hop between consecutive path platforms is physically jumpable with the real movement numbers.
 - `node tools/bot.mjs <level>` — a waypoint bot plays the level to prove it's completable and the scripted beats fire.
