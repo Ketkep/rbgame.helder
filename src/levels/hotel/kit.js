@@ -65,6 +65,15 @@ const WALLS = {
   north: { pos: (u, n) => [u, L.z0 + n], dim: (len, th) => [len, th] },
 };
 
+/** [from, to] stretches of a wall that are left once a `half`-wide gap is cut around each centre in `centres`. */
+function doorwayRuns(from, to, centres, half) {
+  const runs = [];
+  let x = from;
+  for (const c of centres) { if (c - half > x) runs.push([x, c - half]); x = c + half; }
+  if (to > x) runs.push([x, to]);
+  return runs;
+}
+
 /** A decorative (non-colliding) box attached to a wall. */
 function wbox(w, side, u, n, y, len, th, h, o = {}) {
   const W = WALLS[side], [x, z] = W.pos(u, n), [bw, bd] = W.dim(len, th);
@@ -114,8 +123,12 @@ export function lobbyShell(w) {
     wbox(w, side, -4, 0.62, H - 0.72, 40, 0.14, 0.16, { color: GOLD, metal: 1, rough: 0.3, shadow: false });
   }
   for (const side of ['south', 'north']) {
-    wbox(w, side, 0, 0.12, 1.3, 44, 0.24, 2.6, { tex: 'panel', color: 0xffffff, shadow: false });
-    wbox(w, side, 0, 0.2, 2.7, 44, 0.34, 0.12, { color: GOLD, metal: 1, rough: 0.3, shadow: false });
+    // the north panelling stops at each elevator doorway, otherwise it paints over the doors
+    const runs = side === 'north' ? doorwayRuns(-22, 22, ELEV_X, 1.85) : [[-22, 22]];
+    for (const [a, b] of runs) {
+      wbox(w, side, (a + b) / 2, 0.12, 1.3, b - a, 0.24, 2.6, { tex: 'panel', color: 0xffffff, shadow: false });
+      wbox(w, side, (a + b) / 2, 0.2, 2.7, b - a, 0.34, 0.12, { color: GOLD, metal: 1, rough: 0.3, shadow: false });
+    }
     wbox(w, side, 0, 0.35, H - 0.35, 44, 0.8, 0.7, { color: 0xece3cf, rough: 0.35, shadow: false });
   }
 
