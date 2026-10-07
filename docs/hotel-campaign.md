@@ -25,6 +25,13 @@
 - The elevators lie sometimes (from floor 2 up, 1 ride in 4 that would take you to a level just returns you to the lobby).
 - The lobby is full of host banter: the reception bell, the guest book, the locked front doors, a piano he hates.
 
+### The lobby's look (`kit.js: lobbyShell`, `city.js`, `decor.js`)
+- **Walls:** satin green damask with raised gold motifs (`damask` texture, shared by every hotel room), a verde-marble plinth, panels exactly one texture tile high, and a ceiling mural (a gold sunburst ringed with the hotel motto). The panelling stops at the elevator doorways and the entrance, otherwise it paints over the doors.
+- **The view (`city.js: lobbyCity`):** a night city of lit-window towers (one merged mesh), low next to the hotel and tall in the distance, so there is sky to see. West: the rival **HOTEL HONEST** (VACANCY flickers to NO VACANCY, "elevators that go where you press"). East: four billboards for the hotel that cycle through its "reviews". South: **FREE CHECK-OUT\***. Also a blimp towing a banner, the moon, clouds, aircraft beacons, windows that blink. Each board is placed to sit in a window's frame when you stand in the aisle — the wall between the windows hides the rest. `w.city` exposes it for tests.
+- **Moonlight:** each side window throws its panes onto the floor (additive patches), no volumetric cones.
+- **Gags (look-only):** a departures board whose statuses keep changing, a clock with backwards numerals, four portraits whose eyes follow you and whose faces change while you are not looking (`inView`), an inspection certificate beside each elevator, a wet-floor sign standing where it is not wet.
+- The player spawns at z = 9.5, clear of the revolving door's glass wings (they sweep z ≥ 12.3 and pass through the camera if you start inside them).
+
 ## The roster (proposal — tell me what to change)
 
 Types: 🏃 parkour/traps · ❓ quiz · 🔑 escape room · 🌀 maze/chase · 👔 boss · 🃏 trick
@@ -67,7 +74,7 @@ Types: 🏃 parkour/traps · ❓ quiz · 🔑 escape room · 🌀 maze/chase · 
 ## The rage-bait toolbox
 Lying elevators · locked front doors · fake exits · decoy buttons · quiz answers that change · rooms that rearrange · looping corridors · queues that never move · T&C scroll walls · "renovating" floors · a host who comments on everything. Campaign 1's UI tricks (fake loading screens, swapped controls, lag spikes, fake crashes, ads) can be reused.
 
-More building blocks added for floors 2 and 3: `quiz.js: quizHall` (the quiz-level runner: islands, boards, pads, gates, 50/50 hint, countdown, locked answers), `mazekit.js` (random mazes, wall runs, `Walker` NPCs that patrol or chase), `engine/view.js: inView` (is it on screen right now), `engine/bill.js` (itemised bill + tip modal), `world.onDispose`, `hz.predict(t)` (so the test bot can read a hazard's timing), and `tools/test-floors.mjs` for the level-specific tests.
+More building blocks added for floors 2 and 3: `quiz.js: quizHall` (the quiz-level runner: islands, boards, pads, gates, 50/50 hint, countdown, locked answers), `mazekit.js` (random mazes, wall runs, `Walker` NPCs that patrol or chase), `engine/view.js: inView` (is it on screen right now), `engine/bill.js` (itemised bill + tip modal), `world.onDispose` (level teardown now also frees every texture, light shadow map and env-bake mesh a world made), `hz.predict(t)` (so the test bot can read a hazard's timing), and `tools/test-floors.mjs` for the level-specific tests.
 
 ## Building a hotel level
 1. Create `src/levels/hotel/<name>.js` exporting `{ id, name, music, build(w, game) }` (see `wet-floor.js`).

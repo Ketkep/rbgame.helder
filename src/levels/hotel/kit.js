@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { plainMaterial, glowMaterial, softTexture, getTexture, textTexture } from '../../engine/materials.js';
+import { lobbyCity } from './city.js';
 
 // The Hotel Trust-Me building kit: a luxe art-deco lobby at night. Used by the hub and by levels set in the lobby.
 // Axes: +X east, -Z north (the elevator bank is on the north wall, the entrance on the south wall).
@@ -7,6 +8,7 @@ import { plainMaterial, glowMaterial, softTexture, getTexture, textTexture } fro
 export const L = { x0: -22, x1: 22, z0: -24, z1: 16, H: 13 };   // interior bounds + ceiling height
 export const ELEV_X = [-12, -6, 0, 6, 12];
 export const GOLD = 0xd8a94a;
+export const WALL_ROUGH = 0.5;   // the damask is satin, not matt
 
 const gold = (rough = 0.28) => plainMaterial(GOLD, { metalness: 1, roughness: rough });
 const cream = () => plainMaterial(0xece3cf, { roughness: 0.22 });
@@ -74,6 +76,12 @@ function doorwayRuns(from, to, centres, half) {
   return runs;
 }
 
+/** The wall base: polished verde marble with a gold cap. */
+function plinth(w, side, u, len) {
+  wbox(w, side, u, 0.17, 0.3, len, 0.34, 0.6, { tex: 'verde', color: 0xffffff, rough: 0.14, shadow: false });
+  wbox(w, side, u, 0.19, 0.63, len, 0.38, 0.07, { color: GOLD, metal: 1, rough: 0.28, shadow: false });
+}
+
 /** A decorative (non-colliding) box attached to a wall. */
 function wbox(w, side, u, n, y, len, th, h, o = {}) {
   const W = WALLS[side], [x, z] = W.pos(u, n), [bw, bd] = W.dim(len, th);
@@ -93,7 +101,7 @@ export function lobbyShell(w) {
 
   // ---- walls (with window bays) --------------------------------------------------------------
   const T = 1;
-  const slab = (x, y0, y1, z, wd, dd, tex, color = 0xffffff) => w.plat({ x, y: y1, z, w: wd, d: dd, h: y1 - y0, tex, color, roughness: 0.65 });
+  const slab = (x, y0, y1, z, wd, dd, tex, color = 0xffffff) => w.plat({ x, y: y1, z, w: wd, d: dd, h: y1 - y0, tex, color, roughness: WALL_ROUGH });
   const winZ = [-17, -9, -1, 7], WW = 3.8, WY0 = 3.4, WY1 = 10.6;
   for (const sx of [-1, 1]) {
     const X = sx * (22 + T / 2);
@@ -116,18 +124,19 @@ export function lobbyShell(w) {
 
   // ---- wainscot, chair rail, cornice ---------------------------------------------------------
   for (const side of ['west', 'east']) {
-    wbox(w, side, -4, 0.12, 1.3, 40, 0.24, 2.6, { tex: 'panel', color: 0xffffff, shadow: false });
-    wbox(w, side, -4, 0.2, 2.7, 40, 0.34, 0.12, { color: GOLD, metal: 1, rough: 0.3, shadow: false });
-    wbox(w, side, -4, 0.2, 0.14, 40, 0.34, 0.28, { color: 0xece3cf, rough: 0.3, shadow: false });
+    wbox(w, side, -4, 0.12, 1.6, 40, 0.24, 2.0, { tex: 'panel', color: 0xffffff, shadow: false });                    // panels: exactly one texture tile high
+    wbox(w, side, -4, 0.2, 2.7, 40, 0.34, 0.12, { color: GOLD, metal: 1, rough: 0.3, shadow: false });               // chair rail
+    plinth(w, side, -4, 40);
     wbox(w, side, -4, 0.35, H - 0.35, 40, 0.8, 0.7, { color: 0xece3cf, rough: 0.35, shadow: false });
     wbox(w, side, -4, 0.62, H - 0.72, 40, 0.14, 0.16, { color: GOLD, metal: 1, rough: 0.3, shadow: false });
   }
   for (const side of ['south', 'north']) {
-    // the north panelling stops at each elevator doorway, otherwise it paints over the doors
-    const runs = side === 'north' ? doorwayRuns(-22, 22, ELEV_X, 1.85) : [[-22, 22]];
+    // the panelling stops at each doorway (elevators in the north, the entrance in the south), otherwise it paints over the doors
+    const runs = side === 'north' ? doorwayRuns(-22, 22, ELEV_X, 1.85) : doorwayRuns(-22, 22, [0], 3.1);
     for (const [a, b] of runs) {
-      wbox(w, side, (a + b) / 2, 0.12, 1.3, b - a, 0.24, 2.6, { tex: 'panel', color: 0xffffff, shadow: false });
+      wbox(w, side, (a + b) / 2, 0.12, 1.6, b - a, 0.24, 2.0, { tex: 'panel', color: 0xffffff, shadow: false });
       wbox(w, side, (a + b) / 2, 0.2, 2.7, b - a, 0.34, 0.12, { color: GOLD, metal: 1, rough: 0.3, shadow: false });
+      plinth(w, side, (a + b) / 2, b - a);
     }
     wbox(w, side, 0, 0.35, H - 0.35, 44, 0.8, 0.7, { color: 0xece3cf, rough: 0.35, shadow: false });
   }
@@ -172,24 +181,27 @@ export function lobbyShell(w) {
   stanchions(w);
 
   // ---- outside ---------------------------------------------------------------------------------
-  citySkyline(w);
-  // faint moonlight shafts through the side windows
-  for (const c of [-17, -9, -1]) for (const sx of [-1, 1]) moonShaft(w, sx * 22, WY1, c, sx * 16, 0, c + 2);
+  w.city = lobbyCity(w);
+  // moonlight through the side windows, as bright panes on the floor
+  const patch = windowPatchMaterial();
+  w.onDispose(() => { patch.map.dispose(); patch.dispose(); });
+  for (const c of winZ) for (const sx of [-1, 1]) windowPatch(w, patch, sx, c, WW, WY0, WY1);
+  ceilingMural(w);
   return {};
 }
 
 function southWall(w, T, WW, WY0, WY1, H) {
   const Z = 16 + T / 2;
   const edges = [{ c: -16, k: 'win' }, { c: -9, k: 'win' }, { c: 0, k: 'door' }, { c: 9, k: 'win' }, { c: 16, k: 'win' }];
-  const seg = (x0, x1) => { if (x1 - x0 > 0.01) w.plat({ x: (x0 + x1) / 2, y: H, z: Z, w: x1 - x0, d: T, h: H, tex: 'damask', color: 0xffffff, roughness: 0.65 }); };
+  const seg = (x0, x1) => { if (x1 - x0 > 0.01) w.plat({ x: (x0 + x1) / 2, y: H, z: Z, w: x1 - x0, d: T, h: H, tex: 'damask', color: 0xffffff, roughness: WALL_ROUGH }); };
   let x = -23;
   for (const e of edges) {
     const half = e.k === 'door' ? 3 : WW / 2;
     seg(x, e.c - half);
     if (e.k === 'win') {
-      w.plat({ x: e.c, y: WY0, z: Z, w: WW, d: T, h: WY0, tex: 'damask', color: 0xffffff, roughness: 0.65 });
-      w.plat({ x: e.c, y: H, z: Z, w: WW, d: T, h: H - WY1, tex: 'damask', color: 0xffffff, roughness: 0.65 });
-    } else w.plat({ x: e.c, y: H, z: Z, w: 6, d: T, h: H - 6.2, tex: 'damask', color: 0xffffff, roughness: 0.65 });
+      w.plat({ x: e.c, y: WY0, z: Z, w: WW, d: T, h: WY0, tex: 'damask', color: 0xffffff, roughness: WALL_ROUGH });
+      w.plat({ x: e.c, y: H, z: Z, w: WW, d: T, h: H - WY1, tex: 'damask', color: 0xffffff, roughness: WALL_ROUGH });
+    } else w.plat({ x: e.c, y: H, z: Z, w: 6, d: T, h: H - 6.2, tex: 'damask', color: 0xffffff, roughness: WALL_ROUGH });
     x = e.c + half;
   }
   seg(x, 23);
@@ -262,15 +274,29 @@ export function sconce(w, x, y, z, side, withLight = false) {
 
 // ---- floor dressing ------------------------------------------------------------------------------
 function carpetRunner(w) {
-  const tex = getTexture('carpet').clone();
-  tex.repeat.set(5.4 / 2, 38.5 / 2); tex.needsUpdate = true;
-  const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 38.5), mat);
-  m.rotation.x = -Math.PI / 2; m.position.set(0, 0.014, -4.2); m.receiveShadow = true; m.matrixAutoUpdate = false; m.updateMatrix(); w.add(m);
+  // The main runner from the doors to the elevator bank, which ends in a crossbar in front of all five elevators (a T).
+  const Zs = 15.05, Ze = -20.5, len = Zs - Ze, zc = (Zs + Ze) / 2;
+  const piece = (cw, cd, x, z, offU, offV) => {
+    const tex = getTexture('carpet').clone();
+    tex.repeat.set(cw / 2, cd / 2); tex.offset.set(offU, offV); tex.needsUpdate = true;       // the offsets line the lattice up across the join
+    const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(cw, cd), mat);
+    m.rotation.x = -Math.PI / 2; m.position.set(x, 0.014, z); m.receiveShadow = true; m.matrixAutoUpdate = false; m.updateMatrix(); w.add(m);
+  };
+  const strip = (sw, sd, x, z, thin = false) => add(w, new THREE.BoxGeometry(sw, 0.03, sd), gold(), x, thin ? 0.021 : 0.02, z, { cast: false });
+  piece(5.4, len, 0, zc, 0, 0);
+  for (const sx of [-1, 1]) { strip(0.14, len, sx * 2.78, zc); strip(0.06, len, sx * 2.5, zc, true); }
+
+  const X1 = 15.4, Zn = -23.7, Zf = Ze, cwid = 2 * X1, cdep = Zf - Zn, czc = (Zf + Zn) / 2;
+  piece(cwid, cdep, 0, czc, 0.65, 0.775);
+  strip(cwid + 0.3, 0.14, 0, Zn - 0.08); strip(cwid, 0.06, 0, Zn + 0.28, true);                    // along the wall
   for (const sx of [-1, 1]) {
-    add(w, new THREE.BoxGeometry(0.14, 0.03, 38.5), gold(), sx * 2.78, 0.02, -4.2, { cast: false });
-    add(w, new THREE.BoxGeometry(0.06, 0.03, 38.5), gold(), sx * 2.5, 0.02, -4.2, { cast: false });
+    const w0 = X1 - 2.85, mx = sx * (2.85 + w0 / 2);
+    strip(w0, 0.14, mx, Zf + 0.08);                                                                  // the near edge, open where the main runner joins
+    strip(0.14, cdep + 0.3, sx * (X1 + 0.08), czc); strip(0.06, cdep, sx * (X1 - 0.28), czc, true); // the ends
   }
+  // the floor numbers, worked into the carpet in front of each door
+  ['1', '2', '3', '4', '13'].forEach((n, i) => w.sign({ text: n, x: ELEV_X[i], y: 0.045, z: czc, w: 1.3, h: 1.3, rotX: -Math.PI / 2, color: '#e8c673', opacity: 0.85, tw: 256 }));
 }
 
 function medallion(w, x, z) {
@@ -323,16 +349,58 @@ export function citySkyline(w) {
   }
 }
 
-function moonShaft(w, x, y, z, tx, ty, tz) {
-  const from = new THREE.Vector3(x, y, z), to = new THREE.Vector3(tx, ty, tz), dir = to.clone().sub(from), len = dir.length();
-  dir.normalize();
-  const c = document.createElement('canvas'); c.width = 4; c.height = 64;
-  const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 64); gr.addColorStop(0, '#fff'); gr.addColorStop(1, '#000'); g.fillStyle = gr; g.fillRect(0, 0, 4, 64);
-  const fade = new THREE.CanvasTexture(c);
-  const cone = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 1.5, len, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0x9fb4ff, transparent: true, opacity: 0.05, alphaMap: fade, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-  cone.position.copy(from).addScaledVector(dir, len / 2);
-  cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir);
-  cone.matrixAutoUpdate = false; cone.updateMatrix(); w.add(cone);
+// ---- moonlight on the floor ------------------------------------------------------------------------
+// The window's panes projected onto the floor along a fixed moon direction (additive, so it brightens whatever it falls on).
+function windowPatchMaterial() {
+  const c = document.createElement('canvas'); c.width = 128; c.height = 256; const g = c.getContext('2d');
+  g.fillStyle = '#000'; g.fillRect(0, 0, 128, 256);
+  g.fillStyle = '#fff'; g.fillRect(6, 6, 116, 244);
+  g.fillStyle = '#000';
+  g.fillRect(62, 0, 4, 256);                                    // the central mullion
+  for (const f of [(5.6 - 3.4) / 7.2, (8.2 - 3.4) / 7.2]) g.fillRect(0, f * 256 - 3, 128, 6);   // the two transoms
+  const fade = g.createLinearGradient(0, 0, 0, 256); fade.addColorStop(0, 'rgba(0,0,0,0)'); fade.addColorStop(0.7, 'rgba(0,0,0,0.25)'); fade.addColorStop(1, 'rgba(0,0,0,0.85)');
+  g.fillStyle = fade; g.fillRect(0, 0, 128, 256);
+  g.filter = 'blur(2px)'; g.drawImage(c, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.MeshBasicMaterial({ map: t, color: 0x6f8cff, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+}
+
+function windowPatch(w, mat, sx, c, WW, y0, y1) {
+  const kx = 1.25, kz = 0.28;                                     // metres inward / sideways per metre of height
+  const at = (y, dz) => [sx * (22 - y * kx), 0.055, c + dz + y * kz];
+  const P = [at(y0, -WW / 2), at(y0, WW / 2), at(y1, WW / 2), at(y1, -WW / 2)];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(P.flat(), 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2));
+  g.setIndex(sx < 0 ? [0, 1, 2, 0, 2, 3] : [0, 2, 1, 0, 3, 2]);
+  const m = new THREE.Mesh(g, mat); m.matrixAutoUpdate = false; m.renderOrder = 2; w.add(m);
+}
+
+// ---- the ceiling mural: a gold sunburst, ringed with the hotel's motto -----------------------------------
+function ceilingMural(w) {
+  const S = 1024, c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d'), R = S / 2;
+  const bg = g.createRadialGradient(R, R, 20, R, R, R); bg.addColorStop(0, '#2c2470'); bg.addColorStop(0.6, '#151b50'); bg.addColorStop(1, '#0a0f2c');
+  g.fillStyle = bg; g.beginPath(); g.arc(R, R, R - 4, 0, 7); g.fill();
+  g.save(); g.translate(R, R);
+  for (let i = 0; i < 48; i++) { const a0 = (i / 48) * Math.PI * 2; g.fillStyle = i % 2 ? 'rgba(216,169,74,0.5)' : 'rgba(216,169,74,0.16)'; g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, R * 0.6, a0, a0 + Math.PI / 48); g.closePath(); g.fill(); }
+  g.restore();
+  g.strokeStyle = '#d8a94a';
+  for (const [r, lw] of [[R - 10, 10], [R - 56, 4], [R * 0.66, 5], [R * 0.6, 3], [R * 0.3, 8]]) { g.lineWidth = lw; g.beginPath(); g.arc(R, R, r, 0, 7); g.stroke(); }
+  g.fillStyle = '#0e0c26'; g.beginPath(); g.arc(R, R, R * 0.3 - 4, 0, 7); g.fill();
+  g.fillStyle = '#f1d28a'; g.font = '700 150px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('TM', R, R + 8);
+  // the motto, set round the ring
+  const text = 'TRUST ME  ✦  IT WILL BE FINE  ✦  TRUST ME  ✦  NOTHING CAN GO WRONG  ✦  ';
+  g.font = '700 54px Georgia, serif'; g.fillStyle = '#e8c673';
+  const ringR = R * 0.84, step = (Math.PI * 2) / text.length;
+  for (let i = 0; i < text.length; i++) { g.save(); g.translate(R, R); g.rotate(i * step); g.translate(0, -ringR); g.fillText(text[i], 0, 0); g.restore(); }
+  const rnd = (() => { let q = 3; return () => { q = (q * 9301 + 49297) % 233280; return q / 233280; }; })();
+  g.fillStyle = 'rgba(255,240,200,0.8)';
+  for (let i = 0; i < 70; i++) { const a = rnd() * 7, d = R * (0.64 + rnd() * 0.14); g.beginPath(); g.arc(R + Math.cos(a) * d, R + Math.sin(a) * d, 1.5 + rnd() * 2.2, 0, 7); g.fill(); }
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  const mat = new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color(0.82, 0.82, 0.82), polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  w.onDispose(() => { tex.dispose(); mat.dispose(); });
+  const m = new THREE.Mesh(new THREE.CircleGeometry(10, 64), mat);
+  m.rotation.x = Math.PI / 2; m.rotation.z = Math.PI; m.position.set(0, L.H - 0.03, -4); m.matrixAutoUpdate = false; m.updateMatrix(); w.add(m);
 }
 
 // ================================================================================================

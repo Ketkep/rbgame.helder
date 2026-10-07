@@ -101,22 +101,46 @@ const TEX_BUILDERS = {
     for (const [x, y] of [[S / 2, S / 2], [0, 0], [S, 0], [0, S], [S, S]]) { ctx.beginPath(); ctx.arc(x, y, 6, 0, 7); ctx.fill(); }
     noise(ctx, S, S, 16);
   },
-  // deep green damask wallpaper
+  // deep green satin damask wallpaper: raised gold motifs (lit from the top left), faint satin stripes
   damask(ctx, S) {
-    ctx.fillStyle = '#10342b'; ctx.fillRect(0, 0, S, S);
+    ctx.fillStyle = '#0f3329'; ctx.fillRect(0, 0, S, S);
+    for (let x = 0; x < S; x += 32) { ctx.fillStyle = 'rgba(255,255,255,0.028)'; ctx.fillRect(x, 0, 16, S); ctx.fillStyle = 'rgba(0,0,0,0.06)'; ctx.fillRect(x + 16, 0, 16, S); }
+    const shape = (cx, cy, k, dx = 0, dy = 0) => {
+      ctx.beginPath(); ctx.ellipse(cx + dx, cy + dy, 10 * k, 34 * k, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx - 20 * k + dx, cy + 8 * k + dy, 8 * k, 24 * k, -0.9, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + 20 * k + dx, cy + 8 * k + dy, 8 * k, 24 * k, 0.9, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + dx, cy + 36 * k + dy, 5 * k, 0, 7); ctx.fill();
+    };
     const motif = (cx, cy, k) => {
-      ctx.fillStyle = 'rgba(214,170,78,0.5)';
-      ctx.beginPath(); ctx.ellipse(cx, cy, 10 * k, 34 * k, 0, 0, 7); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(cx - 20 * k, cy + 8 * k, 8 * k, 24 * k, -0.9, 0, 7); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(cx + 20 * k, cy + 8 * k, 8 * k, 24 * k, 0.9, 0, 7); ctx.fill();
-      ctx.fillStyle = 'rgba(8,36,28,0.9)';
-      ctx.beginPath(); ctx.ellipse(cx, cy, 4 * k, 20 * k, 0, 0, 7); ctx.fill();
-      ctx.fillStyle = 'rgba(214,170,78,0.7)'; ctx.beginPath(); ctx.arc(cx, cy + 36 * k, 5 * k, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'; shape(cx, cy, k, 2.4 * k, 2.8 * k);                    // cast shadow
+      ctx.fillStyle = 'rgba(255,236,170,0.4)'; shape(cx, cy, k, -1.6 * k, -1.8 * k);              // top-left highlight
+      const g = ctx.createLinearGradient(cx - 30 * k, cy - 34 * k, cx + 30 * k, cy + 40 * k);
+      g.addColorStop(0, 'rgba(236,196,98,0.92)'); g.addColorStop(0.55, 'rgba(196,150,60,0.88)'); g.addColorStop(1, 'rgba(150,108,38,0.9)');
+      ctx.fillStyle = g; shape(cx, cy, k);
+      ctx.fillStyle = 'rgba(8,36,28,0.92)'; ctx.beginPath(); ctx.ellipse(cx, cy, 4 * k, 20 * k, 0, 0, 7); ctx.fill();   // the cut-out
+      ctx.strokeStyle = 'rgba(255,236,170,0.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(cx, cy, 4 * k, 20 * k, 0, 3.4, 5.9); ctx.stroke();
     };
     motif(S / 4, S / 4, 1); motif(S * 0.75, S * 0.75, 1); motif(S * 0.75, S / 4, 0.55); motif(S / 4, S * 0.75, 0.55);
-    ctx.strokeStyle = 'rgba(214,170,78,0.14)'; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(214,170,78,0.16)'; ctx.lineWidth = 1.5;                                 // diamond lattice
     for (let i = -S; i < S * 2; i += 64) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + S, S); ctx.moveTo(i, S); ctx.lineTo(i + S, 0); ctx.stroke(); }
+    ctx.fillStyle = 'rgba(236,196,98,0.5)';                                                       // little studs where the lattice crosses
+    for (let i = 0; i <= S; i += 64) for (let j = 0; j <= S; j += 64) if (((i + j) / 64) % 2 === 0) { ctx.beginPath(); ctx.arc(i, j, 2.4, 0, 7); ctx.fill(); }
     noise(ctx, S, S, 7);
+  },
+  // polished verde marble with white and gold veining (wall plinths)
+  verde(ctx, S) {
+    const rnd = Math.random;
+    ctx.fillStyle = '#0d2b22'; ctx.fillRect(0, 0, S, S);
+    for (let k = 0; k < 40; k++) { ctx.fillStyle = `rgba(${30 + rnd() * 30},${90 + rnd() * 50},${70 + rnd() * 30},${rnd() * 0.12})`; ctx.beginPath(); ctx.arc(rnd() * S, rnd() * S, 10 + rnd() * 40, 0, 7); ctx.fill(); }
+    for (let k = 0; k < 9; k++) {
+      const gold = k % 3 === 0;
+      ctx.strokeStyle = gold ? `rgba(214,170,78,${0.25 + rnd() * 0.3})` : `rgba(235,242,232,${0.14 + rnd() * 0.4})`;
+      ctx.lineWidth = 0.6 + rnd() * 2.2; ctx.beginPath();
+      let px = rnd() * S, py = rnd() * S; ctx.moveTo(px, py);
+      for (let j = 0; j < 9; j++) { px += (rnd() - 0.3) * 44; py += (rnd() - 0.2) * 40; ctx.lineTo(px, py); }
+      ctx.stroke();
+    }
+    noise(ctx, S, S, 5);
   },
   // raised lacquer panel with a gold inset line (wainscoting, doors)
   panel(ctx, S) {
