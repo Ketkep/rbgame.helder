@@ -139,9 +139,9 @@ export default {
     const F2 = path(0, floor(-22, -26, 0));
     // wet marble over a bleach pit: three slabs, a slalom
     pool(-26, -41, -2.2, 'bleach');
-    const marble = (x, zs, zn) => path(0, floor(zs, zn, 0, { x, w: 4.8, tex: 'marble', color: 0xd0d0dc, rough: 0.14, slippery: 0.88, h: 0.5 }));
-    const M1 = marble(-1.6, -26, -31), M2 = marble(1.6, -31, -36), M3 = marble(-1.6, -36, -41);
-    for (const [x, z] of [[-1.6, -28.5], [1.6, -33.5], [-1.6, -38.5]]) w.box({ x, y: -1.35, z, w: 0.5, h: 1.7, d: 0.5, color: 0x8a8a96, rough: 0.4, shadow: false });
+    const marble = (x, zs, zn) => path(0, floor(zs, zn, 0, { x, w: 3.6, tex: 'marble', color: 0xd0d0dc, rough: 0.14, slippery: 0.88, h: 0.5 }));
+    const M1 = marble(-2.2, -26, -31), M2 = marble(2.2, -31, -36), M3 = marble(-2.2, -36, -41);      // no straight line through: zig, zag, zig
+    for (const [x, z] of [[-2.2, -28.5], [2.2, -33.5], [-2.2, -38.5]]) w.box({ x, y: -1.35, z, w: 0.5, h: 1.7, d: 0.5, color: 0x8a8a96, rough: 0.4, shadow: false });
     const F3 = path(0, floor(-41, -45, 0));
     // the trolley bridge (the third one has wheels. It uses them)
     pool(-45, -56.8, -2.2, 'bleach');
@@ -162,11 +162,11 @@ export default {
 
     // ============================ stage 2 · the laundry (y -9) ==================================================
     const Y2 = -9;
-    walls(-58, -139, -11.5, -3, 'tile', 0xc8dcef);
-    ceil(-58, Z.chute0, -3); ceil(-66, -139, -3);
-    wallAcross(-58.5, -11.5, -3, 'tile', 0xc8dcef);
-    const pile = path(1, floor(-59, -66, -8.4, { tex: 'curtain', color: 0xf4f1ea, rough: 0.95, h: 2.6 }));
-    for (const [x, z, r] of [[-2.6, -60.5, 0.7], [2.8, -64.6, 0.9], [-3.2, -64.9, 0.6], [1.9, -60.2, 0.5]]) { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), plainMaterial(0xf6f1e8, { roughness: 1 })); m.scale.y = 0.55; m.position.set(x, -8.4 + r * 0.3, z); w.add(m); }
+    walls(-60, -139, -11.5, -3, 'tile', 0xc8dcef);
+    ceil(-66, -139, -3);
+    wallAcross(-60.5, -11.5, -2.4, 'tile', 0xc8dcef);                    // (the chute's south face, under the corridor floor)
+    const pile = path(1, floor(Z.chute0, -66, -8.85, { tex: 'curtain', color: 0xf4f1ea, rough: 0.95, h: 2.6 }));
+    for (const [x, z, r] of [[-2.6, -61.8, 0.7], [2.8, -64.6, 0.9], [-3.2, -64.9, 0.6], [1.9, -61.6, 0.5]]) { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), plainMaterial(0xf6f1e8, { roughness: 1 })); m.scale.y = 0.55; m.position.set(x, -8.85 + r * 0.3, z); w.add(m); }
     const F5 = path(1, floor(-66, -71, Y2, { color: 0xdfe9f2 }));
     stageCp(1, 0, Y2, -68.5);
     pool(-71, -119.5, -9.6, 'suds');
@@ -238,7 +238,7 @@ export default {
     const counter = path(2, w.plat({ x: -2.6, y: -8.0, z: -182, w: 1.6, d: 10.8, h: 2.6, tex: 'metal', color: 0xd8dde4, roughness: 0.25, metalness: 0.8, radius: 0.04 }), [{ x: -2.6, y: -8, z: -177.5 }, { x: -2.6, y: -8, z: -186.5 }]);
     const LAMP_P = 2.8, LAMP_ON = 1.0;
     const lamps = [-179.8, -184.2].map((z, k) => {
-      const ph = k * 1.4;
+      const ph = -k * 0.3;                                       // a wave: the far lamp follows the near one (a 1.5 s gap every cycle)
       const on = (t) => (((t + ph) % LAMP_P) + LAMP_P) % LAMP_P < LAMP_ON;
       const hz = w.hazard({ x: -2.6, y: -7.25, z, w: 1.7, h: 1.5, d: 1.1, color: 0xff7a30 });
       hz.core.visible = false; hz.shell.visible = false; hz.predict = on;
@@ -549,6 +549,7 @@ export default {
     w.botPlan = (g) => {
       const p = g.player;
       if (g.mods.swapFwd) return { x: p.x, z: p.z, wait: true };                                                   // a human presses S; the bot stands still (the bell waits long enough)
+      if (p.y > -5 && p.z < -57.5 && p.z > -66) return { x: p.x, z: -64.2 };                                       // down the chute: aim for the middle of the hole
       if (elev.phase !== 'top' && elev.phase !== 'bottom' && p.z > Z.shaftN) return { x: 0, z: SZ, wait: true };   // ride the lift down
       return null;
     };
