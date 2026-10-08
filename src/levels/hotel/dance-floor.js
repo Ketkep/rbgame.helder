@@ -73,6 +73,13 @@ export default {
       tiles.push(tl); stages[si].route.push({ x, y: 0, z });
       return tl;
     };
+    const solidPad = (si, x, zNow) => {
+      const pz = zNow;
+      const p = path(w.plat({ x, y: 0, z: pz, w: 3.0, d: 3.0, h: 0.5, tex: 'grid', color: GOLD, roughness: 0.2, metalness: 0.6, radius: 0.08, trim: GOLD }));
+      stages[si].route.push({ x, y: 0, z: pz });
+      p.sign = w.sign({ text: '◆', x, y: 0.27, z: pz, w: 1.6, h: 1.6, rotX: -Math.PI / 2, color: '#ffd23f', double: false, tw: 256, size: 180 });
+      return p;
+    };
     const addBooth = (si, { cpDx = 0 } = {}) => {
       z -= 5.95;
       const b = path(w.plat({ x: 0, y: 0, z, w: 9, d: 5.2, h: 1.4, tex: 'stage', color: 0x3a2a6a, roughness: 0.25, radius: 0.05, trim: 0xffd23f }));
@@ -87,8 +94,11 @@ export default {
     const zone = (zc, fn, o = {}) => w.trigger({ x: 0, y: 1.6, z: zc, w: 34, h: 4, d: 1.4, once: true, resetOnRespawn: true, onEnter: fn, ...o });
 
     // ---- set 1 · warm-up -----------------------------------------------------------------------------------------------
-    for (let k = 0; k < 11; k++) addTile(0, XS[k % XS.length]);
-    const freezeT1 = tiles[6];
+    let freezePad = null;
+    for (let k = 0; k < 11; k++) {
+      if (k === 6) { z -= 5.0; freezePad = solidPad(0, 0.4, z); continue; }
+      addTile(0, XS[k % XS.length]);
+    }
     addBooth(0);
     // ---- set 2 · second set ------------------------------------------------------------------------------------------
     const s2tiles = [];
@@ -97,9 +107,7 @@ export default {
       if (k === 4) {
         // the gold pad: always lit. The DJ drops the beat when you step on it
         z -= 5.0;
-        pad = path(w.plat({ x: 0.4, y: 0, z, w: 3.0, d: 3.0, h: 0.5, tex: 'grid', color: GOLD, roughness: 0.2, metalness: 0.6, radius: 0.08, trim: GOLD }));
-        pad.o.pad = true; stages[1].route.push({ x: 0.4, y: 0, z });
-        w.sign({ text: '◆', x: 0.4, y: 0.27, z, w: 1.6, h: 1.6, rotX: -Math.PI / 2, color: '#ffd23f', double: false, tw: 256, size: 180 });
+        pad = solidPad(1, 0.4, z);
         padZ = z;
         continue;
       }
@@ -157,8 +165,10 @@ export default {
     // the encore: only there once the DJ has been rude
     const enc = [];
     let zz = djZ - 1.85;
+    let encPad = null;
     for (let k = 0; k < 8; k++) {
       zz -= 5.0;
+      if (k === 3) { encPad = solidPad(5, 0.4, zz); encPad.setEnabled(false); encPad.sign.visible = false; continue; }
       const col = NEON[(k + 3) % NEON.length], size = 2.3, x = XS[(k + 5) % XS.length];
       const pl = path(w.plat({ x, y: 0, z: zz, w: size, d: size, h: 0.5, tex: 'grid', color: col, roughness: 0.25, radius: 0.08 }));
       const glow = new THREE.Mesh(new THREE.PlaneGeometry(size - 0.2, size - 0.2), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
@@ -176,13 +186,12 @@ export default {
     finalPl.setEnabled(false);
     const finalGoal = w.goal({ x: 0, y: 0, z: zz, color: GOLD, onReach: () => { game.say('hotel.l10.done', { priority: 2 }); game.completeLevel(); } });
     finalGoal.group.visible = false; finalGoal.trig.enabled = false;
-    const encFreezeT = enc[3];
-    w.goalObj = fakeGoal;
+        w.goalObj = fakeGoal;
     let encoreOn = false;
     const enableEncore = () => {
       encoreOn = true;
       for (const t of enc) { t.active = true; t.ghost.visible = true; w.burst(new THREE.Vector3(t.x, 0.5, t.z), t.col, 10, 3); }
-      finalPl.setEnabled(true); finalGoal.group.visible = true; finalGoal.trig.enabled = true; w.goalObj = finalGoal;
+      encPad.setEnabled(true); encPad.sign.visible = true; finalPl.setEnabled(true); finalGoal.group.visible = true; finalGoal.trig.enabled = true; w.goalObj = finalGoal;
       fakeGoal.group.visible = false; fakeGoal.trig.enabled = false;
       game.say('hotel.l10.encore', { priority: 2 });
     };
@@ -237,9 +246,9 @@ export default {
       spotDisc.position.set(SP.x, 0.72, SP.z); spotRing.position.set(SP.x, 0.73, SP.z); spotDisc.visible = true; spotRing.visible = true;
       game.ui.stamp('SPOTLIGHT!'); game.say(n === 0 ? 'hotel.l10.spot1' : 'hotel.l10.spot2', { priority: 2 });
     };
-    onTile(freezeT1, () => callFreeze('real'));
+    onPlat(w, freezePad, () => callFreeze('real'), { once: false });
     onTile(bluffT, () => callFreeze('bluff'));
-    onTile(encFreezeT, () => { if (encoreOn) callFreeze('real'); });
+    onPlat(w, encPad, () => { if (encoreOn) callFreeze('real'); }, { once: false });
     floors.forEach((f, k) => zone(f.body.z + 2.0, () => callSpot(k)));
     // the mirror mode under the strobes (conga line)
     w.trigger({ x: 0, y: 1.6, z: mirrorZ, w: 34, h: 4, d: 1.4, once: true, resetOnRespawn: true, onEnter: () => { D.strobeUntil = w.t + 6; twist(game, w, 'mouseX', { sec: 6, say: 'hotel.l10.mirror' }); } });
@@ -268,7 +277,7 @@ export default {
       if (D.phase === 'warn' && t - D.t0 >= WARN) { D.phase = 'freeze'; D.t0 = t; if (D.kind === 'real') game.say('hotel.l10.freeze', { priority: 1 });  }
       if (D.phase === 'freeze' && t - D.t0 >= (baby() ? FREEZE_LEN - 0.4 : FREEZE_LEN)) { const wasBluff = D.kind === 'bluff'; D.phase = 'play'; if (wasBluff) game.say('hotel.l10.bluffend', { priority: 1 }); }
       frozenReal = D.phase === 'freeze' && D.kind === 'real';
-      const holding = D.phase === 'warn' || (D.phase === 'freeze' && (D.kind === 'real' || baby()));
+      const holding = (D.phase === 'warn' || D.phase === 'freeze') && (D.kind === 'real' || baby());
       if (holding) pauseAcc += dt;                    // the tiles' clock stops while the DJ shouts (a lit tile stays lit, a dark one dark)
       const tt = t - pauseAcc;
       const strobe = t < D.strobeUntil;
