@@ -260,7 +260,8 @@ export function boardMesh(w, { x, y, z, width = 10, height = 3.4, header = 'QUES
   for (let i = 0; i <= nx; i++) { const bx = -width / 2 + (i * width) / nx; addBulb(bx, height / 2 + 0.12); addBulb(bx, -height / 2 - 0.12); }
   for (let i = 1; i < ny; i++) { const by = -height / 2 + (i * height) / ny; addBulb(-width / 2 - 0.12, by); addBulb(width / 2 + 0.12, by); }
   w.add(grp);
-  hotelHalo(w, x, y, z + 0.6, width * 1.15, 0xffb860, 0.12);
+  const halo = hotelHalo(w, x, y, z + 0.6, width * 1.15, 0xffb860, 0.12);   // (part of the board: hidden with it)
+  w.scene.remove(halo); halo.position.set(0, 0, 0.6); grp.add(halo);
   w.onUpdate((dt, t) => { if (!grp.visible) return; const k = Math.floor(t * 3) % 2; bulbs.forEach((b, i) => { b.visible = (i + k) % 2 === 0 || i % 5 === 0; }); });
   grp.setText = (tx, hd = header, hc = headerColor) => draw(hd, tx, hc);
   return grp;

@@ -38,20 +38,29 @@ export function quizShow(w, game, opts) {
   const rounds = [], stages = [], cps = new Map();
   let cleared = 0;                                   // rounds answered (index of the live round)
   const show = { rounds, stages, z: z0, frozenSim: 0, hallW, H };
+  w.quizShow = show;   // (tests and the bot read it)
   const say = (key, o = {}) => game.say(key, { priority: 1, ...o });
 
   // ---------------------------------------------------------------------------------------------------------------
   //  Building
   // ---------------------------------------------------------------------------------------------------------------
   /** Start a new stage at the current cursor. `at` (optional) is its respawn spot; rounds fill it in themselves. */
-  show.stage = (name, { at = null, say: line = null } = {}) => {
+  show.stage = (name, { at = null, say: line = null, flag: withFlag = true, width = 8 } = {}) => {
     const i = stages.length;
-    const s = { i, name: name || names?.[i] || `Stage ${i + 1}`, at, route: [], line, cp: null, rounds: [] };
+    const s = { i, name: name || names?.[i] || `Stage ${i + 1}`, at, route: [], line, cp: null, rounds: [], noFlag: !withFlag };
     stages.push(s);
-    if (at) s.cp = flag(i, at.x, at.y, at.z);
+    if (at && withFlag) s.cp = flag(i, at.x, at.y, at.z, width);
     return s;
   };
-  const flag = (i, x, y, z) => { const c = w.checkpoint({ x, y, z, real: true }); cps.set(c, i); return c; };
+  const flag = (i, x, y, z, width = hallW - 1) => {
+    const c = w.checkpoint({ x, y, z, real: true }); cps.set(c, i);
+    // the flag's own trigger is 2.4 m wide: this one spans the whole platform, so nobody walks past a stage start
+    w.trigger({ x, y: y + 1.2, z, w: width, h: 3.2, d: 2.4, once: false, onEnter: () => {
+      if (c.used || game.state !== 'playing') return;
+      c.used = true; w.burst(new THREE.Vector3(x, y + 0.4, z), 0xffc83d, 24); game.onCheckpoint(c);
+    } });
+    return c;
+  };
   w.hooks.onCheckpoint = (c) => {
     const i = cps.get(c);
     if (i === undefined) return;
@@ -62,24 +71,37 @@ export function quizShow(w, game, opts) {
   /** A bot/hint waypoint for the stage being built (an interlude): `body` to stand on, optional `wait(g)` / `ride(g)`. */
   show.route = (plat, o = {}) => {
     const s = stages[stages.length - 1], b = plat.body || plat;
-    const node = { body: b, wait: o.wait || null, ride: o.ride || null, x: o.x, z: o.z };
+    const node = { body: b, wait: o.wait || null, ride: o.ride || null, x: o.x, z: o.z, alt: o.alt || null, save: o.save || null };
     s.route.push(node);
     if (plat.o) plat.o.path = true;
+    if (o.save) {   // a quiet save when you land on it
+      w.trigger({ x: b.x, y: b.y + b.hy + 1.5, z: b.z, w: b.hx * 2 - 0.4, h: 3, d: b.hz * 2 - 0.4, once: false, onEnter: () => { if (game.state === 'playing') w.respawn = { ...o.save, yaw: 0 }; } });
+    }
     return plat;
   };
 
   /** Support columns under a platform that otherwise hangs over the pit. */
   show.pillars = (x, y, z, wd, dp, { color = 0xece3cf, r = 0.32 } = {}) => {
-    const len = y - (pitY + 0.5);
-    if (len <= 0.2) return;
+    const out = [], len = y - (pitY + 0.5);
+    if (len <= 0.2) return out;
     const xs = wd > 6 ? [-wd / 2 + 1.2, wd / 2 - 1.2] : [0];
     const zs = dp > 6 ? [-dp / 2 + 1.2, dp / 2 - 1.2] : [0];
     for (const dx of xs) for (const dz of zs) {
       const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.15, len, 14), plainMaterial(color, { roughness: 0.3 }));
       m.position.set(x + dx, pitY + 0.5 + len / 2, z + dz); m.matrixAutoUpdate = false; m.updateMatrix(); w.add(m);
       const cap = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.5, r * 1.2, 0.3, 14), plainMaterial(GOLD, { metalness: 1, roughness: 0.3 }));
-      cap.position.set(x + dx, y - 0.2 - 0.15, z + dz); cap.matrixAutoUpdate = false; cap.updateMatrix(); w.add(cap);
+      cap.position.set(x + dx, y - 0.15, z + dz); cap.matrixAutoUpdate = false; cap.updateMatrix(); w.add(cap);
+      out.push(m, cap);
     }
+    return out;
+  };
+  /** A potted palm standing on a platform whose top is at `y` (props.js only knows the lobby floor). */
+  show.palm = (x, y, z) => {
+    const n0 = w.scene.children.length, b0 = w.bodies.length;
+    palm(w, x, z, 1.0);
+    const objs = w.scene.children.slice(n0), bodies = w.bodies.slice(b0);
+    if (y) { for (const o of objs) { o.position.y += y; o.updateMatrix(); } for (const b of bodies) b.setCenter(b.x, b.y + y, b.z); }
+    return { objs, bodies };
   };
 
   /** One quiz round at the cursor. Returns the round state. */
@@ -87,12 +109,13 @@ export function quizShow(w, game, opts) {
     const k = rounds.length, s = stages[stages.length - 1];
     const zS = show.z, zN = zS - islandD, zc = (zS + zN) / 2, y0 = spec.y ?? 0;
     const isl = w.plat({ x: 0, y: y0, z: zc, w: hallW, d: islandD, h: 1.4, tex: 'carpet', color: spec.carpet ?? s.carpet ?? carpet, roughness: 0.92, radius: 0.05, trim: GOLD });
-    show.pillars(0, y0 - 1.4, zc, hallW - 2, islandD);
-    for (const sx of [-1, 1]) palm(w, sx * (hallW / 2 - 1.3), zc + 1.2, 1.0);
+    const decor = show.pillars(0, y0 - 1.4, zc, hallW - 2, islandD), decorBodies = [];
+    if (spec.palms !== false) for (const sx of [-1, 1]) { const pm = show.palm(sx * (hallW / 2 - 1.3), y0, zc + 1.2); decor.push(...pm.objs); decorBodies.push(...pm.bodies); }
     // the first round of a stage carries the stage's checkpoint
     const at = { x: 0, y: y0, z: zS - 1.8 };
-    if (!s.rounds.length && !s.at) { s.at = at; s.cp = flag(s.i, at.x, at.y, at.z); }
-    s.route.push({ body: isl.body });
+    if (!s.rounds.length && !s.at) { s.at = at; if (!s.noFlag) s.cp = flag(s.i, at.x, at.y, at.z); }
+    const node = { body: isl.body, round: null };
+    s.route.push(node);
 
     // ---- the question (some twists add or rewrite answers) ---------------------------------------------------
     let q = spec.q, answers = q.answers.map((a) => ({ ...a }));
@@ -105,9 +128,17 @@ export function quizShow(w, game, opts) {
       answers = [...wrong.slice(0, at2), ...right, ...wrong.slice(at2)];
     }
     const n = answers.length;
-    const reach = spec.breathe ? 4.8 : 4.4;
+    const rows = spec.stones || 0, extra = rows * 2.7;     // stepping stones between the island and the answers
+    const reach = (spec.breathe ? 4.8 : 4.4) + extra;
     const padZ = zN - reach, padY = y0 + (spec.padDy || 0);
     const sp = spec.double ? 3.4 : spacing;
+    const stones = [];
+    for (let r = 0; r < rows; r++) for (let i = 0; i < n; i++) {
+      const sx = (i - (n - 1) / 2) * sp + (r % 2 ? 1.1 : -1.1), sz = zN - 1.9 - r * 2.7;
+      const stone = w.plat({ x: sx, y: y0, z: sz, w: 1.7, d: 1.6, h: 0.5, tex: 'marble', color: 0xc9b8e8, roughness: 0.25, radius: 0.06, trim: GOLD });
+      show.pillars(sx, y0 - 0.5, sz, 1.7, 1.6, { r: 0.16 });
+      (stones[r] ||= [])[i] = stone;
+    }
     const pads = answers.map((a, i) => {
       const pad = makePad(w, { x: (i - (n - 1) / 2) * sp, z: padZ, y: padY, letter: LETTERS[i], text: a.text, correct: a.correct });
       pad.fallY = 0; pad.k = k;
@@ -125,10 +156,11 @@ export function quizShow(w, game, opts) {
       pads.push(pass);
     }
     if (spec.double) seams(pads, padY, padZ);
-    const gate = makeGate(w, { z: zN - 8.4, width: hallW + 2 });
-    const board = boardMesh(w, { x: 0, y: y0 + 6.6, z: zN - 8.9, width: 12, height: 3.6, header: spec.header || `QUESTION ${k + 1}`, text: q.q, hang: H, headerColor: spec.flip ? '#ff5a6a' : '#d8a94a' });
+    const zG = zN - 8.4 - extra, zB = zN - 8.9 - extra;
+    const gate = makeGate(w, { z: zG, width: hallW + 2 });
+    const board = boardMesh(w, { x: 0, y: y0 + 6.6, z: zB, width: 12, height: 3.6, header: spec.header || `QUESTION ${k + 1}`, text: q.q, hang: H, headerColor: spec.flip ? '#ff5a6a' : '#d8a94a' });
     const st = {
-      k, stage: s.i, spec, q, pads, gate, board, isl, zS, zN, zc, y0, padZ, gateZ: zN - 8.4, at,
+      k, stage: s.i, spec, q, pads, gate, board, isl, zS, zN, zc, y0, padZ, gateZ: zG, zB, at, stones, decor, decorBodies,
       reached: false, passed: false, unlocked: !spec.locked, lieLetter: null, claim: null,
       timer: null, mind: null, sw: null, origQ: q, origAnswers: answers.map((a) => ({ ...a })), hints: 0,
     };
@@ -140,10 +172,11 @@ export function quizShow(w, game, opts) {
     if (spec.poll) { const wp = st.wrong().filter((p) => !p.pass); st.pollLetter = wp[Math.floor(Math.random() * wp.length)].letter; st.poll = pollBoard(st); }
     const tlim = spec.timer || (spec.switch ? 8 : 0);
     if (tlim) {
-      const clock = clockMesh(w, 8.6, y0 + 6.6, zN - 8.9, { hang: H });
+      const clock = clockMesh(w, 8.6, y0 + 6.6, zB, { hang: H });
       st.timer = { limit: tlim, left: tlim, started: !!spec.switch && false, clock, downT: 0, on: !!spec.timer };
     }
     st.unlock = () => { st.unlocked = true; reveal(); };
+    node.round = st;
     rounds.push(st); s.rounds.push(st);
     // a quiet save when you step onto the island, and the host's opening line for the round
     w.trigger({ x: 0, y: y0 + 1.5, z: zc, w: hallW - 1, h: 3, d: islandD - 0.6, once: false, onEnter: () => {
@@ -151,7 +184,7 @@ export function quizShow(w, game, opts) {
       w.respawn = { x: at.x, y: at.y, z: at.z, yaw: 0 };
       if (!st.reached) { st.reached = true; if (k === cleared) enterRound(st); }
     } });
-    show.z = zN - 9.0;
+    show.z = zN - 9.0 - extra;
     return st;
   };
 
@@ -183,7 +216,7 @@ export function quizShow(w, game, opts) {
       g.fillStyle = '#fff6e0'; g.font = '30px "Archivo Black", Impact, sans-serif'; g.fillText(p.letter, x + bw / 2, 302); g.font = '22px "Archivo Black", Impact, sans-serif'; g.fillText(pct[i] + '%', x + bw / 2, 258 - h);
     });
     const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; w.ownTextures.push(tex);
-    const grp = new THREE.Group(); grp.position.set(-8.9, st.y0 + 6.6, st.zN - 8.9);
+    const grp = new THREE.Group(); grp.position.set(-8.9, st.y0 + 6.6, st.zB);
     const face = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.25), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false })); face.position.z = 0.02; grp.add(face);
     const back = new THREE.Mesh(new THREE.BoxGeometry(3.9, 2.55, 0.2), plainMaterial(GOLD, { metalness: 1, roughness: 0.3 })); back.position.z = -0.12; grp.add(back);
     const len = H - (st.y0 + 6.6 + 1.27);
@@ -364,10 +397,14 @@ export function quizShow(w, game, opts) {
   // ---- respawn: the live round starts over; a round you cleared but never left (the host changed his mind) too ----
   w.onRespawn(() => {
     for (const st of rounds) {
-      if (st.k < cleared && !st.passed) {
-        if (st.spec.mind && !game.baby) { cleared = Math.min(cleared, st.k); st.gate.close(); }
-        else { const rp = st.pads.find((p) => p.state === 'right' || (p.correct && p.falling)); if (rp && rp.state !== 'right') { resetPad(rp); rp.set('right'); } }
+      if (st.k >= cleared) continue;
+      if (!st.passed && st.mind) { cleared = Math.min(cleared, st.k); st.gate.close(); st.gate.grp.visible = true; continue; }
+      // a cleared round always keeps one standing pad (the right one), so the way on is never gone
+      if (!st.pads.some((p) => p.state === 'right' && p.plat.body.enabled)) {
+        const rp = st.pads.find((p) => p.state === 'right') || st.pads.find((p) => p.correct);
+        if (rp) { resetPad(rp); rp.set('right'); }
       }
+      st.mind = null;
     }
     for (let k = cleared; k < rounds.length; k++) resetRound(rounds[k]);
     reveal();
@@ -393,7 +430,7 @@ export function quizShow(w, game, opts) {
     if (!show.inRound()) return 'trail';
     if (show.hintGate && !show.hintGate(g, st)) return false;
     const standing = (p) => g.player.grounded && g.player.ground === p.plat.body;
-    const cand = st.pads.filter((p) => !p.correct && !p.eliminated && !standing(p) && p.state === 'idle' && !(st.spec.double && st.pads.indexOf(p) >= 0 && false));
+    const cand = st.pads.filter((p) => !p.correct && !p.eliminated && !standing(p) && p.state === 'idle');
     const sp = st.spec;
     const tip = sp.mind ? K('hint.mind') : sp.switch ? K('hint.switch') : sp.double ? K('hint.double') : sp.flip ? K('hint.flip') : sp.pass ? K('hint.pass') : sp.poll ? K('hint.poll') : sp.none ? K('hint.none.above') : null;
     if (!cand.length) { say(tip || K('hint.none'), { priority: 1 }); return !!tip; }
@@ -423,34 +460,67 @@ export function quizShow(w, game, opts) {
   //  The test bot: plays it perfectly (rounds: the right pad; interludes: the stage route, waiting where told to)
   // ---------------------------------------------------------------------------------------------------------------
   show.botRates = false;
+  let botIdx = 0, allNodes = null;
+  show.nodes = () => (allNodes ||= stages.flatMap((s) => s.route));
+  /** Which route node the player is on (a pad counts as its round's island). -1 if none. */
+  show.nodeAt = (p) => {
+    if (!p.grounded || !p.ground) return -1;
+    const all = show.nodes();
+    let idx = all.findIndex((n) => n.body === p.ground || (n.alt && n.alt.includes(p.ground)));
+    if (idx < 0) { const r = rounds.find((r2) => r2.pads.some((q2) => q2.plat.body === p.ground)); if (r) idx = all.findIndex((n) => n.round === r); }
+    return idx;
+  };
   show.bot = (g) => {
-    const p = g.player;
-    if (g.frozen || g.modal) { show.botRates = true; return { wait: true, x: p.x, z: p.z }; }
+    const p = g.player, hold = { wait: true, x: p.x, z: p.z };
+    if (g.frozen || g.modal) { show.botRates = true; return hold; }
     show.botRates = false;
-    const st = live();
-    // interlude routes (the stage you are in, while the next round is not yet reached)
-    const i = curStage(), s = stages[i];
-    const onNode = s.route.findIndex((n) => p.grounded && p.ground === n.body);
-    if (onNode >= 0 && s.route[onNode].ride?.(g)) return { wait: true, x: p.x, z: p.z };
-    if (st && !st.hidden && (st.reached || st.stage === i) && (st.reached || s.route.findIndex((n) => n.body === st.isl.body) <= onNode + 1 || onNode < 0 && p.z < st.zS + 3)) {
-      if (!st.reached || p.z > st.zS + 0.2) return { body: st.isl.body };
-      if (st.timer && st.timer.downT > 0) return { wait: true, x: p.x, z: p.z };
+    const all = show.nodes();
+    const here = show.nodeAt(p);
+    if (here >= 0) botIdx = here;
+    const node = all[botIdx], st = node.round;
+    if (st && st.hidden) return hold;
+    if (st && st.k >= cleared) {                     // answer it
+      if (p.z > st.zS + 0.2 || !st.reached) return { body: st.isl.body };
+      if (st.timer && st.timer.downT > 0) return hold;
       if (st.spec.double && !st.sw) {
         const r = st.right(); const a = r[0].plat.body, b = r[1].plat.body; const sx = (a.x + b.x) / 2;
         const onBoth = p.grounded && r.every((q2) => overlaps(p, q2.plat.body));
-        if (onBoth && Math.abs(p.x - sx) < 0.2) return { wait: true, x: p.x, z: p.z };
+        if (onBoth && Math.abs(p.x - sx) < 0.25) return hold;
         return { x: sx, z: a.z };
       }
       const right = st.pads.find((q2) => q2.correct && q2.plat.body.enabled && q2.state !== 'wrong');
-      if (!right) return { wait: true, x: p.x, z: p.z };
-      if (p.grounded && p.ground === right.plat.body) return { wait: true, x: p.x, z: p.z };
+      if (!right) return hold;
+      if (p.grounded && p.ground === right.plat.body) return hold;
+      if (st.stones.length) {   // hop the stepping stones in the right answer's column
+        const col = st.pads.indexOf(right);
+        const r = st.stones.findIndex((row) => p.grounded && row[col] && p.ground === row[col].body);
+        if (r < 0 && p.grounded && p.ground === st.isl.body) st.botRow = 0;
+        else if (r >= 0) st.botRow = r + 1;
+        const nxt = st.stones[st.botRow ?? 0]?.[col];
+        if (nxt) return { body: nxt.body };
+      }
       return { body: right.plat.body };
     }
-    const nx = s.route[onNode + 1];
-    if (nx) { if (nx.wait?.(g)) return { wait: true, x: p.x, z: p.z }; return nx.x !== undefined ? { x: nx.x, z: nx.z } : { body: nx.body }; }
-    return null;
+    if (node.ride?.(g) && p.grounded && (p.ground === node.body || node.alt?.includes(p.ground))) return hold;
+    const nx = all[botIdx + 1];
+    if (!nx) return null;
+    if (nx.wait?.(g)) return hold;
+    return nx.x !== undefined ? { x: nx.x, z: nx.z } : { body: nx.body };
   };
 
+  /** Hide a round completely (for a stage that only appears later, e.g. after a fake LEVEL COMPLETE), or bring it back. */
+  show.setHidden = (st, on) => {
+    st.hidden = on;
+    st.isl.setEnabled(!on);
+    st.pads.forEach((p) => { p.off = on; p.plat.setEnabled(!on); });
+    st.decor.forEach((m) => { m.visible = !on; });
+    st.decorBodies.forEach((b) => { b.enabled = !on; });
+    st.gate.grp.visible = !on;
+    st.stones.flat().forEach((s2) => s2.setEnabled(!on));
+    const s = stages[st.stage];
+    if (s.rounds[0] === st && s.cp) s.cp.group.visible = !on;
+    reveal();
+  };
   show.live = live;
   show.get = () => cleared;
   Object.defineProperty(show, 'cleared', { get: () => cleared, set: (v) => { cleared = v; reveal(); } });
