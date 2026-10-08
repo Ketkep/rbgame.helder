@@ -648,6 +648,7 @@ suite('dinner-cellar', async () => {
     g.player.teleport(0, 0.001, -70); const b = dn.barrels[0];
     g.player.teleport(b.body.x, 0.001, b.body.z); g._simulate(1 / 60); out.barrelKills = g.state === 'dead';
     g.state = 'playing'; g.respawnPlayer(false);
+    for (const b2 of dn.barrels) b2.enabled = false;      // (the rest of this test is about the controls and the ring, not the barrels)
     // input lag in the middle of the aisle, announced and temporary
     g.player.teleport(0, 0.001, -75); sim(0.3); out.lag = g.mods.swapStrafe === true;
     g.player.teleport(0, 0.001, -63); sim(8.5); out.lagEnds = !g.mods.swapStrafe;
