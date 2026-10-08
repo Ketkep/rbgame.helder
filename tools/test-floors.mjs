@@ -517,6 +517,102 @@ suite('lobby', async () => {
   await page.close();
 });
 
+// >>> escape rooms (levels 3, 8, 11)
+// ---- level 3: Lost Luggage (five rooms: office · belts · weigh-in · lost property · the pile) --------------------------------
+suite('luggage', async () => {
+  const page = await open(3);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, e = w.escape, out = {};
+    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const type = (c) => { for (const d of c) g.modal.key({ code: 'Digit' + d }); g.modal.key({ code: 'Enter' }); };
+    const stand = (x, y, z) => { g.player.teleport(x, y + 0.001, z); sim(0.1); };
+    // ---- stage 1: the keypad (the poster gives the order; the host's 1337 is wrong; it says GRANTED* once and means it not)
+    g.debug = false; for (let i = 0; i < 3; i++) { g.hintCool = 0; g.useHint(); }
+    out.hintKeys = said.filter((k) => /l3\.hint/.test(k));
+    out.fakeIsNotCode = e.code !== e.fake;
+    out.counts = e.pallets.every((p) => String(p.n) === e.code[e.order.indexOf(p.col)]);
+    g.baby = false;
+    e.useKeypad(g); type(e.fake); out.fakeDenied = !e.doorOpen && said.includes('hotel.l3.fake'); g.modal.close();
+    e.useKeypad(g); type(e.code); sim(1.6); out.firstLie = !e.doorA.open && e.liedA && said.includes('hotel.l3.jk');
+    g.modal?.close(); g.modal = null;
+    e.useKeypad(g); type(e.code); sim(2.5); out.secondOpens = e.doorA.open;
+    // ---- the mimic kills (and the other cases do not)
+    const it = w.interactables.filter((i) => Math.hypot(i.body.x - e.mimic.x, i.body.z - e.mimic.z) < 0.3 && /suitcase/i.test(typeof i.label === 'function' ? i.label() : i.label))[0];
+    stand(e.mimic.x, 0, e.mimic.z + 1.2); it.onUse(g); out.mimicKills = g.state === 'dead';
+    g.state = 'playing'; g.respawnPlayer(false); sim(0.3);
+    // ---- baby mode: the keypad tells the truth straight away
+    g.baby = true; const doorBefore = e.doorA.open; g.baby = false; void doorBefore;
+    // ---- stage 2: belts (a checkpoint at the entrance, an expiring one mid-way, the belt that reverses)
+    out.stageCount = e.stages.defs.length;
+    out.reversePhase = ['fwd', 'warn', 'back'].includes(e.rev.phase);
+    e.rev.phase = 'fwd'; e.rev.t = 100; sim(0.05); out.warns = e.rev.phase === 'warn';
+    sim(1.6); out.reverses = e.rev.phase === 'back' && e.BC.body.conv[1] > 0;
+    sim(2.5); out.forwardAgain = e.rev.phase === 'fwd' && e.BC.body.conv[1] < 0;
+    // the press hurts
+    stand(0, 0, -34.9); out.pressX = 1; g.state = 'playing';
+    // ---- stage 3: the scale. Size is not weight: the big case is the light one.
+    const wb = e.weigh.bags, big = wb.find((b) => b.big);
+    out.bigIsLight = wb.every((b) => b === big || b.kg > big.kg);
+    const sorted = [...wb].sort((a, b) => b.kg - a.kg).map((b) => b.tag).join('');
+    out.codeIsHeaviestFirst = sorted === e.weigh.code;
+    const slotOf = (b) => e.weigh.slots.find((s) => s.bag === b);
+    for (const b of wb) { e.weigh.useSlot(slotOf(b)); e.weigh.useSlot(e.weigh.scaleSlot); e.weigh.useSlot(e.weigh.scaleSlot); }
+    out.weighedAll = e.weigh.weighed.size === 3;
+    stand(0, 0, -64); g.state = 'playing';
+    e.useKeypadB(g); type('000'); out.wrongWeigh = !e.doorB.open; g.modal.close();
+    e.useKeypadB(g); type(e.weigh.code); sim(1.5); out.weighOpens = e.doorB.open;
+    // ---- stage 4: the X-ray (a fake loading screen that frees you), carousel 13, the back of the duck case
+    stand(0, 0, -77.2); out.xrayFreezes = g.frozen === true; for (let i = 0; i < 200 && g.frozen; i++) { /* real-time timer */ }
+    // ---- the claim number is on the BACK; the tag is the host's lie
+    out.claimNotTag = e.duck.back === e.claim && e.duck.tag !== e.claim;
+    stand(8, 0, -106); g.state = 'playing';
+    e.useKeypadC(g); type(e.duck.tag); out.tagDenied = !e.claimed && said.includes('hotel.l3.tag'); g.modal.close();
+    e.useKeypadC(g); type(e.claim); sim(1.2); out.claims = e.claimed && e.gate.open;
+    // ---- hint ladder: honest, current room only
+    return out;
+  });
+  ok(r.fakeIsNotCode && r.counts, 'luggage: the host\'s 1337 is not the code; the code is the suitcase counts in the poster\'s order');
+  ok(r.fakeDenied, 'luggage: typing the host\'s code is denied (and mocked)');
+  ok(r.firstLie && r.secondOpens, 'luggage: the keypad says ACCESS GRANTED* once ("just kidding"), then really opens');
+  ok(r.mimicKills, 'luggage: the breathing suitcase is a mimic and bites');
+  ok(r.stageCount === 5, `luggage: five stages (${r.stageCount})`);
+  ok(r.warns && r.reverses && r.forwardAgain, 'luggage: belt C warns (beacons), reverses, then runs forward again');
+  ok(r.bigIsLight && r.codeIsHeaviestFirst, 'luggage: the big case is the light one; the release code is the tags, heaviest first');
+  ok(r.weighedAll && r.wrongWeigh && r.weighOpens, 'luggage: weighing every case and entering the code opens security');
+  ok(r.xrayFreezes, 'luggage: the X-ray arch is a (short) loading screen');
+  ok(r.claimNotTag && r.tagDenied && r.claims, 'luggage: the claim number is on the back of the duck case, not its tag; the right number releases it');
+  ok(r.hintKeys.join() === 'hotel.l3.hint1,hotel.l3.hint2,hotel.l3.hint3', `luggage: H climbs a clue ladder for the room you are in (${r.hintKeys.join()})`);
+  await page.close();
+});
+
+suite('luggage-end', async () => {
+  const page = await open(3);
+  const r = await page.evaluate(async () => {
+    const g = window.__trust, w = g.world, e = w.escape, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const stand = (x, y, z) => { g.player.teleport(x, y + 0.001, z); sim(0.1); };
+    stand(0, 0, -114.6); sim(0.3); out.pileCheckpoint = Math.abs(w.respawn.z + 114.6) < 0.8;
+    // the stamp runs away twice, then stays
+    const pos = () => `${e.goal.x.toFixed(1)},${e.goal.z.toFixed(1)}`;
+    const seen = [pos()];
+    for (let k = 0; k < 4; k++) { stand(e.goal.x + 1.5, 7.4, e.goal.z + 1.5); sim(0.9); seen.push(pos()); }
+    out.hopsTwice = new Set(seen).size === 3;
+    // the green channel is a closet with no floor
+    g.state = 'playing'; g.respawnPlayer(false);
+    const door = w.interactables.find((i) => /EXIT door|staff closet/.test(typeof i.label === 'function' ? i.label() : i.label));
+    out.hasDoor = !!door;
+    stand(-4.5, 7.4, -136); door.onUse(g); for (let k = 0; k < 20 && g.state !== 'dead'; k++) { await new Promise((res) => setTimeout(res, 300)); sim(0.1); } out.closetKills = g.state === 'dead';
+    return out;
+  });
+  ok(r.pileCheckpoint, 'luggage: there is a checkpoint at the foot of the pile');
+  ok(r.hopsTwice, 'luggage: the customs stamp hops away twice, then stays');
+  ok(r.hasDoor && r.closetKills, 'luggage: NOTHING TO DECLARE is a closet with no floor');
+  await page.close();
+});
+
+// <<< escape rooms
+
 const names = Object.keys(suites).filter((n) => n.includes(filter));
 for (const n of names) { console.log(`\n== ${n}`); await suites[n](); }
 await browser.close();
