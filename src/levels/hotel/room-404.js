@@ -106,7 +106,7 @@ export default {
       title: 'ROOM 404 · ENTER CODE', digits: 3,
       info: () => 'Notes — ' + found.map((d, i) => `Digit ${i + 1}: ${d === null ? '?' : d}`).join(' · '),
       onSubmit: (c, api) => {
-        if (c === codeA) { api.setMsg('UNLOCKED', 'good'); g.audio.confirm(); later(600, () => { api.close(); doorA.openDoor(); padA.setLed(0x40ff88); w.after(0.5, () => g.say('hotel.l11.open', { priority: 2 })); }); }
+        if (c === codeA) { api.setMsg('UNLOCKED', 'good'); g.audio.confirm(); w.after(0.6, () => { api.close(); doorA.openDoor(); padA.setLed(0x40ff88); w.after(0.5, () => g.say('hotel.l11.open', { priority: 2 })); }); }
         else {
           attemptsA++; g.audio.buzzer(); api.clear(); api.setMsg('WRONG', 'bad');
           if (c === fake) g.say('hotel.l11.fake', { priority: 2 });
@@ -286,7 +286,7 @@ export default {
     const useKeypadB = (g) => openKeypad(g, {
       title: 'BATHROOM DOOR · ENTER CODE', digits: 3,
       onSubmit: (c, api) => {
-        if (c === codeB) { api.setMsg('UNLOCKED', 'good'); g.audio.confirm(); later(600, () => { api.close(); doorB.openDoor(); padB.setLed(0x40ff88); w.after(0.5, () => g.say('hotel.l11.b.open', { priority: 2 })); }); }
+        if (c === codeB) { api.setMsg('UNLOCKED', 'good'); g.audio.confirm(); w.after(0.6, () => { api.close(); doorB.openDoor(); padB.setLed(0x40ff88); w.after(0.5, () => g.say('hotel.l11.b.open', { priority: 2 })); }); }
         else {
           attemptsB++; g.audio.buzzer(); api.clear(); api.setMsg('WRONG', 'bad');
           const rev = codeB.split('').reverse().join('');
@@ -328,10 +328,10 @@ export default {
     const useKeypadC = (g) => openKeypad(g, {
       title: 'EXIT · ENTER CODE', digits: 3,
       onSubmit: (c, api) => {
-        if (c === codeC) { api.setMsg('UNLOCKED', 'good'); g.audio.confirm(); later(500, () => { api.close(); doorStairs.openDoor(); padC.setLed(0x40ff88); w.after(0.5, () => g.say('hotel.l11.h.open', { priority: 2 })); }); }
+        if (c === codeC) { api.setMsg('UNLOCKED', 'good'); g.audio.confirm(); w.after(0.5, () => { api.close(); doorStairs.openDoor(); padC.setLed(0x40ff88); w.after(0.5, () => g.say('hotel.l11.h.open', { priority: 2 })); }); }
         else if (c === fake) {                                                   // the host's number: it opens a door. The wrong door.
           api.setMsg('ACCESS GRANTED', 'good'); g.audio.confirm();
-          later(500, () => { api.close(); doorLoop.openDoor(); w.after(0.4, () => g.say('hotel.l11.h.loopdoor', { priority: 2 })); });
+          w.after(0.5, () => { api.close(); doorLoop.openDoor(); w.after(0.4, () => g.say('hotel.l11.h.loopdoor', { priority: 2 })); });
         } else {
           attemptsC++; g.audio.buzzer(); api.clear(); api.setMsg('WRONG', 'bad');
           if (attemptsC % 3 === 0) { g.say('hotel.l11.lock', { priority: 2 }); api.lockout(6); } else g.say('hotel.l11.denied', { priority: 1 });
@@ -371,7 +371,7 @@ export default {
       if (kind === 'mover') w.mover(p, (t) => ({ x: 1.8 * Math.sin(t * 0.9) }));
       stairs.push(p);
     });
-    const landing = step(-0.4, -100.4, 8.0, 6.4, 2.8);
+    const landing = step(0, -100.4, 8.0, 10.2, 2.8);
     stairs.push(landing);
     w.sign({ text: 'EXIT', x: 0, y: 11.2, z: -101.7, w: 3, h: 1.0, color: '#6cf0b2', double: false, tw: 512, size: 130, glow: true });
     w.light(0x9affc8, 10, 16, 0, 9.5, -99);
@@ -389,7 +389,7 @@ export default {
       game.say('hotel.l11.bonus', { priority: 2 });
     };
     const runner = evasiveGoal(w, game, {
-      spots: [{ x: -2.4, y: 8.0, z: -100.4 }, { x: 2.6, y: 8.0, z: -100.8 }, { x: -0.4, y: 8.0, z: -100.2 }], radius: 4.2, color: 0x6cf0b2, say: ['hotel.l11.hop1', 'hotel.l11.hop2'],
+      spots: [{ x: -4.0, y: 8.0, z: -100.4 }, { x: 4.0, y: 8.0, z: -100.6 }, { x: 0, y: 8.0, z: -100.2 }], radius: 3.4, color: 0x6cf0b2, say: ['hotel.l11.hop1', 'hotel.l11.hop2'],
       onReach: () => { if (!fakeComplete(game, w, { title: 'LEVEL COMPLETE', say: 'hotel.l11.fakewin', then: enableBonus })) game.completeLevel(); },
     });
     w.goalObj = runner;

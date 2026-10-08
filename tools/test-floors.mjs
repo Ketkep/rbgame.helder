@@ -844,16 +844,16 @@ suite('room404-stairs', async () => {
     // the exit runs away twice, then a fake LEVEL COMPLETE, then a bonus climb
     const pos = () => `${rm.runner.x.toFixed(1)},${rm.runner.z.toFixed(1)}`;
     const seen = [pos()];
-    for (let k = 0; k < 2; k++) { stand(rm.runner.x + 1.2, 8, rm.runner.z + 1.0); sim(0.9); seen.push(pos()); }
-    out.hops = new Set(seen).size === 3;
-    stand(rm.runner.x + 0.3, 8, rm.runner.z + 0.3); sim(0.3);
+    for (let k = 0; k < 2; k++) { stand(rm.runner.x + (rm.runner.x > 0 ? -1.2 : 1.2), 8, rm.runner.z + 0.5); sim(0.9); seen.push(pos()); }
+    out.hops = new Set(seen).size === 3; out.seen = seen.join(' | ') + ' ' + g.state;
+    stand(rm.runner.x + (rm.runner.x > 0 ? -0.3 : 0.3), 8, rm.runner.z + 0.3); sim(0.3);
     out.fake = g.frozen === true && !!document.querySelector('.fakewin') && !rm.bonusOn;
     for (let k = 0; k < 40 && !rm.bonusOn; k++) { await new Promise((res) => setTimeout(res, 250)); }
     sim(0.3); out.bonus = rm.bonusOn && !g.frozen && rm.bonus.every((p) => p.body.enabled) && rm.finalGoal.group.visible;
     return out;
   });
   ok(r.cp && r.fallKills, 'room404: the stairwell has a checkpoint, and falling off the steps is fatal');
-  ok(r.hops, 'room404: the exit at the top hops away twice');
+  ok(r.hops, 'room404: the exit at the top hops away twice (' + r.seen + ')');
   ok(r.fake && r.bonus, 'room404: reaching it shows LEVEL COMPLETE, which is a lie, and a bonus climb appears');
   await page.close();
 });
