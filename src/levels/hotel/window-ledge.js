@@ -136,7 +136,58 @@ export default {
         ? trollCheckpoint(w, game, { ...at, mode: 'expire', ttl: 30, say: extra.say })
         : w.checkpoint({ ...at, real: true });
       cps.set(cp, n - 1);
+      S = n;
       return cp;
+    };
+
+    // a window-cleaner's lift: a platform on rails that rises H metres, rests, and comes back down (the tag says OUT OF ORDER; it is lying).
+    const LW = 4.4, LD = 2.4;
+    const smooth = (t, T, ph) => Math.min(1, Math.max(0, 0.5 + 0.78 * Math.sin((t + ph) * Math.PI * 2 / T)));
+    const lift = (H, T, ph = 4, tagText = 'OUT OF ORDER') => {
+      const low = ledges[ledges.length - 1];
+      const lx = X + 0.6 + LW / 2, ly = Y;
+      const pl = w.plat({ x: lx, y: ly, z: -1.7, w: LW, d: LD, h: 0.3, tex: 'metal', color: 0xd8dce4, roughness: 0.3, metalness: 0.8, radius: 0.04 });
+      pl.o.path = true; pl.kind = 'lift'; pl.ledge = { i: ledges.length, type: 'lift', pl, x: lx, y: ly, len: LW, dep: LD, zc: -1.7, stage: S };
+      w.mover(pl, (t) => ({ y: H * smooth(t, T, ph) }));
+      ledges.push(pl.ledge); route.push(pl); stages[S].route.push({ x: lx, y: ly, z: -1.7 });
+      for (const sx of [-1, 1]) pl.attach(w.box({ x: lx + sx * 2.0, y: ly + H / 2 + 8, z: -1.7, w: 0.06, h: H + 16, d: 0.06, color: 0x2a2a30, metal: 0.8, rough: 0.5, static: false }));
+      pl.attach(w.box({ x: lx, y: ly + 0.55, z: -2.8, w: LW, h: 0.07, d: 0.07, color: 0xffd21f, rough: 0.5, static: false }));
+      for (const sx of [-1, 1]) pl.attach(w.box({ x: lx + sx * 2.15, y: ly + 0.55, z: -1.7, w: 0.07, h: 0.07, d: LD, color: 0xffd21f, rough: 0.5, static: false }));
+      pl.attach(w.sign({ text: tagText, x: lx, y: ly + 0.95, z: -2.84, w: 2.4, h: 0.5, rotY: Math.PI, color: '#ffffff', bg: '#a01828', double: true, tw: 512, size: 56 }));
+      w.box({ x: lx, y: ly + H + 16, z: -1.7, w: 7, h: 0.5, d: 0.6, color: 0x3a3a44, metal: 0.8, rough: 0.5, shadow: false });
+      for (const sx of [-1, 1]) w.box({ x: lx + sx * 2.0, y: ly + H / 2 - 0.2, z: -0.45, w: 0.14, h: H + 1, d: 0.14, color: 0x8a8d95, metal: 0.8, rough: 0.4, shadow: false });
+      X = lx + LW / 2 + 0.6;
+      lifts.push({ pl, low, H, T, ph });
+      return pl;
+    };
+    // a window-cleaner's tram: a platform that rides a rail along the wall across a gap too wide to jump, resting at each end
+    const trams = [];
+    const tram = (travel, T = 22, ph = 0) => {
+      const cx0 = X + 0.6 + LW / 2, ty = Y;
+      const pl = w.plat({ x: cx0, y: ty, z: -1.7, w: LW, d: LD, h: 0.3, tex: 'metal', color: 0xd8dce4, roughness: 0.3, metalness: 0.8, radius: 0.04 });
+      pl.o.path = true; pl.kind = 'tram'; pl.ledge = { i: ledges.length, type: 'tram', pl, x: cx0, y: ty, len: LW, dep: LD, zc: -1.7, stage: S };
+      w.mover(pl, (t) => ({ x: travel * smooth(t, T, ph) }));
+      ledges.push(pl.ledge); route.push(pl); stages[S].route.push({ x: cx0 + travel / 2, y: ty, z: -1.7 });
+      for (const sx of [-1, 1]) pl.attach(w.box({ x: cx0 + sx * 2.0, y: ty + 3.1, z: -1.7, w: 0.06, h: 6.2, d: 0.06, color: 0x2a2a30, metal: 0.8, rough: 0.5, static: false }));
+      pl.attach(w.box({ x: cx0, y: ty + 0.55, z: -2.8, w: LW, h: 0.07, d: 0.07, color: 0xffd21f, rough: 0.5, static: false }));
+      for (const sx of [-1, 1]) pl.attach(w.box({ x: cx0 + sx * 2.15, y: ty + 0.55, z: -1.7, w: 0.07, h: 0.07, d: LD, color: 0xffd21f, rough: 0.5, static: false }));
+      w.box({ x: cx0 + travel / 2, y: ty + 6.3, z: -1.7, w: travel + LW + 1, h: 0.4, d: 0.5, color: 0x3a3a44, metal: 0.8, rough: 0.5, shadow: false });
+      w.box({ x: cx0 + travel / 2, y: ty - 0.5, z: -0.5, w: travel + LW, h: 0.12, d: 0.12, color: 0x8a8d95, metal: 0.8, rough: 0.4, shadow: false });
+      X = cx0 + LW / 2 + travel + 0.6;
+      trams.push({ pl, travel, T, ph });
+      return pl;
+    };
+    // a gale gate: a head-on gust across the middle of a long sill. It out-pushes you (you are shoved back out of it, never off the ledge),
+    // so you wait in the lee for the lull: the pennant stiffens a second before it blows and goes limp when it is over
+    const gates = [];
+    const gate = (len, gap, rise, o = {}) => {
+      const l = L('sill', len, gap, rise, o);
+      const xa = l.x0 + 3.2, xb = l.x1 - 3.2;
+      const wi = w.wind({ x: (xa + xb) / 2, y: l.y + 1.2, z: l.zc, w: xb - xa, h: 3.2, d: l.dep + 1.2, dx: -1, dz: 0, strength: 40, period: 10, on: 4.8, phase: o.phase ?? 0 });
+      const g = { wi, base: 40, period: 10, on: 4.8, phase: o.phase ?? 0, xa, xb, y: l.y, sock: sock(xa + 0.2, l.y + 2.6), forced: 0, k: 0, gate: true, ledge: l };
+      w.sign({ text: 'GALE GATE\nwait for the lull', x: xa - 1.2, y: l.y + 1.9, z: -0.14, w: 2.6, h: 1.0, rotY: Math.PI, color: '#111', bg: '#ffd21f', double: false, tw: 512, size: 56 });
+      gusts.push(g); gates.push(g);
+      return l;
     };
 
     // ---------------- stage 1 · sill walk ---------------------------------------------------------------------------------------
@@ -144,11 +195,13 @@ export default {
     const sp = L('sill', 7, 0, 0); w.sign({ text: 'WINDOW 1 ▸', x: sp.x + 1, y: Y0 + 0.02, z: -0.9, w: 3, h: 0.7, rotX: -Math.PI / 2, rotY: Math.PI / 2, color: '#f1d28a', double: false, tw: 512, size: 56 });
     L('sill', 4, 2.6, 0);
     L('sill', 4.5, 2.8, 0.4);
-    const c1 = L('cornice', 10, 2.4, 0); const gA = gust(c1.x0, c1.x1, c1.y, 15, { period: 5.6, on: 1.8, phase: 0.5 });
+    const c1 = L('cornice', 10, 2.4, 0); gust(c1.x0, c1.x1, c1.y, 15, { period: 5.6, on: 1.8, phase: 0.5 });
     L('sill', 4, 2.7, 0.4);
     L('ac', 1.7, 2.9, 0.9); L('ac', 1.7, 2.7, 0.9);
     L('sill', 5, 2.7, 0.4);
     const c2 = L('cornice', 12, 2.4, 0); gust(c2.x0, c2.x1, c2.y, 17, { period: 5.2, on: 1.9, phase: 2.2 });
+    L('sill', 4, 2.6, 0.4);
+    const c2b = L('cornice', 8, 2.4, 0); gust(c2b.x0, c2b.x1, c2b.y, 17, { period: 5.0, on: 1.9, phase: 0.3 });
     const e1 = L('sill', 6, 2.6, 0.4, { noWin: true });
     endStage(e1, 1);
 
@@ -158,6 +211,8 @@ export default {
     const vs1 = L('vanish', 6, 2.5, 0, { say: 'hotel.l15.vanish' });
     const pp = L('pipe', 9, 2.7, 0); gust(pp.x0, pp.x1, pp.y, 18, { period: 5.4, on: 1.8, phase: 1.6 });
     L('sill', 4.5, 2.6, 0.4);
+    tram(20, 22, 3);
+    L('sill', 5, 0, 0);
     const cr1 = [L('crumble', 1.9, 2.5, 0.5), L('crumble', 1.9, 2.5, 0.5), L('crumble', 1.9, 2.5, 0.5)];
     const paintSill = L('sill', 7, 2.5, 0.5, { noWin: true });
     const e2 = L('sill', 6, 2.8, 0.4, { noWin: true });
@@ -165,27 +220,9 @@ export default {
 
     // ---------------- stage 3 · the cleaner's lift -------------------------------------------------------------------------------
     const lowSill = L('sill', 5, 2.6, 0.4);
-    // the lift: a window-cleaner's platform on rails. It rises 8 m, rests, comes back down. The tag says OUT OF ORDER. It is working.
-    const H1 = 8, LW = 4.4, LD = 2.4, T1 = 17;
-    const liftX = X + 0.6 + LW / 2, liftTop = Y;
-    const lift = w.plat({ x: liftX, y: liftTop, z: -1.7, w: LW, d: LD, h: 0.3, tex: 'metal', color: 0xd8dce4, roughness: 0.3, metalness: 0.8, radius: 0.04 });
-    lift.o.path = true; lift.kind = 'lift'; lift.ledge = { i: ledges.length, type: 'lift', pl: lift, x: liftX, y: liftTop, len: LW, dep: LD, zc: -1.7, stage: S };
-    const liftS = (t) => Math.min(1, Math.max(0, 0.5 + 0.78 * Math.sin((t + 4) * Math.PI * 2 / T1)));
-    w.mover(lift, (t) => ({ y: H1 * liftS(t) }));
-    ledges.push(lift.ledge); route.push(lift); stages[S].route.push({ x: liftX, y: liftTop, z: -1.7 });
-    for (const sx of [-1, 1]) lift.attach(w.box({ x: liftX + sx * 2.0, y: liftTop + 14, z: -1.7, w: 0.06, h: 28, d: 0.06, color: 0x2a2a30, metal: 0.8, rough: 0.5, static: false }));
-    lift.attach(w.box({ x: liftX, y: liftTop + 0.55, z: -2.8, w: LW, h: 0.07, d: 0.07, color: 0xffd21f, rough: 0.5, static: false }));
-    for (const sx of [-1, 1]) lift.attach(w.box({ x: liftX + sx * 2.15, y: liftTop + 0.55, z: -1.7, w: 0.07, h: 0.07, d: LD, color: 0xffd21f, rough: 0.5, static: false }));
-    const tag = w.sign({ text: 'OUT OF ORDER', x: liftX, y: liftTop + 0.95, z: -2.84, w: 2.4, h: 0.5, rotY: Math.PI, color: '#ffffff', bg: '#a01828', double: true, tw: 512, size: 56 });
-    lift.attach(tag);
-    for (const sx of [-1, 1]) w.box({ x: liftX + sx * 2.0, y: liftTop + 8.5, z: -1.7, w: 0.35, h: 0.35, d: 0.35, color: 0x3a3a44, metal: 0.8, rough: 0.5, shadow: false });
-    w.box({ x: liftX, y: liftTop + H1 + 11.5, z: -1.7, w: 7, h: 0.5, d: 0.6, color: 0x3a3a44, metal: 0.8, rough: 0.5, shadow: false });
-    // rails the lift runs on
-    for (const sx of [-1, 1]) w.box({ x: liftX + sx * 2.0, y: liftTop + H1 / 2 - 0.2, z: -0.45, w: 0.14, h: H1 + 1, d: 0.14, color: 0x8a8d95, metal: 0.8, rough: 0.4, shadow: false });
-    X = liftX + LW / 2 + 0.6;
-    lifts.push({ pl: lift, low: lowSill, H: H1, T: T1, s: liftS });
-    const upSill = L('sill', 6, 0, H1);
-    L('cornice', 8, 2.5, 0.4); const c3 = ledges[ledges.length - 1]; gust(c3.x0, c3.x1, c3.y, 17, { period: 5.4, on: 1.9, phase: 3.0 });
+    lift(12, 26);
+    const upSill = L('sill', 6, 0, 12);
+    const c3 = L('cornice', 8, 2.5, 0.4); gust(c3.x0, c3.x1, c3.y, 17, { period: 5.4, on: 1.9, phase: 3.0 });
     const preG = L('sill', 4, 2.6, 0);
     // the gondola: swings between two sills across a wide gap
     const GP = 9.6, gcx = X + GP / 2, gy = Y;
@@ -200,6 +237,7 @@ export default {
     ledges.push(gond.ledge); route.push(gond); stages[S].route.push({ x: gcx, y: gy, z: -1.7 });
     X += GP;
     L('sill', 5, 0, 0);
+    gate(18, 2.5, 0.4, { phase: 0 });
     L('crumble', 1.9, 2.5, 0.5); L('crumble', 1.9, 2.5, 0.5);
     const e3 = L('sill', 6, 2.5, 0.5, { noWin: true });
     endStage(e3, 3);
@@ -210,13 +248,20 @@ export default {
     const gale = L('cornice', 14, 2.4, 0); const gD = gust(gale.x0, gale.x1, gale.y, 22, { period: 6.0, on: 2.4, phase: 4.4 });
     const vs2 = L('vanish', 5, 2.5, 0, { say: null });
     L('perch', 1.3, 3.0, 0.4); L('perch', 1.3, 3.1, 0.4);
-    const e4 = L('sill', 6, 3.0, 0.4, { noWin: true });
+    L('sill', 4, 3.0, 0.4);
+    tram(16, 20, 9);
+    L('sill', 5, 0, 0);
+    const e4 = L('sill', 6, 2.6, 0.4, { noWin: true });
     endStage(e4, 4);
 
     // ---------------- stage 5 · the top floor --------------------------------------------------------------------------------------
     const rung1 = L('rung', 3, 2.6, 1.0); const rung2 = L('rung', 3, 2.6, 1.0); L('rung', 3, 2.6, 1.0); L('rung', 3, 2.6, 1.0); L('rung', 3, 2.6, 1.0);
     const c5 = L('cornice', 9, 2.5, 0.4); gust(c5.x0, c5.x1, c5.y, 19, { period: 5.2, on: 2.0, phase: 0.9 });
+    L('sill', 4, 2.5, 0.4);
+    lift(8, 19, 7, 'HOIST · RIDE AT OWN RISK');
+    L('sill', 4, 0, 8);
     L('crumble', 1.9, 2.5, 0.5); L('crumble', 1.9, 2.5, 0.5);
+    gate(18, 2.5, 0.4, { phase: 5 });
     const last = L('sill', 8, 2.6, 0.5, { noWin: true });
     windowAt(last.x, last.y, true, 'ROOM 1502');
     stages[4].route.push({ x: last.x, y: last.y, z: last.zc });
@@ -458,6 +503,13 @@ export default {
       const p = g.player;
       if (g.frozen || w.completed) return { x: p.x, z: p.z, wait: true };
       if (!p.grounded) return null;
+      if (g.mods && g.mods.jumpLag > 0) return { x: p.x, z: p.z, wait: true };       // input lag: a careful guest waits it out
+      for (const gt of gates) {                                                         // gale gates: wait in the lee for the lull
+        if (p.x < gt.xa && p.x > gt.xa - 7 && Math.abs(p.y - gt.y) < 1.5) {
+          const u = ((w.t + gt.phase) % gt.period + gt.period) % gt.period, lull = u >= gt.on ? gt.period - u : 0, need = (gt.xb - p.x) / 5.6 + 0.7;
+          if (lull < need) return { x: p.x, z: p.z, wait: true };
+        }
+      }
       const k = route.findIndex((q) => q.body === p.ground);
       if (k < 0) return null;
       const here = route[k], next = route[k + 1];
@@ -468,14 +520,15 @@ export default {
       const level = (a, b) => Math.abs(a - b) < 0.3;
       if (next.kind === 'lift') return level(nb.top, hb.top) ? { body: nb } : { x: p.x, z: p.z, wait: true };
       if (here.kind === 'lift') return level(hb.top, nb.top) ? { body: nb } : { x: p.x, z: p.z, wait: true };
-      if (next.kind === 'gondola') return Math.abs(nb.x - nb.hx - (hb.x + hb.hx)) < 1.5 ? { body: nb } : { x: p.x, z: p.z, wait: true };
-      if (here.kind === 'gondola') return Math.abs(nb.x - nb.hx - (hb.x + hb.hx)) < 1.5 ? { body: nb } : { x: p.x, z: p.z, wait: true };
+      const NEARGAP = (a, b) => Math.abs(Math.max(a.x - a.hx, b.x - b.hx) - Math.min(a.x + a.hx, b.x + b.hx)) < 1.5;
+      if (next.kind === 'gondola' || next.kind === 'tram') return NEARGAP(hb, nb) ? { body: nb } : { x: p.x, z: p.z, wait: true };
+      if (here.kind === 'gondola' || here.kind === 'tram') return NEARGAP(hb, nb) ? { body: nb } : { x: p.x, z: p.z, wait: true };
       if (!nb.enabled) return { x: p.x, z: p.z, wait: true };
       return null;
     };
 
-    w.ledge = { ledges, winds: gusts.map((g) => g.wi), gusts, gondolas: [gond], lifts, stages, cps, route, bonus, fakeGoal, realGoal, storm, Y0, paint, flash,
+    w.ledge = { ledges, winds: gusts.map((g) => g.wi), gusts, gondolas: [gond], lifts, trams, gates, stages, cps, route, bonus, fakeGoal, realGoal, storm, Y0, paint, flash,
       get bonusOn() { return bonusOn; }, set windScale(v) { windScale = v; } };
-    void rnd; void softTexture; void textTexture; void gA; void vs1; void gar1;
+    void rnd; void softTexture; void textTexture; void vs1; void gar1; void upSill;
   },
 };
