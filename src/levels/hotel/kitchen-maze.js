@@ -23,8 +23,8 @@ import { fakeExit, trollCheckpoint, twistZone, crash, vanishAfter, stageTitle } 
 
 const NAMES = ['The Freezers', 'Cold Storage', 'The Pass', 'The Pantry', 'Last Orders', 'Loading Dock'];
 const C = 4.4, T = 0.8, WH = 3.6, H = 10;
-const NA = 9, NB = 10;
-const XW = 26;                       // inner faces of the kitchen's side walls
+const NA = 10, NB = 11;
+const XW = 28;                       // inner faces of the kitchen's side walls
 const ZS = 14;                       // south wall of the kitchen
 const ZA = 0, ZA1 = ZA - NA * C;     // maze A: south / north wall lines (-30.8)
 const ZB = ZA1 - 56, ZB1 = ZB - NB * C;   // maze B (-74.8 … -110)
@@ -58,8 +58,8 @@ export default {
 
     // ---- the two mazes ----------------------------------------------------------------------------------------------
     const walls = { tex: 'tile', color: 0xf4f8ff, roughness: 0.4, radius: 0.06, reach: [-XW, XW] };
-    const MA = mazeSection(w, { N: NA, C, T, WH, Z0: ZA, band: [52, 60], walls });
-    const MB = mazeSection(w, { N: NB, C, T, WH, Z0: ZB, band: [66, 74], walls: { ...walls, color: 0xd9e0e8 } });
+    const MA = mazeSection(w, { N: NA, C, T, WH, Z0: ZA, band: [60, 68], walls });
+    const MB = mazeSection(w, { N: NB, C, T, WH, Z0: ZB, band: [74, 82], walls: { ...walls, color: 0xd9e0e8 } });
 
     // ---- floors: one tile per cell (a third of maze A is freezer ice), the rest plain -----------------------------------
     const iceA = new Set();
@@ -188,16 +188,17 @@ export default {
     const K2 = mark(counter(10.6, 10.5, 0.5, 2.4));
     w.mover(K2, (t) => ({ x: 1.4 * Math.sin(t * 1.0) }));
     const K3 = mark(w.crumble(counter(6.8, 14.0, 0.6, 2.2), { delay: 0.65, gone: 3 }));
-    const belt = mark(counter(2.4, 24.5, 0.6, 3.4, 7.5));
+    const belt = mark(counter(2.4, 20.5, 0.6, 3.4, 7.5));
     w.conveyor(belt, { vz: 2.2 });          // toward the start: against you (the arrows say so)
-    const K4 = mark(counter(1.2, 31.0, 0.7, 2.6));
-    const K5 = mark(counter(-0.8, 35.0, 0.75, 2.4));
+    const K4 = mark(counter(1.2, 26.7, 0.7, 2.6));
+    const K5 = mark(counter(-0.8, 30.6, 0.75, 2.4));
     w.mover(K5, (t) => ({ x: 1.3 * Math.sin(t * 1.15 + 1.0) }));
-    const K6 = mark(w.crumble(counter(-3.0, 39.0, 0.8, 2.2), { delay: 0.65, gone: 3 }));
-    const V = mark(w.plat({ x: -3.0, y: 0.85, z: zu(45.8), w: 1.8, d: 7.2, h: 0.3, tex: 'metal', color: 0xdfe3e8, roughness: 0.3, metalness: 0.8, radius: 0.1 }));
+    const K6 = mark(w.crumble(counter(-3.0, 34.4, 0.8, 2.2), { delay: 0.65, gone: 3 }));
+    const K7 = mark(counter(-3.0, 38.2, 0.85, 2.4));
+    const V = mark(w.plat({ x: -3.0, y: 0.85, z: zu(44.2), w: 1.8, d: 7.2, h: 0.3, tex: 'metal', color: 0xdfe3e8, roughness: 0.3, metalness: 0.8, radius: 0.1 }));
     vanishAfter(w, game, V, { axis: 'z', dir: -1, frac: 0.55, delay: 0.75, back: 3.2, say: 'hotel.l9.bridge' });
     // the trolley on a rail: rolls to the landing with you on it
-    const L2X = -19.8, L2Z = WATER_N + 2.4, L2W = 12, L2E = L2X + L2W / 2;
+    const L2X = MB.cx(0), L2Z = WATER_N + 2.4, L2W = 12, L2E = L2X + L2W / 2;
     const cartZ = WATER_N + 4.2, cart0 = -3.0, cartStop = L2E + 1.1;
     const cart = mark(w.plat({ x: cart0, y: 0.7, z: cartZ, w: 2.2, d: 1.6, h: 0.1, tex: 'brass', color: 0xffffff, roughness: 0.3, metalness: 0.9, radius: 0.03 }));
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
@@ -210,9 +211,9 @@ export default {
     w.rollaway(cart, { dir: [-1, 0], dist: cart0 - cartStop, accel: 2.4, speed: 3.0, delay: 0.5, hold: 3.2, back: 1.6, onGo: () => game.say('hotel.l9.trolley', { priority: 1 }) });
     const L2 = mark(w.plat({ x: L2X, y: 0, z: L2Z, w: L2W, d: 4.8, h: 1.4, tex: 'tile', color: 0xd8dde2, roughness: 0.45 }));
     // the fake LOADING DOCK: a shutter door beside the landing. It is a closet. With no floor.
-    const dockDoor = fakeExit(w, game, { x: -23.4, y: 0, z: WATER_N + 0.9, kind: 'door', label: 'LOADING DOCK', say: 'hotel.l9.docklie', reason: 'fake' });
+    const dockDoor = fakeExit(w, game, { x: L2X - 3.6, y: 0, z: WATER_N + 0.9, kind: 'door', label: 'LOADING DOCK', say: 'hotel.l9.docklie', reason: 'fake' });
     void dockDoor;
-    void K4; void K3; void K5; void K6; void belt;
+    void K4; void K3; void K5; void K6; void K7; void belt;
 
     // ---- the chefs ----------------------------------------------------------------------------------------------------------------
     const vig = document.createElement('div');
@@ -299,7 +300,7 @@ export default {
     const cp = (i, x, z, y = 0) => { const c = w.checkpoint({ x, y, z, real: true }); cps.set(c, i); return c; };
     cp(1, MA.cx(MA.mid[0]), MA.cz(MA.mid[1]));
     cp(2, L1.body.x, L1.body.z);
-    const cp3 = trollCheckpoint(w, game, { x: -15.8, y: 0, z: L2Z, mode: 'expire', ttl: 35, say: 'hotel.l9.cpexp' });
+    const cp3 = trollCheckpoint(w, game, { x: L2X + 4, y: 0, z: L2Z, mode: 'expire', ttl: 35, say: 'hotel.l9.cpexp' });
     cps.set(cp3, 3);
     cp(4, MB.cx(MB.mid[0]), MB.cz(MB.mid[1]));
     cp(5, exitX, ZB1 - 3.6);
