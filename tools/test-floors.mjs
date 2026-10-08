@@ -545,8 +545,7 @@ suite('minibar', async () => {
   // the lure: a save point (crooked pole) that sends you back to the start of the carousel and saves nothing
   const lure = await page.evaluate(() => {
     const { g, w, sim } = window.__T, mb = w.minibar, L = mb.lure.body, before = { ...w.respawn }, out = {};
-    g.player.teleport(L.x, L.top, L.z); g.player.grounded = true; g.player.ground = L; sim(1.4);
-    out.back = g.player.z > L.z + 15; out.notSaved = Math.abs(w.respawn.z - L.z) > 1; return out;
+    g.player.teleport(L.x, L.top, L.z); g.player.grounded = true; g.player.ground = L; sim(0.3); return new Promise((res) => setTimeout(() => { sim(0.5); out.back = g.player.z > L.z + 15; out.notSaved = Math.abs(w.respawn.z - L.z) > 1; res(out); }, 1200));
   });
   ok(lure.back && lure.notSaved, 'minibar: the SAVE POINT rewinds you to the carousel dock and saves nothing');
   // the bill: a tip you cannot refuse, then CHECKED OUT! is a lie and the corrected bill follows
@@ -562,7 +561,8 @@ suite('minibar', async () => {
   });
   ok(b1.needsTip && b1.zeroRefused, 'minibar: the bill refuses to be paid without a tip (and refuses a zero tip)');
   ok(b1.tips === '1 · 18%|2 · 20%|3 · 25%', `minibar: the tip choices are 18 / 20 / 25 (${b1.tips})`);
-  await page.waitForFunction(() => !!document.querySelector('.fakewin'), null, { timeout: 6000 });
+  await page.waitForTimeout(2000);
+  ok(await fakeOverlay(page), 'minibar: paying the bill shows CHECKED OUT!');
   ok(await page.evaluate(() => window.__trust.state === 'playing'), 'minibar: CHECKED OUT! is a fake (the level is not over)');
   await page.waitForTimeout(4600);
   const b2 = await page.evaluate(() => {

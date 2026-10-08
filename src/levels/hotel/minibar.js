@@ -287,6 +287,8 @@ export default {
       if (ok !== true) g.say(opens === 1 ? 'hotel.l13.first' : 'hotel.l13.opened', { priority: 1 });
     }
 
+    show.reveal();   // (tags of the locked rounds start hidden)
+
     // ---- hints cost money (and the price on the button is, again, wrong); the hint itself is honest -------------------------
     const baseHint = w.hintAction;
     w.hintAction = (g) => {
