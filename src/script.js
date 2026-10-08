@@ -440,7 +440,7 @@ Object.assign(SCRIPT, {
   'hotel.l13.r.poll': 'Round six. Let us ask the audience. The audience says {poll}. {pct} percent. The audience is on the minibar payroll.',
   'hotel.l13.r.flip': 'Round seven. Read the top of the board. In red. I made it red so you would not read it.',
   'hotel.l13.wrong.flip': ['That was the RIGHT answer. This round wanted a WRONG one. It said so. In red.', 'Correct! Which is wrong. The board said pick a wrong answer. Reading is a skill. A billable skill.'],
-  'hotel.l13.ad': 'A word from our sponsor. Press E to skip it for ninety-nine cents. Plus the things. Or stand there. It is free. It is five seconds of your life, which is also on the bill.',
+  'hotel.l13.ad': 'A word from our sponsor. Press K to skip it for ninety-nine cents. Plus the things. Or stand there. It is free. It is five seconds of your life, which is also on the bill.',
   'hotel.l13.r.none': 'Round eight. Read ALL the answers. Then read the one that is not there. It is not free. Nothing is.',
   'hotel.l13.carousel': 'The luggage carousel! Your bags go round. So does the belt. Stay left of the bags and right of the edge.',
   'hotel.l13.lure': 'A checkpoint! Over there! On the little platform! Just for you! It is entirely safe. I am pointing at it. With my whole face.',
