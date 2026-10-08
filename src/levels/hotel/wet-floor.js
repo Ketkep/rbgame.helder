@@ -135,25 +135,24 @@ export default {
     const G3 = hop(3, w.crumble(grate({ x: -1.2, y: 6.5, z: -4.2, w: 2.4, d: 2.4, h: 0.3 }), { delay: 0.6, gone: 3 }));
     const G4 = hop(3, marble({ x: -8.0, y: 6.5, z: -4.2, w: 8, d: 2.4, h: 0.3 }));
     vanishAfter(w, game, G4, { axis: 'x', dir: -1, frac: 0.5, delay: 0.7, back: 3.2, say: 'hotel.l1.bridge' });
-    const G5 = hop(3, grate({ x: -15.0, y: 6.5, z: -4.2, w: 3, d: 3, h: 0.3 }));
+    const G5 = hop(3, grate({ x: -14.6, y: 6.5, z: -4.2, w: 2.2, d: 2.2, h: 0.3 }));
+    w.mover(G5, (t) => ({ z: 1.5 * Math.sin(t * 1.3 + 1) }));                                                       // a luggage hook, swinging
     const G6 = start(4, marble({ x: -19.0, y: 6.5, z: -4.6, w: 4, d: 4, h: 0.3 }));
     cp(4, -19.0, 6.5, -4.6);
     twistZone(game, w, { x: 9.9, y: 8, z: -4.2, w: 3, h: 4, d: 3 }, 'swap', { sec: 6, say: 'hotel.l1.swap' });   // G1: A and D swap, then wear off on their own
-    for (const p of [G0, G1, GD, G3, G5]) hang(p, 2);
+    for (const p of [G0, G1, GD, G3]) hang(p, 2);
     hang(G4, 4); hang(G6, 4);
     // gold rails + a banner along the gantry, so it reads as a gantry
     for (const x of [13, 6, -1, -8, -15]) w.box({ x, y: 7.7, z: -2.7, w: 0.12, h: 2.4, d: 0.12, color: GOLD, metal: 1, rough: 0.3 });
     w.box({ x: 0, y: 8.9, z: -2.7, w: 30, h: 0.1, d: 0.1, color: GOLD, metal: 1, rough: 0.3, shadow: false });
 
     // ===== stage 5 · the climb =========================================================================
-    const H1 = hop(4, marble({ x: -18.2, y: 6.9, z: -8.6, w: 2.2, d: 2.2, h: 0.14 }));
-    for (const p of [H1]) hang(p, 2);
-    const H2 = hop(4, marble({ x: -15.2, y: 7.3, z: -11.8, w: 2.2, d: 2.2, h: 0.14 }));
-    const H3 = hop(4, marble({ x: -18.0, y: 7.5, z: -15.0, w: 2.2, d: 2.2, h: 0.14 }));
-    w.mover(H3, (t) => ({ z: 1.5 * Math.sin(t * 1.0) }));
-    const H4 = hop(4, marble({ x: -15.6, y: 7.5, z: -18.4, w: 2.2, d: 2.2, h: 0.14 }));
-    const H5 = hop(4, marble({ x: -14.0, y: 7.5, z: -22.4, w: 2.4, d: 2.4, h: 0.14 }));
-    for (const p of [H2, H4, H5]) hang(p, 2);
+    const Hspec = [[-18.2, 6.9, -8.6], [-13.6, 7.0, -10.4], [-18.2, 7.1, -12.2], [-13.6, 7.2, -14.0], [-18.2, 7.3, -15.8], [-13.6, 7.4, -17.6], [-18.2, 7.5, -19.4], [-14.0, 7.5, -22.4]];
+    const H = Hspec.map(([x, y, z], i) => hop(4, marble({ x, y, z, w: i === 7 ? 2.4 : 2.2, d: i === 7 ? 2.4 : 2.2, h: 0.14 })));
+    w.mover(H[2], (t) => ({ z: 1.0 * Math.sin(t * 1.0) }));
+    w.mover(H[5], (t) => ({ x: 0.0, z: 1.0 * Math.sin(t * 1.15 + 2) }));
+    for (const i of [0, 1, 3, 4, 6, 7]) hang(H[i], 2);
+    const H3 = H[2];
 
     // ===== stage 6 · mezzanine =========================================================================
     const balc = mark(w.plat({ x: 0, y: 7.5, z: -22.9, w: 24, d: 1.8, h: 0.6, tex: 'marble', color: 0xffffff, roughness: 0.15, radius: 0.05 }));
@@ -164,9 +163,11 @@ export default {
     w.sign({ text: 'MEZZANINE · STAFF ONLY', x: 0, y: 7.52, z: -22.0, w: 5, h: 0.5, rotX: -Math.PI / 2, color: '#f1d28a', double: false, tw: 1024, size: 50 });
     cp(5, -10.4, 7.5, -22.9);
     // the bonus climb: only there once the host has been rude (the level pretends it is over first)
-    const bonus = [[7, 8.4, -19.8, 2.0], [3.6, 9.1, -20.1, 2.0], [0.2, 9.7, -20.3, 2.0], [-3.4, 10.2, -20.5, 2.0], [-7.2, 10.6, -20.4, 3.4]].map(([x, y, z, s]) => {
-      const p = marble({ x, y, z, w: s, d: s, h: 0.2 }); p.setEnabled(false); mark(p); return p;
+    const bonus = [[8.0, 8.4, -19.8, 1.9], [5.0, 8.9, -20.0, 1.9], [2.0, 9.4, -20.2, 1.9], [-1.0, 9.8, -20.3, 1.9], [-4.0, 10.2, -20.4, 1.9], [-7.2, 10.6, -20.4, 3.4]].map(([x, y, z, sz]) => {
+      const p = marble({ x, y, z, w: sz, d: sz, h: 0.2 }); p.setEnabled(false); mark(p); return p;
     });
+    w.mover(bonus[1], (t) => ({ z: 1.0 * Math.sin(t * 1.2) }));
+    w.mover(bonus[3], (t) => ({ z: 1.0 * Math.sin(t * 1.0 + 1.5) }));
     const finalGoal = w.goal({ x: -7.2, y: 10.6, z: -20.4, color: GOLD, onReach: () => { game.say('hotel.l1.done', { priority: 2 }); game.completeLevel(); } });
     finalGoal.group.visible = false; finalGoal.trig.enabled = false;
     let bonusOn = false;
@@ -229,7 +230,7 @@ export default {
       return { x: runner.x, z: runner.z };
     };
     w.wet = { stages, mop, mopA, mopB, duster, lane, runner, finalGoal, bonus, G4, cps, get bonusOn() { return bonusOn; } };
-    void P0; void T2; void T4; void G2; void H3;
+    void P0; void T2; void T4; void G2; void G5; void H3;
   },
 };
 
