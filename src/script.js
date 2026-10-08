@@ -253,7 +253,7 @@ Object.assign(SCRIPT, {
   'hotel.l4.deadend': ['A dead end! Every maze has one. Yours has several.', 'Nothing here but hedge and regret.', 'Congratulations, you found the part of the maze I am proudest of.'],
   'hotel.l4.half': 'Halfway through the first maze. A checkpoint! Statistically you are as lost as ever. And now: luggage carts. Housekeeping uses the maze as a shortcut.',
   'hotel.l4.door': 'Revolving doors. A wonderful invention that lets you enter and leave at the same time. Mind the glass.',
-  'hotel.l4.carts': 'Luggage carts! Housekeeping has the right of way. Hop them. They are low. Your standards are lower.',
+  'hotel.l4.carts': 'Luggage carts! Housekeeping has the right of way. They hug one wall. The other half of the corridor is yours. Or hop them. They are low. Your standards are lower.',
   'hotel.l4.cart': ['Housekeeping has the right of way. It is in the contract.', 'You walked into a luggage cart. In a maze. Outdoors. Impressive.', 'Mind the trolley. It does not mind you.'],
   'hotel.l4.fountain': 'The fountain courtyard! The water is very shallow. Ankle deep. Decorative. I would not swim in it. I would not stand in it either. Use the stones.',
   'hotel.l4.crumble': 'That stone is antique. Antique means "about to leave". Keep moving.',

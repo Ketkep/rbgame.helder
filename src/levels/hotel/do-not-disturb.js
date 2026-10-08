@@ -4,7 +4,7 @@ import { roomShell, hotelHalo, GOLD } from './kit.js';
 import { solveMaze } from './mazekit.js';
 import { rayAABB } from '../../engine/physics.js';
 import { onPlat } from '../common.js';
-import { mazeSection, sectionHint, routeHint } from './mazestage.js';
+import { mazeSection, sectionHint, routeHint, cautiousSteer } from './mazestage.js';
 import { fakeExit, fakeComplete, twistZone, loadingScreen, vanishAfter, stageTitle } from './trolls.js';
 
 // Hotel level 12 — "Do Not Disturb" (Hard · Guest Rooms). Stealth. Two wings of the guest floor, two mazes (new ones every attempt),
@@ -573,33 +573,16 @@ export default {
     ]);
 
     // ---- the bot: it reads the rounds (they are exact), waits, backs off, and goes -----------------------------------------------------------------------------
-    const planAhead = (M, p) => {
-      const [ci, cj] = M.clampCell(p);
-      const sol = solveMaze(M.maze, [ci, cj]);
-      const pts = [{ x: p.x, z: p.z }];
-      for (let i = 1; i < sol.length && i <= 6; i++) pts.push({ x: M.cx(sol[i][0]), z: M.cz(sol[i][1]) });
-      return pts;
-    };
-    const planBack = (M, p) => {
-      const [ci, cj] = M.clampCell(p);
-      const sol = solveMaze(M.maze, [0, 0], [ci, cj]);
-      const pts = [{ x: p.x, z: p.z }];
-      for (let i = sol.length - 2; i >= 0 && pts.length <= 5; i--) pts.push({ x: M.cx(sol[i][0]), z: M.cz(sol[i][1]) });
-      return pts;
-    };
-    const risk = (M, pts, speed, hdt = 0.12, H = 4.6) => {
-      let exposed = 0, acc = 0, seg = 0, x = pts[0].x, z = pts[0].z, segLeft = 0, ux = 0, uz = 0;
-      const next = () => { seg++; if (seg >= pts.length) return false; const dx = pts[seg].x - x, dz = pts[seg].z - z; segLeft = Math.hypot(dx, dz); ux = dx / (segLeft || 1); uz = dz / (segLeft || 1); return true; };
-      let moving = next();
-      for (let tau = 0; tau < H; tau += hdt) {
-        for (const m of maids) {
-          if (m.M !== M || w.t + tau < m.offUntil) continue;
-          if (seesAt(m.walls, m.round.at(w.t + tau), x, z, 0.35)) { exposed += hdt; break; }
-        }
-        if (moving) { let step = speed * hdt; while (step > 0 && moving) { const s = Math.min(step, segLeft); x += ux * s; z += uz * s; segLeft -= s; step -= s; if (segLeft <= 1e-6) moving = next(); } }
-        acc += hdt;
+    const seenBy = (M) => (x, z, t) => maids.some((m) => m.M === M && t >= m.offUntil && seesAt(m.walls, m.round.at(t), x, z, 0.35));
+    const risk = (M, pts, speed) => {      // exposed seconds along a polyline (for tests)
+      let x = pts[0].x, z = pts[0].z, seg = 1, bad = 0;
+      const bd = seenBy(M);
+      for (let tau = 0; tau < 4; tau += 0.1) {
+        if (bd(x, z, w.t + tau)) bad += 0.1;
+        let step = speed * 0.1;
+        while (step > 0 && seg < pts.length) { const dx = pts[seg].x - x, dz = pts[seg].z - z, l = Math.hypot(dx, dz); if (l <= step) { x = pts[seg].x; z = pts[seg].z; step -= l; seg++; } else { x += dx / l * step; z += dz / l * step; step = 0; } }
       }
-      return exposed;
+      return bad;
     };
     w.botPlan = (g) => {
       const p = g.player;
@@ -617,14 +600,7 @@ export default {
         return MB.steer(p);
       }
       if (!M) return null;
-      const tgt = M.steer(p);
-      if (maids.every((m) => m.M !== M)) return tgt;
-      const fwd = planAhead(M, p);
-      if (risk(M, fwd, 5.8) < 0.2) return tgt;
-      if (risk(M, [{ x: p.x, z: p.z }], 0) < 0.2) return { x: p.x, z: p.z, wait: true };
-      const back = planBack(M, p);
-      if (back.length > 1 && risk(M, back, 5.8) < 0.3) return { x: back[1].x, z: back[1].z };
-      return tgt;
+      return cautiousSteer(M, p, seenBy(M), w.t);
     };
 
     // ---- test handles ---------------------------------------------------------------------------------------------------------------------------------------------

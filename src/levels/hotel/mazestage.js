@@ -8,6 +8,8 @@
 
 import { bandMaze, solveMaze, mazeGrid, buildMazeWalls, edgeKey } from './mazekit.js';
 
+export { solveMaze };
+
 /**
  * opts: N, C, T, WH, X0, Z0 (south-west corner; the maze runs north = -Z), band [lo, hi] (solution length in cells),
  *       walls: options for buildMazeWalls (tex, color, … and `reach` = [x west wall, x east wall] to seal the room), y (floor top, 0).
@@ -119,4 +121,34 @@ export function routeHint(route, end = null) {
     for (let k = bi + (bd < 1.2 ? 1 : 0); k < all.length && out.length < 8; k++) out.push({ x: all[k].x, y: all[k].y + 0.15, z: all[k].z });
     return out;
   };
+}
+
+/**
+ * Bot helper (w.botPlan): walk the maze solution, but only when it is safe. `bad(x, z, t)` says whether standing at (x, z) at world time t
+ * is dangerous (a cart sweeping through, a housekeeper's cone…). The look-ahead replays the next cells at `speed`; if the way on is not
+ * clear it waits where it stands (when that stays safe), else backs off along the solution. Returns a botPlan result ({x, z, wait?}).
+ */
+export function cautiousSteer(M, p, bad, t0, { speed = 5.8, H = 3.6, ahead = 4, back = 4, tol = 0.15, hdt = 0.1 } = {}) {
+  const tgt = M.steer(p);
+  const [ci, cj] = M.clampCell(p);
+  const risk = (pts, sp) => {
+    let x = pts[0].x, z = pts[0].z, seg = 0, left = 0, ux = 0, uz = 0, bad_t = 0;
+    const next = () => { seg++; if (seg >= pts.length) return false; const dx = pts[seg].x - x, dz = pts[seg].z - z; left = Math.hypot(dx, dz); ux = dx / (left || 1); uz = dz / (left || 1); return true; };
+    let moving = sp > 0 && next();
+    for (let tau = 0; tau < H; tau += hdt) {
+      if (bad(x, z, t0 + tau)) bad_t += hdt;
+      if (moving) { let step = sp * hdt; while (step > 0 && moving) { const q = Math.min(step, left); x += ux * q; z += uz * q; left -= q; step -= q; if (left <= 1e-6) moving = next(); } }
+    }
+    return bad_t;
+  };
+  const sol = solveMaze(M.maze, [ci, cj]);
+  const fwd = [{ x: p.x, z: p.z }];
+  for (let i = 1; i < sol.length && i <= ahead; i++) fwd.push({ x: M.cx(sol[i][0]), z: M.cz(sol[i][1]) });
+  if (risk(fwd, speed) <= tol) return tgt;
+  if (risk([{ x: p.x, z: p.z }], 0) <= tol) return { x: p.x, z: p.z, wait: true };
+  const prev = solveMaze(M.maze, [0, 0], [ci, cj]);
+  const bk = [{ x: p.x, z: p.z }];
+  for (let i = prev.length - 2; i >= 0 && bk.length <= back; i--) bk.push({ x: M.cx(prev[i][0]), z: M.cz(prev[i][1]) });
+  if (bk.length > 1 && risk(bk, speed) <= tol * 2) return { x: bk[1].x, z: bk[1].z };
+  return tgt;
 }

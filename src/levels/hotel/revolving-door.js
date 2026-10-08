@@ -324,12 +324,13 @@ export default {
     const carts = [];
     for (const run of pathRuns(MA, { min: 2, skip: doorEdges, from: midA + 2 }).sort(() => Math.random() - 0.5).slice(0, 4)) {   // (never next to the checkpoint)
       const mx = (MA.cx(run.from[0]) + MA.cx(run.to[0])) / 2, mz = (MA.cz(run.from[1]) + MA.cz(run.to[1])) / 2;
-      const alongX = run.dir[0] !== 0, Lr = (Math.abs(run.to[0] - run.from[0]) + Math.abs(run.to[1] - run.from[1])) * C, A = Lr / 2 - 0.2;
-      const len = 1.5, wid = 3.2, ph = Math.random() * 6, sp = 0.55 * (game.baby ? 0.8 : 1);
-      const hz = w.hazard({ x: mx, y: 0.4, z: mz, w: alongX ? len : wid, h: 0.8, d: alongX ? wid : len, color: 0xff3a46, move: (t) => (alongX ? { x: A * Math.sin(t * sp + ph) } : { z: A * Math.sin(t * sp + ph) }) });
+      const alongX = run.dir[0] !== 0, Lr = (Math.abs(run.to[0] - run.from[0]) + Math.abs(run.to[1] - run.from[1])) * C, A = Lr / 2 - C / 2 - 0.3;   // (it never reaches the corner cells at either end)
+      const len = 1.5, wid = 1.9, side = Math.random() < 0.5 ? -1 : 1, ph = Math.random() * 6, sp = 0.55 * (game.baby ? 0.8 : 1);
+      const lx = alongX ? 0 : side * 0.85, lz = alongX ? side * 0.85 : 0;      // the train hugs one wall: the other half of the corridor is yours
+      const hz = w.hazard({ x: mx + lx, y: 0.4, z: mz + lz, w: alongX ? len : wid, h: 0.8, d: alongX ? wid : len, color: 0xff3a46, move: (t) => (alongX ? { x: A * Math.sin(t * sp + ph) } : { z: A * Math.sin(t * sp + ph) }) });
       hz.core.visible = false; hz.shell.visible = false; hz.jumpable = true;
       cartVisual(hz.group, alongX, len, wid);
-      carts.push({ hz, alongX, run });
+      carts.push({ hz, alongX, run, side });
     }
 
     // ---- the courtyard: a fountain pool, wall to wall --------------------------------------------------------------
@@ -358,7 +359,7 @@ export default {
     const S3 = mark(w.crumble(stone(5.6, 0.6, z0 - 10.2, 2.2), { delay: 0.65, gone: 3 }));
     // the fountain: a square rim round a tiered column (the rim is the way; the middle is deep)
     const FX = 0.4, FZ = z0 - 13.2, FR = 3.6, RW = 1.8;
-    const rim = (x, z, ww, dd) => w.plat({ x, y: 0.75, z, w: ww, d: dd, h: 2.15, tex: 'marble', color: 0xece3cf, roughness: 0.25, radius: 0.08 });
+    const rim = (x, z, ww, dd) => w.plat({ x, y: 0.6, z, w: ww, d: dd, h: 2.0, tex: 'marble', color: 0xece3cf, roughness: 0.25, radius: 0.08 });
     const FE = mark(rim(FX + FR - RW / 2, FZ, RW, 2 * FR));
     const FS = mark(rim(FX, FZ - FR + RW / 2, 2 * FR - 2 * RW + 0.02, RW));
     const FW = mark(rim(FX - FR + RW / 2, FZ, RW, 2 * FR));
@@ -490,22 +491,21 @@ export default {
       { zS: ZB1 - 0.4, zN: -1e9, hint: routeHint([{ x: VX, y: 0.1, z: ZV0 + 1 }, { x: VX, y: 0.1, z: vest[0].mz - 1.4 }, { x: VX, y: 0.1, z: DZ + DR + 0.3 }, { x: VX, y: 0.1, z: DZ - DR - 0.6 }, { x: VX, y: 0.1, z: vest[1].mz - 1.2 }], { x: VX, y: 0.1, z: goal.z }) },
     ]);
 
-    // a human sees a cart trundling away down the corridor and waits for it to come back (hopping one from behind is hard)
-    const cartWait = (p, tgt) => {
-      const dx = tgt.x - p.x, dz = tgt.z - p.z, len = Math.hypot(dx, dz) || 1, ux = dx / len, uz = dz / len;
+    // the bot keeps to the free half of the corridor while it passes a cart train
+    const laneTarget = (p) => {
       for (const c of carts) {
-        const hb = c.hz.body, rx = hb.x - p.x, rz = hb.z - p.z, ahead = rx * ux + rz * uz, lat = Math.abs(rx * uz - rz * ux);
-        if (ahead < 0.3 || ahead > 7.5 || lat > 2.2) continue;
-        const o0 = c.hz.move(w.t), o1 = c.hz.move(w.t + 0.1);
-        const v = (((o1.x || 0) - (o0.x || 0)) * ux + ((o1.z || 0) - (o0.z || 0)) * uz) / 0.1;
-        if (v > -0.4) return { x: p.x, z: p.z, wait: true };
+        const r = c.run, xs = [MA.cx(r.from[0]), MA.cx(r.to[0])], zs = [MA.cz(r.from[1]), MA.cz(r.to[1])];
+        if (p.x < Math.min(...xs) - C / 2 || p.x > Math.max(...xs) + C / 2 || p.z < Math.min(...zs) - C / 2 || p.z > Math.max(...zs) + C / 2) continue;
+        const lane = -c.side * 0.95, tg = c.alongX ? { x: xs[1], z: zs[0] + lane } : { x: xs[0] + lane, z: zs[1] };
+        if (Math.hypot(tg.x - p.x, tg.z - p.z) < 0.9) continue;      // (arrived: the maze steering takes over)
+        return tg;
       }
-      return tgt;
+      return null;
     };
     // ---- the bot: maze steering, the courtyard's platforms (the default), ride the cart, wait for the gate --------------------------
     w.botPlan = (g) => {
       const p = g.player;
-      if (p.z > WATER_S) return cartWait(p, MA.steer(p));
+      if (p.z > WATER_S) return laneTarget(p) || MA.steer(p);
       if (p.grounded && p.ground === cart.body) return cart.body.x > cartStop + 0.15 ? { x: cart.body.x, z: cart.body.z, wait: true } : { x: L2X, z: L2Z };
       if (p.z > L2Z + 2.4 || (p.x > L2E && p.z > WATER_N)) return null;
       if (!gate.open) { const at = Math.hypot(p.x - L2X, p.z - (ZB + 2.4)) < 0.6; return { x: L2X, z: ZB + 2.4, wait: at }; }
