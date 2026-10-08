@@ -77,7 +77,7 @@ export function wallX(w, { x, z0, z1, y0 = -2, y1 = 7, d = 0.8, gaps = [], mat =
 /** A plain box room: floor slab, ceiling slab and (optionally) walls. Coordinates: z0 north (more negative), z1 south. */
 export function roomBox(w, { x0, x1, z0, z1, y = 0, H = 6, floor = null, ceil = { tex: 'coffer', color: 0xffffff }, walls = {}, wallMat = {}, yb = -2, floorH = 1 }) {
   if (floor) w.plat({ x: (x0 + x1) / 2, y, z: (z0 + z1) / 2, w: x1 - x0, d: z1 - z0, h: floorH, roughness: 0.8, radius: 0.02, ...floor });
-  if (ceil) w.plat({ x: (x0 + x1) / 2, y: y + H + 0.5, z: (z0 + z1) / 2, w: x1 - x0 + 1.6, d: z1 - z0 + 1.6, h: 0.5, roughness: 0.85, radius: 0.02, ...ceil });
+  if (ceil) w.plat({ x: (x0 + x1) / 2, y: y + H + 0.5, z: (z0 + z1) / 2, w: x1 - x0 + 1.2, d: z1 - z0 + 1.2, h: 0.5, roughness: 0.85, radius: 0.02, ...ceil });   // (ends 0.6 m inside the walls: never flush with a wall face)
   const T = 0.8, out = {};
   if (walls.n) out.n = wallZ(w, { z: z0 - T / 2, x0: x0 - T, x1: x1 + T, y0: yb, y1: y + H, gaps: walls.n === true ? [] : walls.n, mat: wallMat, floorY: y });
   if (walls.s) out.s = wallZ(w, { z: z1 + T / 2, x0: x0 - T, x1: x1 + T, y0: yb, y1: y + H, gaps: walls.s === true ? [] : walls.s, mat: wallMat, floorY: y });

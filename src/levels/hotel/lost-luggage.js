@@ -6,14 +6,16 @@ import { openKeypad } from '../../engine/keypad.js';
 import { trollCheckpoint, fakeExit, loadingScreen } from './trolls.js';
 import { shuffle, rint, roomBox, wallZ, wallX, slideDoor, doorFrame, keypadBox, escapeStages, canvasPlane, readModal } from './escape-kit.js';
 
-// Hotel level 3 — "Lost Luggage" (Easy · Mezzanine). An escape room in four stages, one checkpoint each:
+// Hotel level 3 — "Lost Luggage" (Easy · Mezzanine). An escape room in five stages, one checkpoint each:
 //   1 Baggage Office   count the suitcases by colour (the poster gives the order; the host's 1337 is a lie; one case is a mimic —
-//                      it breathes). The keypad says ACCESS GRANTED* the first time. The asterisk means "just kidding".
-//   2 The Belts        the handling hall over a pit: a belt against you (with a suitcase to hop), an expiring checkpoint, the press,
+//                      it breathes and its tongue shows). The keypad says ACCESS GRANTED* the first time. The asterisk means "just kidding".
+//   2 The Belts        the handling hall over a pit: a belt against you (with a suitcase riding it), an expiring checkpoint, the press,
 //                      a sideways transfer belt, and a belt that reverses (its beacons blink first)
 //   3 Weigh-In         carry three cases to the scale; the release code is their tag numbers, heaviest first (the big one is empty)
 //   4 Lost Property    an X-ray arch that "loads", Carousel 13: find your bag (purple, rubber duck), read the claim number on its
-//                      BACK (the host swears it is on the tag), claim it at the desk, then customs: NOTHING TO DECLARE is a closet
+//                      BACK (the host swears it is on the tag), claim it at the desk
+//   5 The Pile         climb the mountain of unclaimed luggage (an overhead pallet to ride, a cardboard box that gives) to customs
+//                      on the mezzanine: NOTHING TO DECLARE is a closet (you are holding a suitcase)
 // Baby Mode: the keypad tells the truth, the reversing belt warns longer and pushes softer, the mimic growls, the expiring checkpoint
 // keeps, the X-ray is quicker, the decoy door is labelled.
 
@@ -23,14 +25,17 @@ const COLORS = [
   { name: 'yellow', hex: 0xe6bb2c, css: '#f2c93a' },
   { name: 'green', hex: 0x2f9e5b, css: '#3cc274' },
 ];
-const NAMES = ['Baggage Office', 'The Belts', 'Weigh-In', 'Lost Property'];
+const NAMES = ['Baggage Office', 'The Belts', 'Weigh-In', 'Lost Property', 'The Pile'];
 const STONE = { tex: 'stone', color: 0xd8cdb4, roughness: 0.7 };
 const STEEL = { tex: 'metal', color: 0x6a7486, roughness: 0.5, metalness: 0.5 };
+const WOODWALL = { tex: 'panel', color: 0x8a6a4a };
 
-// z planes (north is -z)
-const WA = -8.4, WB = -72.4, WC = -82.4, WD = -112.4, WE = -126.4;
-const BAY_Z0 = -56.4;                 // the weigh-in bay starts here (south edge)
-const CAR = { x: 0, z: -96, L: 8, R: 3.2 };   // Carousel 13: a stadium, straights along z
+// z planes of the walls between the rooms (north is -z); each wall is 0.8 thick, centred on these
+const WA = -8.4, WB = -72.4, WC = -82.4, WD = -112.4, WE = -125.4;
+const BAY_Z0 = -55.2;                          // the weigh-in bay's south edge (the pit ends here)
+const UP = 7.4;                                // the customs mezzanine's floor height
+const CAR = { x: 0, z: -96, L: 8, R: 3.2 };    // Carousel 13: a stadium, straights along z
+const BELT_C = { x: -11.1, z0: -47.0, z1: BAY_Z0, v: -3.0 };
 
 export default {
   id: 'hotel-3',
@@ -44,52 +49,64 @@ export default {
     w.respawn = { ...w.spawn };
     w.killY = -8;
     const baby = () => game.baby;
+    const near = (x, z, r) => Math.hypot(game.player.x - x, game.player.z - z) < r;
 
     // =====================================================================================================
-    //  The building
+    //  The building (floors and walls overlap into each other rather than meet flush: no shimmering seams)
     // =====================================================================================================
     // the office
-    roomBox(w, { x0: -13, x1: 13, z0: -8, z1: 14, H: 7, floor: { tex: 'tile', color: 0xb9c0c8, roughness: 0.45, z: (14 - 8.8) / 2, d: 22.8 }, ceil: { tex: 'coffer', color: 0xe8e2d4 }, walls: { s: true, w: true, e: true }, wallMat: STONE });
-    w.plat({ x: 0, y: 0, z: (14 - 8.8) / 2, w: 26, d: 22.8, h: 2, tex: 'tile', color: 0xb9c0c8, roughness: 0.45 });
+    w.plat({ x: 0, y: 0, z: 2.8, w: 26, d: 22.8, h: 2, tex: 'tile', color: 0xb9c0c8, roughness: 0.45 });
+    roomBox(w, { x0: -13, x1: 13, z0: -8, z1: 14, H: 7, ceil: { tex: 'coffer', color: 0xe8e2d4 }, walls: { s: true, w: true, e: true }, wallMat: STONE });
     wallZ(w, { z: WA, x0: -13.8, x1: 13.8, y0: -10, y1: 9, gaps: [{ c: 0, w: 4, h: 4.4 }], mat: STONE });
-    for (const s of [-1, 1]) {   // a blue-grey dado band and a skirting board (they stand clear of the wall face)
-      w.box({ x: s * 12.92, y: 0.65, z: 2.8, w: 0.06, h: 1.3, d: 21.9, tex: 'panel', color: 0x7f93a8, shadow: false });
-      w.box({ x: s * 12.9, y: 1.34, z: 2.8, w: 0.1, h: 0.08, d: 21.9, color: GOLD, metal: 1, rough: 0.35, shadow: false });
+    for (const s of [-1, 1]) {   // a blue-grey dado band and a brass rail (both stand clear of the wall face)
+      w.box({ x: s * 12.92, y: 0.65, z: 3, w: 0.06, h: 1.3, d: 21.8, tex: 'panel', color: 0x7f93a8, shadow: false });
+      w.box({ x: s * 12.9, y: 1.34, z: 3, w: 0.1, h: 0.08, d: 21.8, color: GOLD, metal: 1, rough: 0.35, shadow: false });
     }
-    for (const z of [10, 3, -4]) for (const x of [-7, 7]) { w.box({ x, y: 6.6, z, w: 2.6, h: 0.1, d: 0.3, glow: 0xdff4ff, glowIntensity: 1.5, shadow: false }); hotelHalo(w, x, 6.2, z, 4.5, 0xcfe8ff, 0.16); }
+    for (const z of [10, 3, -4]) for (const x of [-7, 7]) { w.box({ x, y: 6.9, z, w: 2.6, h: 0.1, d: 0.3, glow: 0xdff4ff, glowIntensity: 1.5, shadow: false }); hotelHalo(w, x, 6.5, z, 4.5, 0xcfe8ff, 0.16); }
     w.light(0xfff0d0, 16, 26, 0, 5.4, 4);
     w.light(0xe4f0ff, 12, 22, 0, 5.4, -4);
 
-    // the baggage hall (a pit under the belts, then the weigh-in bay)
+    // the baggage hall: a pit under the belts, then the weigh-in bay
     wallX(w, { x: -13.4, z0: -72.8, z1: -8.8, y0: -10, y1: 9, mat: STEEL });
     wallX(w, { x: 13.4, z0: -72.8, z1: -8.8, y0: -10, y1: 9, mat: STEEL });
     w.plat({ x: 0, y: 9.5, z: -40.6, w: 28, d: 64.4, h: 0.5, tex: 'metal', color: 0x3a4050, roughness: 0.7 });
-    w.plat({ x: 0, y: -9, z: (-8.8 + BAY_Z0) / 2, w: 26, d: BAY_Z0 + 8.8 > 0 ? 1 : 8.8 - BAY_Z0 * -1, h: 1, tex: 'tile', color: 0x22252c, roughness: 0.95 });
-    w.plat({ x: 0, y: 0, z: (BAY_Z0 - 72.8) / 2, w: 26, d: 72.8 + BAY_Z0, h: 2, tex: 'metal', color: 0x8c95a3, roughness: 0.55 });
-    w.box({ x: 0, y: -4.5, z: BAY_Z0 + 0.06, w: 26, h: 9, d: 0.1, tex: 'metal', color: 0x2c313b, shadow: false });     // the pit's north face
+    w.plat({ x: 0, y: -9, z: (-8.6 + BAY_Z0) / 2, w: 26.4, d: -8.6 - BAY_Z0, h: 1, tex: 'tile', color: 0x22252c, roughness: 0.95 });
+    w.plat({ x: 0, y: 0, z: (BAY_Z0 - 72.6) / 2, w: 26.4, d: 72.6 + BAY_Z0, h: 2, tex: 'metal', color: 0x8c95a3, roughness: 0.55 });
+    w.box({ x: 0, y: -5.5, z: BAY_Z0 + 0.06, w: 26, h: 7, d: 0.1, tex: 'metal', color: 0x2c313b, shadow: false });     // the pit's north face, below the bay floor slab
     wallZ(w, { z: WB, x0: -13.8, x1: 13.8, y0: -2, y1: 9, gaps: [{ c: 0, w: 3, h: 3.6 }], mat: STEEL });
-    for (let z = -16; z > -70; z -= 8) { w.box({ x: 0, y: 8.6, z, w: 3.4, h: 0.1, d: 0.3, glow: 0xdff4ff, glowIntensity: 1.4, shadow: false }); hotelHalo(w, 0, 8.1, z, 5.5, 0xcfe8ff, 0.12); }
-    w.light(0xfff0d0, 16, 30, 0, 7.5, -22); w.light(0xfff0d0, 16, 30, 0, 7.5, -44); w.light(0xffe6c0, 14, 24, 0, 7, -64);
-    for (const s of [-1, 1]) for (let z = -12; z > -70; z -= 6) w.box({ x: s * 12.9, y: 0.3, z, w: 0.1, h: 0.6, d: 3, color: 0xffd21f, shadow: false });   // hazard plates along the walls
-    w.sign({ text: 'BAGGAGE HANDLING · HALL B', x: 0, y: 6.4, z: WA - 0.42, w: 9, h: 1.0, rotY: Math.PI, color: '#ffd21f', double: false, tw: 1024, size: 70 });
+    for (let z = -16; z > -70; z -= 8) { w.box({ x: 0, y: 8.9, z, w: 3.4, h: 0.1, d: 0.3, glow: 0xdff4ff, glowIntensity: 1.4, shadow: false }); hotelHalo(w, 0, 8.4, z, 5.5, 0xcfe8ff, 0.12); }
+    w.light(0xfff0d0, 18, 34, 0, 7.5, -26); w.light(0xffe6c0, 16, 30, 0, 7, -58);
+    for (const s of [-1, 1]) for (let z = -59; z > -71; z -= 3.4) w.box({ x: s * 12.92, y: 0.3, z, w: 0.08, h: 0.6, d: 1.6, color: 0xffd21f, shadow: false });   // hazard plates along the bay walls
+    w.sign({ text: 'BAGGAGE HANDLING · HALL B', x: 0, y: 6.4, z: WA - 0.44, w: 9, h: 1.0, rotY: Math.PI, color: '#ffd21f', double: false, tw: 1024, size: 70 });
 
     // the X-ray corridor
-    w.plat({ x: 0, y: 0, z: -77.8, w: 6.6, d: 10, h: 2, tex: 'tile', color: 0xe8ecf0, roughness: 0.4 });
+    w.plat({ x: 0, y: 0, z: -77.6, w: 6.6, d: 10.4, h: 2, tex: 'tile', color: 0xe8ecf0, roughness: 0.4 });
     wallX(w, { x: -2.9, z0: -82.8, z1: -72.8, y0: -2, y1: 3.6, mat: { tex: 'tile', color: 0xf2f4f6 } });
     wallX(w, { x: 2.9, z0: -82.8, z1: -72.8, y0: -2, y1: 3.6, mat: { tex: 'tile', color: 0xf2f4f6 } });
     w.plat({ x: 0, y: 4.1, z: -77.6, w: 6.6, d: 10.4, h: 0.5, tex: 'tile', color: 0xdfe4ea });
-    w.light(0xd8ecff, 8, 10, 0, 3.0, -77.6);
 
     // lost property
-    roomBox(w, { x0: -13, x1: 13, z0: -112, z1: -82.8, H: 7, floor: { tex: 'wood', color: 0x9a7a58, roughness: 0.6, z: -97.8, d: 30 }, ceil: { tex: 'coffer', color: 0xd8ccb8 }, walls: { w: true, e: true }, wallMat: { tex: 'panel', color: 0x8a6a4a } });
-    wallZ(w, { z: WC, x0: -13.8, x1: 13.8, y0: -2, y1: 9, gaps: [{ c: 0, w: 3, h: 3.6 }], mat: { tex: 'panel', color: 0x8a6a4a } });
-    wallZ(w, { z: WD, x0: -13.8, x1: 13.8, y0: -2, y1: 7, gaps: [{ c: 0, w: 4, h: 4.2 }], mat: { tex: 'panel', color: 0x8a6a4a } });
+    w.plat({ x: 0, y: 0, z: -97.6, w: 26.4, d: 30, h: 2, tex: 'wood', color: 0x9a7a58, roughness: 0.6 });
+    roomBox(w, { x0: -13, x1: 13, z0: -112, z1: -82.8, H: 7, ceil: { tex: 'coffer', color: 0xd8ccb8 }, walls: { w: true, e: true }, wallMat: WOODWALL });
+    wallZ(w, { z: WC, x0: -13.8, x1: 13.8, y0: -2, y1: 7, gaps: [{ c: 0, w: 3, h: 3.6 }], mat: WOODWALL });
+    wallZ(w, { z: WD, x0: -13.8, x1: 13.8, y0: -2, y1: 15, gaps: [{ c: 0, w: 4, h: 4.2 }], mat: WOODWALL });
     w.light(0xffd8a8, 16, 26, 0, 6, -90); w.light(0xffd8a8, 16, 26, 0, 6, -104);
     for (const z of [-88, -96, -104]) for (const x of [-7, 7]) { w.box({ x, y: 6.85, z, w: 0.6, h: 0.3, d: 0.6, glow: 0xffd9a0, glowIntensity: 1.6, shadow: false }); hotelHalo(w, x, 6.5, z, 3.2, 0xffc880, 0.18); }
 
-    // customs
-    roomBox(w, { x0: -9, x1: 9, z0: -126, z1: -112.8, H: 6, floor: { tex: 'marble', color: 0xffffff, roughness: 0.2, z: -119.8, d: 14 }, ceil: { tex: 'coffer', color: 0xffffff }, walls: { n: true, w: true, e: true }, wallMat: { tex: 'tile', color: 0xf0f0ec } });
-    w.light(0xffffff, 12, 20, 0, 5, -119);
+    // the pile (a tall hall of unclaimed luggage) and customs on the mezzanine above its north end
+    w.plat({ x: 0, y: 0, z: -118.9, w: 20.4, d: 12.6, h: 2, tex: 'stone', color: 0x7a7468, roughness: 0.8 });
+    roomBox(w, { x0: -10, x1: 10, z0: -125, z1: -112.8, H: 15, ceil: { tex: 'metal', color: 0x4a505c }, walls: { w: true, e: true }, wallMat: { tex: 'stone', color: 0xa89c88 } });
+    wallZ(w, { z: WE, x0: -10.8, x1: 10.8, y0: -2, y1: 15, gaps: [{ c: 0, w: 3.4, h: 3.8, y: UP }], mat: { tex: 'stone', color: 0xa89c88 } });
+    w.light(0xffe0b0, 18, 30, 0, 12, -118);
+    for (const x of [-6, 0, 6]) { w.box({ x, y: 14.85, z: -118.9, w: 0.5, h: 0.3, d: 9, glow: 0xfff0d0, glowIntensity: 1.3, shadow: false }); hotelHalo(w, x, 14.2, -118.9, 4, 0xffe0b0, 0.14); }
+    w.plat({ x: 0, y: UP, z: -132.4, w: 18.4, d: 14.8, h: 2, tex: 'marble', color: 0xffffff, roughness: 0.2 });
+    roomBox(w, { x0: -9, x1: 9, z0: -139, z1: -125.8, y: UP, H: 5.6, ceil: { tex: 'coffer', color: 0xffffff }, walls: { n: true, w: true, e: true }, wallMat: { tex: 'tile', color: 0xf0f0ec }, yb: UP - 2 });
+    w.light(0xffffff, 12, 20, 0, UP + 4.6, -132);
+
+    // real-time timers that die with the level (only for things the player watches; game logic uses world time)
+    const timers = new Set();
+    const later = (ms, fn) => { const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); return id; };
+    w.onDispose(() => { for (const id of timers) clearTimeout(id); });
 
     // =====================================================================================================
     //  Stage 1 · the baggage office (count the suitcases)
@@ -108,7 +125,7 @@ export default {
       w.sign({ text: col.name.toUpperCase(), x: px, y: 0.19, z: pz + 2.1, w: 2.4, h: 0.5, rotX: -Math.PI / 2, color: col.css, double: false, tw: 512, size: 70 });
       pallets.push({ col, n, px, pz });
     });
-    poster(w, order, -7.4, 2.6, WA + 0.42);
+    poster(w, order, -7.4, 2.6, WA + 0.52);
     luggageCart(w, -11, 9, 1); luggageCart(w, 11, 9, 1);
     const junk = ['a single sock', 'a rubber duck (not yours)', 'forty-two keys (none fit)', 'a sandwich of unclear age', 'a tiny hat for a tiny dog', 'a laminated apology', 'six spoons. Only spoons.'];
     const openJunk = (g) => { g.ui.toast('Inside: ' + junk[Math.floor(Math.random() * junk.length)], 'gold'); g.audio.click(); g.say('hotel.l3.junk', { priority: 1 }); };
@@ -116,23 +133,24 @@ export default {
       suitcase(w, x, z, c, 0, 1.15);
       w.interactable({ x, y: 0.4, z, w: 1.3, h: 0.9, d: 0.75, label: 'Open suitcase', onUse: openJunk });
     }
-    // the mimic: it breathes (watch the lid), and its tongue sticks out of the seam. That is the tell.
-    const mimic = suitcase(w, -3.6, -6.8, 0x111114, 0, 1.25);
+    // the mimic: it breathes (watch the lid) and its tongue pokes out of the seam. That is the tell.
+    const MX = -3.6, MZ = -6.8;
+    const mimic = suitcase(w, MX, MZ, 0x111114, 0, 1.25);
     mimic.group.matrixAutoUpdate = true;
-    const tongue = w.box({ x: -3.75, y: 0.42, z: -6.8 + 0.36, w: 0.22, h: 0.05, d: 0.16, color: 0xc8324a, rough: 0.4, shadow: false, static: false });
-    for (const tx of [-3.95, -3.3]) w.box({ x: tx, y: 0.43, z: -6.8 + 0.355, w: 0.06, h: 0.07, d: 0.04, color: 0xf4f0e6, shadow: false });
-    w.onUpdate((dt, t) => { const s = 1 + 0.05 * Math.max(0, Math.sin(t * 2.1)); mimic.group.scale.set(1, s, 1); tongue.position.z = -6.8 + 0.37 + 0.04 * Math.max(0, Math.sin(t * 2.1)); });
-    w.interactable({ x: -3.6, y: 0.45, z: -6.8, w: 1.45, h: 0.95, d: 0.85, label: () => (baby() ? 'Open suitcase (it is growling)' : 'Open suitcase'), onUse: (g) => { g.say('hotel.l3.mimic', { priority: 2 }); g.audio.buzzer(); g.kill('mimic'); } });
-    // the ledger on the desk (the host's handwriting)
+    const tongue = w.box({ x: MX - 0.15, y: 0.42, z: MZ + 0.37, w: 0.22, h: 0.05, d: 0.16, color: 0xc8324a, rough: 0.4, shadow: false, static: false });
+    for (const tx of [MX - 0.35, MX + 0.3]) w.box({ x: tx, y: 0.43, z: MZ + 0.36, w: 0.06, h: 0.07, d: 0.04, color: 0xf4f0e6, shadow: false });
+    w.onUpdate((dt, t) => { const k = Math.max(0, Math.sin(t * 2.1)); mimic.group.scale.set(1, 1 + 0.05 * k, 1); tongue.position.z = MZ + 0.37 + 0.05 * k; });
+    w.interactable({ x: MX, y: 0.45, z: MZ, w: 1.45, h: 0.95, d: 0.85, label: () => (baby() ? 'Open suitcase (it is growling)' : 'Open suitcase'), onUse: (g) => { g.say('hotel.l3.mimic', { priority: 2 }); g.audio.buzzer(); g.kill('mimic'); } });
+    // the ledger on the desk (in the host's handwriting)
     w.plat({ x: 11.3, y: 1.0, z: -5.2, w: 2.6, d: 1.3, h: 0.14, tex: 'wood', color: 0xc9a56e, roughness: 0.5, radius: 0.04 });
-    w.plat({ x: 11.3, y: 0.5, z: -5.2, w: 2.4, d: 1.1, h: 0.9, tex: 'wood', color: 0x8c6a3e, roughness: 0.6, radius: 0.04 });
-    w.box({ x: 11.3, y: 1.1, z: -5.2, w: 0.9, h: 0.08, d: 0.65, color: 0x7a1f2a, rough: 0.7 });
+    w.plat({ x: 11.3, y: 0.86, z: -5.2, w: 2.4, d: 1.1, h: 0.86, tex: 'wood', color: 0x8c6a3e, roughness: 0.6, radius: 0.04 });
+    w.box({ x: 11.3, y: 1.04, z: -5.2, w: 0.9, h: 0.08, d: 0.65, color: 0x7a1f2a, rough: 0.7 });
     w.interactable({ x: 11.3, y: 1.15, z: -5.2, w: 1.1, h: 0.4, d: 0.8, label: 'Read the ledger', onUse: (g) => g.say('hotel.l3.ledger', { priority: 1, vars: { fake } }) });
 
-    // the door, and a keypad that lies exactly once
+    // the door, and a keypad that lies exactly once (ACCESS GRANTED*, with an asterisk)
     const doorA = slideDoor(w, game, { x: 0, z: WA, width: 4, height: 4.4, stripes: 0xffd21f });
     doorFrame(w, { x: 0, z: WA, width: 4, height: 4.4 });
-    w.sign({ text: 'BAGGAGE HANDLING · STAFF ONLY', x: 0, y: 5.3, z: WA + 0.42, w: 6, h: 0.9, color: '#ffd21f', double: false, tw: 1024, size: 54 });
+    w.sign({ text: 'BAGGAGE HANDLING · STAFF ONLY', x: 0, y: 5.3, z: WA + 0.44, w: 6, h: 0.9, color: '#ffd21f', double: false, tw: 1024, size: 54 });
     let attemptsA = 0, liedA = false;
     const padA = keypadBox(w, game, { x: 3.7, z: WA + 0.47, face: 's', label: () => (doorA.open ? 'Door unlocked' : 'Use keypad'), use: (g) => { if (!doorA.open) useKeypadA(g); } });
     const useKeypadA = (g) => openKeypad(g, {
@@ -142,11 +160,11 @@ export default {
           if (!liedA && !g.baby) {
             liedA = true;
             api.setMsg('ACCESS GRANTED*', 'good'); g.audio.confirm(); padA.setLed(0x40ff88);
-            later(700, () => { api.close(); doorA.jolt(0.35); padA.setLed(0xff3a46); g.ui.toast('*just kidding. Please re-enter your code.', 'bad'); g.say('hotel.l3.jk', { priority: 2 }); });
+            w.after(0.8, () => { api.close(); doorA.jolt(0.35); padA.setLed(0xff3a46); g.ui.toast('*just kidding. Please re-enter your code.', 'bad'); g.say('hotel.l3.jk', { priority: 2 }); });
             return;
           }
           api.setMsg('ACCESS GRANTED', 'good'); g.audio.confirm();
-          later(600, () => { api.close(); doorA.openDoor(); padA.setLed(0x40ff88); w.after(0.6, () => g.say('hotel.l3.granted', { priority: 2 })); });
+          w.after(0.6, () => { api.close(); doorA.openDoor(); padA.setLed(0x40ff88); w.after(0.6, () => g.say('hotel.l3.granted', { priority: 2 })); });
         } else {
           attemptsA++; g.audio.buzzer(); api.clear(); api.setMsg('ACCESS DENIED', 'bad');
           if (c === fake) g.say('hotel.l3.fake', { priority: 2, vars: { fake } });
@@ -155,24 +173,17 @@ export default {
         }
       },
     });
-    // real-time timers that die with the level
-    const timers = new Set();
-    const later = (ms, fn) => { const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); return id; };
-    w.onDispose(() => { for (const id of timers) clearTimeout(id); });
 
     // =====================================================================================================
     //  Stage 2 · the belts
     // =====================================================================================================
     const path = (p) => { p.o.path = true; return p; };
-    const legs = (x, z, ww, dd, top) => { for (const sx of [-1, 1]) for (const sz of [-1, 1]) w.box({ x: x + sx * (ww / 2 - 0.4), y: (top - 9) / 2 - 0.45, z: z + sz * (dd / 2 - 0.4), w: 0.3, h: -9 - (top - 0.9) + 9 * 2 - 9, d: 0.3, color: 0x4a505c, metal: 0.6, rough: 0.4 }); };
-    const stand = (x, z, ww, dd) => { for (const sx of [-1, 1]) for (const sz of [-1, 1]) w.box({ x: x + sx * (ww / 2 - 0.45), y: -5.05, z: z + sz * (dd / 2 - 0.45), w: 0.3, h: 7.9, d: 0.3, color: 0x4a505c, metal: 0.6, rough: 0.4, shadow: false }); };
-    void legs;
-    const pad = (x, z0, z1, ww, o = {}) => {
+    const stand = (x, z, ww, dd, bottom) => { for (const sx of [-1, 1]) for (const sz of [-1, 1]) w.box({ x: x + sx * (ww / 2 - 0.45), y: (bottom - 8.5) / 2, z: z + sz * (dd / 2 - 0.45), w: 0.3, h: bottom + 8.5, d: 0.3, color: 0x4a505c, metal: 0.6, rough: 0.4, shadow: false }); };
+    const pad = (x, z0, z1, ww) => {
       const d = Math.abs(z0 - z1), z = (z0 + z1) / 2;
-      const p = path(w.plat({ x, y: 0, z, w: ww, d, h: 1.1, tex: 'metal', color: 0xaab2bc, roughness: 0.5, metalness: 0.4, radius: 0.04, ...o }));
-      w.box({ x, y: 0.012, z: z - d / 2 + 0.15, w: ww - 0.3, h: 0.02, d: 0.16, color: 0xffd21f, shadow: false });
-      w.box({ x, y: 0.012, z: z + d / 2 - 0.15, w: ww - 0.3, h: 0.02, d: 0.16, color: 0xffd21f, shadow: false });
-      stand(x, z, ww, d);
+      const p = path(w.plat({ x, y: 0, z, w: ww, d, h: 1.1, tex: 'metal', color: 0xaab2bc, roughness: 0.5, metalness: 0.4, radius: 0.04 }));
+      for (const e of [-1, 1]) w.box({ x, y: 0.012, z: z + e * (d / 2 - 0.15), w: ww - 0.3, h: 0.02, d: 0.16, color: 0xffd21f, shadow: false });
+      stand(x, z, ww, d, -1.1);
       return p;
     };
     const belt = (x, z, ww, dd, v, rails = [-1, 1]) => {
@@ -183,74 +194,70 @@ export default {
         if (alongZ) w.box({ x: x + s * (ww / 2 + 0.12), y: 0.12, z, w: 0.24, h: 0.5, d: dd, color: GOLD, metal: 1, rough: 0.35, shadow: false });
         else w.box({ x, y: 0.12, z: z + s * (dd / 2 + 0.12), w: ww, h: 0.5, d: 0.24, color: GOLD, metal: 1, rough: 0.35, shadow: false });
       }
-      stand(x, z, ww, dd);
+      stand(x, z, ww, dd, -0.9);
       return p;
     };
-    const E = pad(0, -8.8, -13.4, 9);
-    const BA = belt(0, -19.7, 6, 9, { vz: 2.8 });                 // against you
-    const P1 = pad(0, -26, -29, 7);
-    const BB = belt(0, -36.5, 6, 11, { vz: -3.4 });               // with you, under the press
-    const P2 = pad(0, -44, -47, 7);
-    const BT = belt(-7.1, -45.5, 5, 3, { vx: 3.2 });               // sideways, against you
-    const P3 = pad(-11.1, -43.6, -47.4, 3);
-    const BC = belt(-11.1, -52.4, 3, 8, { vz: -3.0 }, [1]);        // with you... until it is not
-    w.box({ x: 0, y: 0.5, z: BAY_Z0 - 0.2, w: 26, h: 0.06, d: 0.25, color: 0xffd21f, shadow: false });
-    // the bay floor is the last stop on the route
-    const bayEdge = path(w.plat({ x: -9, y: 0, z: BAY_Z0 - 1.6, w: 8, d: 3.2, h: 0.2, tex: 'metal', color: 0x8c95a3, roughness: 0.55, collide: true }));
-    bayEdge.group.visible = false;      // (an invisible route marker on top of the bay floor, flush with it)
-    w.checkpoint({ x: 0, y: 0, z: -11.2, real: true });
-    const cpBelts = w.checkpoints[w.checkpoints.length - 1];
-    trollCheckpoint(w, game, { x: 0, y: 0, z: -27.5, mode: 'expire', ttl: 15, say: 'hotel.l3.expired' });
+    const E = pad(0, -8.6, -13.4, 9);
+    const BA = belt(0, -19.7, 6, 9, { vz: 2.8 });                  // against you (a suitcase rides it)
+    const P1 = pad(0, -24.2, -27.4, 7);                            // (flush with belt A's far end: no gap after the suitcase hop)
+    const BB = belt(0, -34.9, 6, 11, { vz: -3.4 });                // with you, under the press
+    const PRESS_Z = -34.9;
+    const P2 = pad(0, -42.4, -45.6, 7);
+    const BT = belt(-7.1, -44, 5, 3.2, { vx: 3.2 });                // sideways, against you
+    const P3 = pad(-11.1, -42.0, -46.0, 3);
+    const BC = belt(BELT_C.x, (BELT_C.z0 + BELT_C.z1) / 2, 3, BELT_C.z0 - BELT_C.z1 + 0.2, { vz: BELT_C.v }, [1]);   // with you... until it is not
+    void E; void BA; void P1; void BB; void P2; void BT; void P3;
+    w.box({ x: 0, y: 0.012, z: BAY_Z0 - 0.25, w: 26, h: 0.02, d: 0.2, color: 0xffd21f, shadow: false });
+    // (an invisible route marker on the bay floor, flush with it: the last stop of the belt route)
+    const bayEdge = path(w.plat({ x: -9, y: 0, z: BAY_Z0 - 1.8, w: 8, d: 3.2, h: 0.2, tex: 'metal', color: 0x8c95a3 }));
+    bayEdge.group.visible = false;
+    const cpBelts = w.checkpoint({ x: 0, y: 0, z: -11.2, real: true });
+    trollCheckpoint(w, game, { x: 0, y: 0, z: -25.8, mode: 'expire', ttl: 15, say: 'hotel.l3.expired' });
 
-    // luggage traffic on belt A: one suitcase rides it toward you (hop it)
-    const BA_Z0 = -15.2, BA_LEN = 9;
-    const bagHz = w.hazard({ x: 0.4, y: 0.3, z: BA_Z0 + 0.4, w: 1.0, h: 0.6, d: 0.6, color: 0xff3a46, move: (t) => ({ z: ((t * 2.8) % (BA_LEN - 0.8)) * -1 + (BA_LEN - 0.8) * 0 + ((t * 2.8) % (BA_LEN - 0.8)) * 2 }) });
-    bagHz.move = (t) => ({ z: -(BA_LEN - 0.8) + ((t * 2.8) % (BA_LEN - 0.8)) });
-    bagHz.base.set(0.4, 0.3, BA_Z0 - 0.4 + 0);
+    // luggage traffic on belt A: one suitcase rides it toward you, out of one flap curtain and into the other (hop it, or step round it)
+    const BA_N = -23.6, BA_RUN = 7.8;
+    const bagHz = w.hazard({ x: 0.6, y: 0.3, z: BA_N, w: 1.0, h: 0.6, d: 0.5, color: 0xff3a46, move: (t) => ({ z: (t * 2.8) % BA_RUN }) });
     bagHz.core.visible = false; bagHz.shell.visible = false; bagHz.jumpable = true;
-    bagHz.group.add(bagMesh({ color: 0x7a2a52, s: 1.05 }));
-    bagHz.group.children[bagHz.group.children.length - 1].position.y = -0.3;
+    { const m = bagMesh({ color: 0x7a2a52, s: 1.05 }); m.position.y = -0.3; bagHz.group.add(m); }
+    for (const fz of [-15.45, -23.95]) flapCurtain(w, 0, fz, 6.2);
     // the press over belt B
-    const press = w.hazard({ x: 0, y: 3.2, z: -36.5, w: 6.2, h: 1.1, d: 2.2, color: 0xff3a4a, move: (t) => ({ y: -2.3 * Math.max(0, Math.sin(t * 1.6) * 1.4 - 0.4) }) });
-    for (const sx of [-1, 1]) w.box({ x: sx * 3.4, y: 1.4, z: -36.5, w: 0.4, h: 12, d: 0.4, color: 0x5a6070, metal: 0.7, rough: 0.4 });
-    w.box({ x: 0, y: 6.6, z: -36.5, w: 7.4, h: 0.6, d: 0.7, color: 0x5a6070, metal: 0.7, rough: 0.4 });
-    w.sign({ text: 'MIND THE PRESS', x: 0, y: 5.6, z: -35.1, w: 4, h: 0.6, color: '#ffd21f', double: true, tw: 512, size: 60 });
-    // belt C reverses: amber beacons blink, then it runs backwards for a while
+    const press = w.hazard({ x: 0, y: 3.2, z: PRESS_Z, w: 6.2, h: 1.1, d: 2.2, color: 0xff3a4a, move: (t) => ({ y: -2.3 * Math.max(0, Math.sin(t * 1.6) * 1.4 - 0.4) }) });
+    for (const sx of [-1, 1]) w.box({ x: sx * 3.4, y: 1.5, z: PRESS_Z, w: 0.4, h: 21, d: 0.4, color: 0x5a6070, metal: 0.7, rough: 0.4 });
+    w.box({ x: 0, y: 6.6, z: PRESS_Z, w: 7.4, h: 0.6, d: 0.7, color: 0x5a6070, metal: 0.7, rough: 0.4 });
+    w.sign({ text: 'MIND THE PRESS', x: 0, y: 5.6, z: PRESS_Z + 0.38, w: 4, h: 0.6, color: '#ffd21f', double: false, tw: 512, size: 60 });
+    w.box({ x: 0, y: 5.6, z: PRESS_Z + 0.32, w: 4.2, h: 0.75, d: 0.06, color: 0x1c2028, shadow: false });
+    // belt C reverses: two amber beacons on its rail blink (and tick quietly), then it runs backwards for a while
     const beacons = [];
-    for (const z of [-48.6, -56.0]) {
-      w.box({ x: -9.3, y: 0.9, z, w: 0.12, h: 1.8, d: 0.12, color: 0x30343c, metal: 0.6, rough: 0.4, shadow: false });
-      const b = w.box({ x: -9.3, y: 1.9, z, w: 0.3, h: 0.3, d: 0.3, color: 0x3a2a10, static: false, shadow: false });
-      beacons.push(b);
+    for (const z of [BELT_C.z0 - 0.3, BELT_C.z1 + 0.4]) {
+      w.box({ x: BELT_C.x + 1.62, y: 1.07, z, w: 0.1, h: 1.4, d: 0.1, color: 0x30343c, metal: 0.6, rough: 0.4, shadow: false });
+      beacons.push(w.box({ x: BELT_C.x + 1.62, y: 1.9, z, w: 0.3, h: 0.3, d: 0.3, color: 0x3a2a10, static: false, shadow: false }));
     }
+    w.sign({ text: '⚠ REVERSES WHEN AMBER', x: BELT_C.x + 1.75, y: 1.45, z: (BELT_C.z0 + BELT_C.z1) / 2, w: 4.2, h: 0.4, rotY: Math.PI / 2, color: '#ffa21f', double: true, tw: 512, size: 48 });
     const beaconOn = glowMaterial(0xffa21f, 2.6), beaconOff = plainMaterial(0x3a2a10, { roughness: 0.5 });
     const beltMesh = BC.group.children[BC.group.children.length - 1];
-    const rev = { phase: 'fwd', t: 0, saidRev: false };
-    const REV = () => ({ fwd: 5.5, warn: baby() ? 2.2 : 1.2, back: 2.2, speed: baby() ? 3.8 : 5.2 });
+    const r0 = beltMesh.rotation.y;
+    const rev = { phase: 'fwd', t: 0, saidRev: false, on: false };
+    const REV = () => ({ fwd: 5.5, warn: baby() ? 2.2 : 1.3, back: 2.2, speed: baby() ? 3.8 : 5.2 });
+    const setRev = (back) => { BC.body.conv = [0, back ? REV().speed : BELT_C.v]; beltMesh.rotation.y = back ? r0 + Math.PI : r0; for (const b of beacons) b.material = back ? beaconOn : beaconOff; };
     w.onUpdate((dt) => {
       const R = REV();
       rev.t += dt;
       if (rev.phase === 'fwd' && rev.t > R.fwd) { rev.phase = 'warn'; rev.t = 0; }
       else if (rev.phase === 'warn') {
         const on = Math.floor(rev.t * 6) % 2 === 0;
-        for (const b of beacons) b.material = on ? beaconOn : beaconOff;
-        if (on !== rev._on) { rev._on = on; if (on && near(-11.1, -50, 14)) game.audio.tick(); }
+        if (on !== rev.on) { rev.on = on; for (const b of beacons) b.material = on ? beaconOn : beaconOff; if (on && near(BELT_C.x, -51, 14)) game.audio.tick(); }
         if (rev.t > R.warn) {
-          rev.phase = 'back'; rev.t = 0; BC.body.conv = [0, R.speed]; beltMesh.rotation.y += Math.PI;
-          for (const b of beacons) b.material = beaconOn;
-          if (!rev.saidRev && near(-11.1, -50, 12)) { rev.saidRev = true; game.say('hotel.l3.reverse', { priority: 1 }); }
+          rev.phase = 'back'; rev.t = 0; setRev(true);
+          if (!rev.saidRev && near(BELT_C.x, -51, 12)) { rev.saidRev = true; game.say('hotel.l3.reverse', { priority: 1 }); }
         }
-      } else if (rev.phase === 'back' && rev.t > R.back) {
-        rev.phase = 'fwd'; rev.t = 0; BC.body.conv = [0, -3.0]; beltMesh.rotation.y -= Math.PI;
-        for (const b of beacons) b.material = beaconOff;
-      }
+      } else if (rev.phase === 'back' && rev.t > R.back) { rev.phase = 'fwd'; rev.t = 0; setRev(false); }
     });
-    const near = (x, z, r) => Math.hypot(game.player.x - x, game.player.z - z) < r;
 
     // =====================================================================================================
-    //  Stage 3 · weigh-in (carry the cases to the scale; tags, heaviest first)
+    //  Stage 3 · weigh-in (carry the cases to the scale; the code is their tags, heaviest first)
     // =====================================================================================================
-    w.checkpoint({ x: -11.1, y: 0, z: -58.8, real: true });
-    const cpWeigh = w.checkpoints[w.checkpoints.length - 1];
+    const cpWeigh = w.checkpoint({ x: BELT_C.x, y: 0, z: BAY_Z0 - 2.4, real: true });
+    w.trigger({ x: -9.5, y: 1.2, z: BAY_Z0 - 2.4, w: 7, h: 3, d: 3, once: true, onEnter: () => { if (!cpWeigh.used) { cpWeigh.used = true; w.burst(new THREE.Vector3(cpWeigh.x, 0.4, cpWeigh.z), 0xffc83d, 24); game.onCheckpoint(cpWeigh); } } });   // (the whole belt exit counts)
     const wcols = shuffle(COLORS).slice(0, 3);
     const bigI = rint(0, 2);
     const weights = [];
@@ -262,55 +269,63 @@ export default {
     const tags = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 3);
     const wbags = wcols.map((col, i) => ({ col, kg: weights[i], tag: tags[i], big: i === bigI, mesh: null, i }));
     const wcode = [...wbags].sort((a, b) => b.kg - a.kg).map((b) => b.tag).join('');
-    // the rack along the west side, the scale in the middle
-    const RACK_X = -6.2, RZ = [-61.4, -64.4, -67.4];
-    w.plat({ x: RACK_X, y: 0.55, z: -64.4, w: 2.2, d: 9.4, h: 0.12, tex: 'metal', color: 0x9aa2ae, roughness: 0.45 });
-    for (const z of [-59.9, -64.4, -68.9]) for (const sx of [-1, 1]) w.box({ x: RACK_X + sx * 0.95, y: 0.25, z, w: 0.1, h: 0.5, d: 0.1, color: 0x4a505c, metal: 0.6, shadow: false });
+    // three baggage carts round the bay (one case on each), the scale in the middle
+    const CARTS = shuffle([{ x: -8.6, z: -66.6, face: 'e' }, { x: 8.2, z: -59.6, face: 'w' }, { x: 8.2, z: -69.4, face: 'w' }]);
+    for (const c of CARTS) {
+      w.plat({ x: c.x, y: 0.55, z: c.z, w: 1.6, d: 2.2, h: 0.12, tex: 'brass', color: 0xffffff, roughness: 0.3, metalness: 0.9, radius: 0.03 });
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) w.box({ x: c.x + sx * 0.65, y: 0.245, z: c.z + sz * 0.95, w: 0.08, h: 0.49, d: 0.08, color: 0x14141a, rough: 0.5, shadow: false });
+      w.box({ x: c.x + (c.face === 'e' ? -0.78 : 0.78), y: 1.25, z: c.z, w: 0.06, h: 1.3, d: 2.2, color: GOLD, metal: 1, rough: 0.3, shadow: false });
+      w.collider({ x: c.x, y: 0.3, z: c.z, w: 1.6, h: 0.6, d: 2.2 });
+    }
     const SCALE = { x: 2.4, z: -64.4 };
     w.box({ x: SCALE.x, y: 0.04, z: SCALE.z, w: 2.0, h: 0.08, d: 2.0, color: 0x2c313b, metal: 0.6, rough: 0.35 });
     w.box({ x: SCALE.x, y: 0.09, z: SCALE.z, w: 1.7, h: 0.04, d: 1.7, tex: 'metal', color: 0xc8ced8, shadow: false });
-    w.box({ x: SCALE.x, y: 1.0, z: SCALE.z - 1.15, w: 0.12, h: 2.0, d: 0.12, color: 0x30343c, metal: 0.6, shadow: false });
-    const disp = canvasPlane(w, { x: SCALE.x, y: 2.15, z: SCALE.z - 1.08, width: 1.6, height: 0.6, px: 512, draw: () => {} });
+    w.box({ x: SCALE.x, y: 1.05, z: SCALE.z - 1.15, w: 0.12, h: 2.1, d: 0.12, color: 0x30343c, metal: 0.6, shadow: false });
     w.box({ x: SCALE.x, y: 2.15, z: SCALE.z - 1.14, w: 1.75, h: 0.75, d: 0.08, color: 0x14161c, shadow: false });
+    const disp = canvasPlane(w, { x: SCALE.x, y: 2.15, z: SCALE.z - 1.08, width: 1.6, height: 0.6, px: 512, draw: () => {} });
     const showKg = (txt, col = '#7dffb0') => disp.redraw((g, cw, ch) => { g.fillStyle = '#05140c'; g.fillRect(0, 0, cw, ch); g.fillStyle = col; g.font = '700 110px ui-monospace, Menlo, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, cw / 2, ch / 2 + 6); });
     showKg('0.0 kg');
     // slots: three on the rack, one on the scale. E on a slot swaps what you hold with what is there.
-    const wslots = RZ.map((z, i) => ({ x: RACK_X, z, y: 0.61, bag: wbags[i], scale: false, i }));
+    const wslots = CARTS.map((c, i) => ({ x: c.x, z: c.z, y: 0.61, bag: wbags[i], scale: false, i, face: c.face }));
     const scaleSlot = { x: SCALE.x, z: SCALE.z, y: 0.11, bag: null, scale: true };
     const allSlots = [...wslots, scaleSlot];
     let held = null;
-    for (const b of wbags) {
-      b.mesh = bagMesh({ color: b.col.hex, s: b.big ? 1.45 : 1, tag: String(b.tag) });
-      w.add(b.mesh);
-    }
-    const seat = (slot) => { const b = slot.bag; if (!b) return; b.mesh.position.set(slot.x, slot.y, slot.z); b.mesh.rotation.set(0, slot.scale ? 0 : Math.PI / 2, 0); b.mesh.scale.setScalar(1); };
+    for (const b of wbags) { b.mesh = bagMesh({ color: b.col.hex, s: b.big ? 1.45 : 1, tag: String(b.tag) }); w.add(b.mesh); }
+    const seat = (slot) => { const b = slot.bag; if (!b) return; b.mesh.position.set(slot.x, slot.y, slot.z); b.mesh.rotation.set(0, slot.scale ? 0 : slot.face === 'e' ? Math.PI / 2 : -Math.PI / 2, 0); b.mesh.scale.setScalar(1); };
     allSlots.forEach(seat);
-    let weighed = new Set(), saidScale = false;
-    const updScale = () => { if (scaleSlot.bag) { showKg(`${scaleSlot.bag.kg.toFixed(1)} kg`); weighed.add(scaleSlot.bag.i); if (!saidScale) { saidScale = true; game.say('hotel.l3.scale', { priority: 1 }); } if (scaleSlot.bag.big) game.say('hotel.l3.bigkg', { priority: 1 }); } else showKg('0.0 kg'); };
+    const weighed = new Set();
+    let saidScale = false, saidBig = false;
+    const updScale = (announce) => {
+      const b = scaleSlot.bag;
+      if (!b) { showKg('0.0 kg'); return; }
+      showKg(`${b.kg.toFixed(1)} kg`); weighed.add(b.i);
+      if (!announce) return;
+      if (b.big && !saidBig) { saidBig = true; game.say('hotel.l3.bigkg', { priority: 1 }); }
+      else if (!saidScale) { saidScale = true; game.say('hotel.l3.scale', { priority: 1 }); }
+    };
     const useSlot = (g, slot) => {
       if (!held && !slot.bag) return;
       g.audio.click();
       const was = slot.bag;
       slot.bag = held; held = was;
       seat(slot);
-      if (slot.scale) updScale();
+      if (slot.scale) updScale(true);
     };
     for (const slot of allSlots) {
       w.interactable({
         x: slot.x, y: slot.y + 0.45, z: slot.z, w: slot.scale ? 1.8 : 1.6, h: 1.0, d: slot.scale ? 1.8 : 1.6, range: 3.4, pad: 0.05,
         label: () => {
-          if (held && slot.bag) return slot.scale ? `Swap: weigh the ${held.col.name} case` : `Swap for the ${slot.bag.col.name} case`;
+          if (held && slot.bag) return slot.scale ? `Weigh the ${held.col.name} case instead` : `Swap for the ${slot.bag.col.name} case`;
           if (held) return slot.scale ? `Put the ${held.col.name} case on the scale` : `Put the ${held.col.name} case down`;
-          if (slot.bag) return `Pick up the ${slot.bag.col.name} case`;
-          return slot.scale ? 'Scale (empty)' : 'Empty rack';
+          return `Pick up the ${slot.bag?.col.name} case`;
         },
-        enabled: () => !!(held || slot.bag),
+        enabled: () => !!(held || slot.bag) && !claimed,
         onUse: (g) => useSlot(g, slot),
       });
     }
     // standing on the scale yourself
-    w.trigger({ x: SCALE.x, y: 1, z: SCALE.z, w: 1.6, h: 2, d: 1.6, once: false, onEnter: () => { if (!scaleSlot.bag) { showKg('404 kg', '#ff7a85'); game.say('hotel.l3.you', { priority: 0 }); } }, onExit: () => updScale() });
-    // the carried case floats in front of you, slightly to the right
+    w.trigger({ x: SCALE.x, y: 1, z: SCALE.z, w: 1.6, h: 2, d: 1.6, once: false, onEnter: () => { if (!scaleSlot.bag) { showKg('404 kg', '#ff7a85'); game.say('hotel.l3.you', { priority: 0 }); } }, onExit: () => updScale(false) });
+    // the carried case rides in front of you, slightly to the right
     w.onUpdate(() => {
       if (!held) return;
       const p = game.player, yw = game.yaw;
@@ -319,22 +334,23 @@ export default {
       held.mesh.rotation.set(0, yw + Math.PI / 2, 0);
       held.mesh.scale.setScalar(0.62);
     });
-    weighPoster(w, -6.0, 3.2, WB + 0.42);
-    w.sign({ text: 'SCALE ▸', x: SCALE.x, y: 0.14, z: SCALE.z + 1.4, w: 1.8, h: 0.5, rotX: -Math.PI / 2, color: '#7dffb0', double: false, tw: 512, size: 70 });
-    // a pile of crates and a parked cart in the corner (dressing; solid)
-    luggageCart(w, 10.5, -61, 0); luggageCart(w, 10.5, -67.5, 0);
-    for (const [x, z, s] of [[8, -70.4, 1.2], [9.4, -70.4, 1.0], [8.6, -70.4, 0.8]]) w.plat({ x, y: s * (x === 8.6 ? 2.2 : 1), z: z + (x === 8.6 ? 0 : 0), w: s, d: s, h: s, tex: 'wood', color: 0xa07a4a, roughness: 0.8 });
-    // the door to the X-ray (keypad: the tags, heaviest first)
+    weighPoster(w, -6.0, 3.2, WB + 0.52);
+    w.sign({ text: 'SCALE ▸', x: SCALE.x, y: 0.03, z: SCALE.z + 1.5, w: 1.8, h: 0.5, rotX: -Math.PI / 2, color: '#7dffb0', double: false, tw: 512, size: 70 });
+    luggageCart(w, -10.6, -60.2, 0);
+    w.plat({ x: 8.0, y: 1.2, z: -70.6, w: 1.2, d: 1.2, h: 1.2, tex: 'wood', color: 0xa07a4a, roughness: 0.8 });
+    w.plat({ x: 9.4, y: 1.0, z: -70.6, w: 1.0, d: 1.0, h: 1.0, tex: 'wood', color: 0x8a6a3a, roughness: 0.8 });
+    w.plat({ x: 8.75, y: 2.0, z: -70.6, w: 0.8, d: 0.8, h: 0.8, tex: 'wood', color: 0xb08a5a, roughness: 0.8 });
+    // the door to security (keypad: the tags, heaviest first)
     const doorB = slideDoor(w, game, { x: 0, z: WB, width: 3, height: 3.6, stripes: 0xffd21f });
     doorFrame(w, { x: 0, z: WB, width: 3, height: 3.6 });
-    w.sign({ text: 'SECURITY ▸ LOST PROPERTY', x: 0, y: 4.5, z: WB + 0.42, w: 5, h: 0.7, color: '#ffd21f', double: false, tw: 1024, size: 54 });
+    w.sign({ text: 'SECURITY ▸ LOST PROPERTY', x: 0, y: 4.5, z: WB + 0.44, w: 5, h: 0.7, color: '#ffd21f', double: false, tw: 1024, size: 54 });
     let attemptsB = 0;
     const padB = keypadBox(w, game, { x: 2.6, z: WB + 0.47, face: 's', label: () => (doorB.open ? 'Door unlocked' : 'Release code'), use: (g) => { if (!doorB.open) useKeypadB(g); } });
     const useKeypadB = (g) => openKeypad(g, {
       title: 'HOLD BAGGAGE · RELEASE CODE', digits: 3,
-      info: () => 'Weighed: ' + wbags.map((b) => (weighed.has(b.i) ? `${b.col.name} ${b.kg} kg (tag ${b.tag})` : `${b.col.name} ?`)).join(' · '),
+      info: () => 'Weighed so far: ' + (weighed.size ? wbags.filter((b) => weighed.has(b.i)).map((b) => `${b.col.name} ${b.kg} kg (tag ${b.tag})`).join(' · ') : 'nothing'),
       onSubmit: (c, api) => {
-        if (c === wcode) { api.setMsg('RELEASED', 'good'); g.audio.confirm(); later(600, () => { api.close(); doorB.openDoor(); padB.setLed(0x40ff88); w.after(0.5, () => g.say('hotel.l3.w.open', { priority: 2 })); }); }
+        if (c === wcode) { api.setMsg('RELEASED', 'good'); g.audio.confirm(); w.after(0.6, () => { api.close(); doorB.openDoor(); padB.setLed(0x40ff88); w.after(0.5, () => g.say('hotel.l3.w.open', { priority: 2 })); }); }
         else {
           attemptsB++; g.audio.buzzer(); api.clear(); api.setMsg('WRONG ORDER', 'bad');
           if (attemptsB % 3 === 0) { g.say('hotel.l3.lock', { priority: 2 }); api.lockout(5); } else g.say('hotel.l3.w.denied', { priority: 1 });
@@ -345,36 +361,43 @@ export default {
     // =====================================================================================================
     //  Stage 4 · X-ray, lost property, customs
     // =====================================================================================================
-    // the X-ray arch: it scans you. It is a loading screen.
-    for (const sx of [-1, 1]) w.box({ x: sx * 1.6, y: 1.35, z: -77.2, w: 0.5, h: 2.7, d: 1.2, color: 0xdfe4ea, rough: 0.3 });
+    // the X-ray arch: it scans you. It is a loading screen. (It also confiscates the case you are carrying: it was not yours.)
+    for (const sx of [-1, 1]) { w.box({ x: sx * 1.6, y: 1.35, z: -77.2, w: 0.5, h: 2.7, d: 1.2, color: 0xdfe4ea, rough: 0.3 }); w.collider({ x: sx * 1.6, y: 1.35, z: -77.2, w: 0.5, h: 2.7, d: 1.2 }); }
     w.box({ x: 0, y: 2.85, z: -77.2, w: 3.7, h: 0.5, d: 1.2, color: 0xdfe4ea, rough: 0.3 });
     w.box({ x: 0, y: 2.85, z: -76.58, w: 2.4, h: 0.22, d: 0.04, glow: 0x6ad4ff, glowIntensity: 1.8, shadow: false });
     w.sign({ text: 'X-RAY · PLEASE HOLD STILL', x: 0, y: 3.3, z: -76.58, w: 3.2, h: 0.4, color: '#bfe8ff', double: false, tw: 512, size: 50 });
     let xrayDone = false;
-    w.trigger({ x: 0, y: 1, z: -77.2, w: 2.6, h: 2, d: 1.0, once: true, onEnter: () => { if (xrayDone) return; xrayDone = true; loadingScreen(game, w, { sec: 2.4, say: 'hotel.l3.xray', sayAfter: 'hotel.l3.xray2' }); } });
+    w.trigger({
+      x: 0, y: 1, z: -77.2, w: 2.6, h: 2, d: 1.0, once: false, onEnter: () => {
+        if (held && !claimed) { const free = allSlots.find((s) => !s.bag); if (free) { free.bag = held; held = null; seat(free); updScale(false); game.ui.toast('Confiscated by security: one (1) suitcase. It was not yours.', 'bad'); } }
+        if (xrayDone) return;
+        xrayDone = true; loadingScreen(game, w, { sec: 2.4, say: 'hotel.l3.xray', sayAfter: 'hotel.l3.xray2' });
+      },
+    });
     w.sign({ text: 'LIQUIDS: 100 ml · DIGNITY: 0 ml', x: -2.47, y: 2.0, z: -75, w: 2.6, h: 0.45, rotY: Math.PI / 2, color: '#2a3a4a', bg: '#e8f4ff', double: false, tw: 512, size: 34 });
 
-    w.checkpoint({ x: 0, y: 0, z: -85.6, real: true });
-    const cpLP = w.checkpoints[w.checkpoints.length - 1];
+    const cpLP = w.checkpoint({ x: 0, y: 0, z: -85.6, real: true });
     // the cage: wire mesh in front of shelves full of other people's things
     for (const s of [-1, 1]) {
-      w.plat({ x: s * 12.1, y: 3.6, z: -97.5, w: 1.6, d: 26, h: 3.6, tex: 'wood', color: 0x6a4a2a, roughness: 0.7, collide: true });
-      for (let k = 0; k < 9; k++) lostItem(w, s * 12.0, 3.6, -86.5 - k * 2.8, k + (s > 0 ? 9 : 0));
-      wireMesh(w, s * 11.2, -97.5, 26, 5.4, s);
-      w.sign({ text: 'LOST PROPERTY · DO NOT FEED THE UMBRELLAS', x: s * 11.15, y: 5.9, z: -97.5, w: 8, h: 0.5, rotY: -s * Math.PI / 2, color: '#f1d28a', double: false, tw: 1024, size: 44 });
+      const sx = s * 12.2;
+      for (const y of [1.2, 2.6]) w.box({ x: sx, y, z: -97.4, w: 1.4, h: 0.06, d: 27, tex: 'wood', color: 0x6a4a2a, shadow: false });
+      for (let z = -84.4; z >= -110.4; z -= 3.25) w.box({ x: sx, y: 1.5, z, w: 1.4, h: 3.0, d: 0.08, tex: 'wood', color: 0x5a3a1a, shadow: false });
+      w.collider({ x: s * 12.15, y: 1.5, z: -97.4, w: 1.7, h: 3, d: 27 });
+      for (let k = 0; k < 8; k++) lostItem(w, sx, k % 2 ? 2.63 : 1.23, -86 - k * 3.25, k + (s > 0 ? 8 : 0));
+      wireMesh(w, s * 11.25, -97.4, 27, 5.4, s);
+      w.sign({ text: 'LOST PROPERTY · DO NOT FEED THE UMBRELLAS', x: s * 11.2, y: 5.9, z: -97.4, w: 8, h: 0.5, rotY: -s * Math.PI / 2, color: '#f1d28a', double: false, tw: 1024, size: 44 });
     }
     // Carousel 13
     const BAGCOL = [0x6a3fa0, 0x6a3fa0, 0x6a3fa0, 0xc2332a, 0x2a62c8, 0x2f9e5b, 0x22222a, 0xe07a2a];
-    let claim;
-    do { claim = String(rint(1000, 9999)); } while (claim.includes('0') && Math.random() < 0.5);
+    const claim = String(rint(1000, 9999));
     const decoyNum = () => { let s; do { s = String(rint(1000, 9999)); } while (s === claim); return s; };
     const duckI = 0;
-    const cbags = BAGCOL.map((col, i) => ({ col, duck: i === duckI, back: i === duckI ? claim : decoyNum(), tag: decoyNum(), s0: 0, mesh: null }));
+    const cbags = BAGCOL.map((col, i) => ({ col, duck: i === duckI, back: i === duckI ? claim : decoyNum(), tag: decoyNum(), s0: 0, mesh: null, pos: null, claimed: false }));
     const order2 = shuffle(cbags.map((_, i) => i));
     const PER = 2 * CAR.L + 2 * Math.PI * CAR.R, SPD = 1.05;
     order2.forEach((bi, k) => { cbags[bi].s0 = (k / cbags.length) * PER; });
     for (const b of cbags) { b.mesh = bagMesh({ color: b.col, s: 1, duck: b.duck, back: b.back, tag: b.tag, front: true }); w.add(b.mesh); }
-    const carPos = (s) => {   // position + outward normal along the stadium, counter-clockwise seen from above
+    const carPos = (s) => {   // position + outward normal along the stadium
       s = ((s % PER) + PER) % PER;
       const { x, z, L, R } = CAR;
       if (s < L) return { x: x + R, z: z + L / 2 - s, nx: 1, nz: 0 };                                 // east straight, going north
@@ -385,37 +408,34 @@ export default {
       s -= L;
       const a = s / R; return { x: x - R * Math.cos(a), z: z + L / 2 + R * Math.sin(a), nx: -Math.cos(a), nz: Math.sin(a) };
     };
-    const placeBags = (t) => { for (const b of cbags) { if (b.claimed) continue; const q = carPos(b.s0 + t * SPD); b.pos = q; b.mesh.position.set(q.x, 0.62, q.z); b.mesh.rotation.y = Math.atan2(q.nx, q.nz); } };
+    const placeBags = (t) => { for (const b of cbags) { if (b.claimed) continue; const q = carPos(b.s0 + t * SPD); b.pos = q; b.mesh.position.set(q.x, 0.56, q.z); b.mesh.rotation.y = Math.atan2(q.nx, q.nz); } };
     placeBags(0);
     w.onUpdate((dt, t) => placeBags(t));
     carousel(w, CAR);
-    w.sign({ text: 'CAROUSEL 13', x: 0, y: 1.55, z: CAR.z, w: 3.4, h: 0.7, rotY: Math.PI / 2, color: '#ffd21f', double: true, tw: 512, size: 90 });
+    for (const dz of [-1.3, 1.3]) w.box({ x: 0, y: 1.0, z: CAR.z + dz, w: 0.08, h: 0.6, d: 0.08, color: 0x30343c, metal: 0.6, shadow: false });
+    w.sign({ text: 'CAROUSEL 13', x: 0, y: 1.6, z: CAR.z, w: 3.2, h: 0.65, rotY: Math.PI / 2, color: '#ffd21f', bg: '#1c2028', double: true, tw: 512, size: 90 });
     // the claim desk, the report, the keypad
     w.plat({ x: 0, y: 1.1, z: -107, w: 10, d: 1.2, h: 1.1, tex: 'wood', color: 0x7a5232, roughness: 0.5, radius: 0.04 });
-    w.plat({ x: 0, y: 1.16, z: -107, w: 10.3, d: 1.4, h: 0.08, tex: 'wood', color: 0xc9a56e, roughness: 0.4, radius: 0.03 });
-    w.sign({ text: 'CLAIMS · WINDOW 13', x: 0, y: 0.62, z: -106.38, w: 4, h: 0.5, color: '#f1d28a', double: false, tw: 512, size: 60 });
-    const report = canvasPlane(w, { x: -2.4, y: 1.24, z: -106.9, width: 0.9, height: 1.2, rotX: -Math.PI / 2 + 0.35, px: 360, basic: true, draw: (g, cw, ch) => drawReport(g, cw, ch) });
-    void report;
+    w.plat({ x: 0, y: 1.16, z: -107, w: 10.3, d: 1.4, h: 0.06, tex: 'wood', color: 0xc9a56e, roughness: 0.4, radius: 0.02 });
+    w.sign({ text: 'CLAIMS · WINDOW 13', x: 0, y: 0.62, z: -106.37, w: 4, h: 0.5, color: '#f1d28a', double: false, tw: 512, size: 60 });
+    w.box({ x: -2.4, y: 1.19, z: -106.9, w: 0.75, h: 0.02, d: 1.0, color: 0x5a3a1a, shadow: false });
+    canvasPlane(w, { x: -2.4, y: 1.205, z: -106.9, width: 0.7, height: 0.95, rotX: -Math.PI / 2, px: 360, draw: (g, cw, ch) => drawReport(g, cw, ch) });
     const REPORT_HTML = '<b>LOST BAGGAGE REPORT · No. 404</b><br>Guest: you (probably)<br>Item: <b>PURPLE</b> hard-shell case with a <b>yellow rubber-duck sticker</b><br>Location: Carousel 13<br>Claim number: stencilled on the <b>BACK</b> of the case (regulation 4.04).<br><i>Luggage tags are decorative. Please do not trust them.</i>';
     let readReport = false;
     w.interactable({ x: -2.4, y: 1.35, z: -106.9, w: 1.1, h: 0.5, d: 1.3, range: 3.2, label: 'Read the lost baggage report', onUse: (g) => { readReport = true; readModal(g, { title: 'LOST & FOUND', html: REPORT_HTML }); g.say('hotel.l3.report', { priority: 1 }); } });
-    w.box({ x: 6.6, y: 1.1, z: -107, w: 0.5, h: 2.2, d: 0.5, color: 0x3a2a1a, rough: 0.5 });
-    w.collider({ x: 6.6, y: 1.1, z: -107, w: 0.5, h: 2.2, d: 0.5 });
+    w.plat({ x: 6.6, y: 2.2, z: -107, w: 0.5, d: 0.5, h: 2.2, tex: 'wood', color: 0x3a2a1a, roughness: 0.5 });
     const gate = slideDoor(w, game, { x: 0, z: WD, width: 4, height: 4.2, tex: 'metal', color: 0x6a7280 });
     doorFrame(w, { x: 0, z: WD, width: 4, height: 4.2 });
-    w.sign({ text: 'CUSTOMS ▸', x: 0, y: 4.9, z: WD + 0.42, w: 3, h: 0.6, color: '#f1d28a', double: false, tw: 512, size: 60 });
+    w.sign({ text: 'CUSTOMS ▸', x: 0, y: 4.95, z: WD + 0.44, w: 3, h: 0.6, color: '#f1d28a', double: false, tw: 512, size: 60 });
     let attemptsC = 0, claimed = false;
-    const padC = keypadBox(w, game, { x: 6.6, y: 1.45, z: -106.75 + 0.07, face: 's', label: () => (claimed ? 'Bag claimed' : 'Enter claim number'), use: (g) => { if (!claimed) useKeypadC(g); } });
+    const padC = keypadBox(w, game, { x: 6.6, y: 1.45, z: -106.68, face: 's', label: () => (claimed ? 'Bag claimed' : 'Enter claim number'), use: (g) => { if (!claimed) useKeypadC(g); } });
     const useKeypadC = (g) => openKeypad(g, {
       title: 'CLAIMS · ENTER CLAIM NUMBER', digits: 4,
       onSubmit: (c, api) => {
-        if (c === claim) {
-          api.setMsg('BAG RELEASED', 'good'); g.audio.confirm();
-          later(600, () => { api.close(); claimBag(g); });
-        } else {
+        if (c === claim) { api.setMsg('BAG RELEASED', 'good'); g.audio.confirm(); w.after(0.6, () => { api.close(); claimBag(g); }); }
+        else {
           attemptsC++; g.audio.buzzer(); api.clear(); api.setMsg('NO SUCH CLAIM', 'bad');
-          const duck = cbags[duckI];
-          if (c === duck.tag) g.say('hotel.l3.tag', { priority: 2 });
+          if (c === cbags[duckI].tag) g.say('hotel.l3.tag', { priority: 2 });
           else if (attemptsC % 3 === 0) { g.say('hotel.l3.lock', { priority: 2 }); api.lockout(5); }
           else g.say('hotel.l3.lp.denied', { priority: 1 });
         }
@@ -424,132 +444,135 @@ export default {
     const claimBag = (g) => {
       claimed = true; padC.setLed(0x40ff88);
       const duck = cbags[duckI]; duck.claimed = true;
-      if (held) { held.mesh.visible = false; }
+      if (held) { const free = allSlots.find((s) => !s.bag); if (free) { free.bag = held; seat(free); } }
       held = { mesh: duck.mesh, col: { name: 'purple' } };
       gate.openDoor();
       w.after(0.5, () => g.say('hotel.l3.claimed', { priority: 2 }));
     };
-    // customs: two channels, a counter between them
-    w.plat({ x: 0, y: 1.05, z: -120.6, w: 0.8, d: 10.8, h: 1.05, tex: 'marble', color: 0xffffff, roughness: 0.2, radius: 0.04 });
-    w.box({ x: 4.5, y: 0.012, z: -120, w: 5, h: 0.02, d: 12, color: 0x8a1a22, rough: 0.9, shadow: false });
-    w.box({ x: -4.5, y: 0.012, z: -120, w: 5, h: 0.02, d: 12, color: 0x1a6a3a, rough: 0.9, shadow: false });
+    // customs: two channels, a counter between them. You are carrying a suitcase. You have something to declare.
+    w.plat({ x: 0, y: 1.05, z: -120.7, w: 0.8, d: 10.8, h: 1.05, tex: 'marble', color: 0xffffff, roughness: 0.2, radius: 0.04 });
+    w.box({ x: 4.5, y: 0.012, z: -120, w: 5, h: 0.02, d: 11.6, color: 0x8a1a22, rough: 0.9, shadow: false });
+    w.box({ x: -4.5, y: 0.012, z: -120, w: 5, h: 0.02, d: 11.6, color: 0x1a6a3a, rough: 0.9, shadow: false });
     fakeExit(w, game, { x: -4.5, y: 0, z: -125.75, kind: 'door', label: 'NOTHING TO DECLARE', color: 0x2dd47f, say: 'hotel.l3.green' });
-    w.sign({ text: 'GOODS TO DECLARE', x: 4.5, y: 4.95, z: -125.5, w: 3.4, h: 0.9, color: '#ff8a8a', double: true, tw: 512, size: 70, glow: true });
-    w.sign({ text: '(you are carrying a suitcase)', x: 4.5, y: 4.35, z: -125.5, w: 3.4, h: 0.4, color: '#ffc8c8', double: true, tw: 512, size: 40 });
-    const goal = w.goal({ x: 4.5, y: 0, z: -122.4, color: GOLD, onReach: () => { game.say('hotel.l3.done', { priority: 2 }); game.completeLevel(); } });
+    w.sign({ text: 'GOODS TO DECLARE', x: 4.5, y: 4.95, z: -125.55, w: 3.4, h: 0.9, color: '#ff8a8a', double: false, tw: 512, size: 70, glow: true });
+    w.sign({ text: '(say, a suitcase)', x: 4.5, y: 4.38, z: -125.55, w: 3.4, h: 0.4, color: '#ffc8c8', double: false, tw: 512, size: 40 });
+    const goal = w.goal({ x: 4.5, y: 0, z: -122.6, color: GOLD, onReach: () => { game.say('hotel.l3.done', { priority: 2 }); game.completeLevel(); } });
 
     // =====================================================================================================
     //  The host, the stages, the hint
     // =====================================================================================================
     const S = escapeStages(w, game, [
       { name: NAMES[0], at: { x: 0, y: 0, z: 11 }, clues: ['hotel.l3.hint1', 'hotel.l3.hint2', 'hotel.l3.hint3'], vars: () => ({ a: code[0], b: code[1], code }), solved: () => doorA.open, trail: [{ x: 0, y: 0, z: -6.5 }, { x: 0, y: 0, z: -9.6 }] },
-      { name: NAMES[1], at: { x: 0, y: 0, z: -11.2 }, trail: [{ x: 0, y: 0, z: -16 }, { x: 0, y: 0, z: -23 }, { x: 0, y: 0, z: -27.5 }, { x: 0, y: 0, z: -33 }, { x: 0, y: 0, z: -40 }, { x: 0, y: 0, z: -45.5 }, { x: -6.5, y: 0, z: -45.5 }, { x: -11.1, y: 0, z: -45.5 }, { x: -11.1, y: 0, z: -50 }, { x: -11.1, y: 0, z: -55 }] },
-      { name: NAMES[2], at: { x: -11.1, y: 0, z: -58.8 }, clues: ['hotel.l3.w.hint1', 'hotel.l3.w.hint2', 'hotel.l3.w.hint3'], vars: () => ({ code: wcode }), solved: () => doorB.open, trail: [{ x: 0, y: 0, z: -70.5 }, { x: 0, y: 0, z: -74 }, { x: 0, y: 0, z: -80 }] },
-      { name: NAMES[3], at: { x: 0, y: 0, z: -85.6 }, clues: ['hotel.l3.lp.hint1', 'hotel.l3.lp.hint2', 'hotel.l3.lp.hint3'], vars: () => ({ code: claim }), solved: () => claimed, trail: [{ x: 0, y: 0, z: -110 }, { x: 0, y: 0, z: -114 }, { x: 4.5, y: 0, z: -116.5 }], end: { x: goal.x, y: 0, z: goal.z } },
+      { name: NAMES[1], at: { x: 0, y: 0, z: -11.2 }, trail: [{ x: 0, y: 0, z: -16 }, { x: 0, y: 0, z: -23 }, { x: 0, y: 0, z: -27.5 }, { x: 0, y: 0, z: -33 }, { x: 0, y: 0, z: -40 }, { x: 0, y: 0, z: -45.5 }, { x: -6.5, y: 0, z: -45.5 }, { x: BELT_C.x, y: 0, z: -45.5 }, { x: BELT_C.x, y: 0, z: -50 }, { x: BELT_C.x, y: 0, z: -55 }] },
+      { name: NAMES[2], at: { x: BELT_C.x, y: 0, z: -58.8 }, clues: ['hotel.l3.w.hint1', 'hotel.l3.w.hint2', 'hotel.l3.w.hint3'], vars: () => ({ code: wcode }), solved: () => doorB.open, trail: [{ x: 0, y: 0, z: -70.5 }, { x: 0, y: 0, z: -74 }, { x: 0, y: 0, z: -80 }] },
+      { name: NAMES[3], at: { x: 0, y: 0, z: -85.6 }, clues: ['hotel.l3.lp.hint1', 'hotel.l3.lp.hint2', 'hotel.l3.lp.hint3'], vars: () => ({ code: claim }), solved: () => claimed, trail: [{ x: 8.2, y: 0, z: -105.6 }, { x: 8.2, y: 0, z: -109.6 }, { x: 0, y: 0, z: -110.2 }, { x: 0, y: 0, z: -114 }, { x: 4.5, y: 0, z: -116.5 }], end: { x: goal.x, y: 0, z: goal.z } },
     ]);
     const cps = new Map([[cpBelts, 1], [cpWeigh, 2], [cpLP, 3]]);
-    w.hooks.onCheckpoint = (c) => { const i = cps.get(c); if (i !== undefined) { S.enter(i); if (i === 1) game.say('hotel.l3.belt', { priority: 1 }); if (i === 2) { game.say('hotel.l3.weigh', { priority: 1 }); game.say('hotel.l3.big', { priority: 1 }); } if (i === 3) game.say('hotel.l3.lp', { priority: 1 }); } };
-    // (the expiring checkpoint announces itself through the kit's toast; the host adds his bit)
+    w.hooks.onCheckpoint = (c) => {
+      const i = cps.get(c);
+      if (i === undefined) return;
+      S.enter(i);
+      if (i === 1) game.say('hotel.l3.belt', { priority: 1 });
+      if (i === 2) { game.say('hotel.l3.weigh', { priority: 1 }); game.say('hotel.l3.big', { priority: 1 }); }
+      if (i === 3) game.say('hotel.l3.lp', { priority: 1 });
+    };
+    // (the expiring checkpoint announces itself with the kit's toast; the host adds his bit)
     w.trigger({ x: 0, y: 1.2, z: -27.5, w: 2.4, h: 3.2, d: 2.4, once: true, onEnter: () => { if (!game.baby) game.say('hotel.l3.exp', { priority: 1 }); } });
     let t0 = 0, intro = false, saidBag = false, saidPress = false;
     w.onUpdate((dt) => {
       if (game.state !== 'playing') return;
       t0 += dt;
       const p = game.player;
-      if (!intro && t0 > 1.2) { intro = true; game.say('hotel.l3.intro'); game.say('hotel.l3.intro2', { vars: { fake } }); stageTitlePending = true; }
-      if (stageTitlePending && t0 > 1.4) { stageTitlePending = false; S.banner(); }
+      if (!intro && t0 > 1.2) { intro = true; game.say('hotel.l3.intro'); game.say('hotel.l3.intro2', { vars: { fake } }); S.banner(); }
       if (!saidBag && p.z < -14.5 && p.z > -25 && p.y > -1) { saidBag = true; game.say('hotel.l3.bag', { priority: 1 }); }
       if (!saidPress && p.z < -31 && p.z > -42 && p.y > -1) { saidPress = true; game.say('hotel.l3.press', { priority: 1 }); }
     });
-    let stageTitlePending = false;
     w.hooks.onDeath = (info) => {
       const p = game.player;
-      if (info.reason === 'mimic') return true;
+      if (info.reason === 'mimic' || info.reason === 'fake') return true;
       if (info.reason === 'hazard' && p.z < -31 && p.z > -42) { game.say('hotel.l3.pressed', { priority: 1 }); return true; }
       if (info.reason === 'hazard' && p.z < -14 && p.z > -25) { game.say('hotel.l3.bagged', { priority: 1 }); return true; }
-      if (info.reason === 'void') { game.say('hotel.l3.pit', { priority: 1 }); return true; }
+      if (info.reason === 'void') { game.say(p.x < -8 && p.z < -47 ? 'hotel.l3.revdeath' : 'hotel.l3.pit', { priority: 1 }); return true; }
       return false;
     };
-    // a respawn puts a carried case back where it came from, and the reversing belt starts its cycle over
+    // a respawn puts a carried weigh-in case back on the rack, and the reversing belt starts its cycle over
     w.onRespawn(() => {
-      if (held && !claimed) { const free = allSlots.find((s) => !s.bag); if (free) { free.bag = held; held = null; seat(free); if (free.scale) updScale(); } }
-      rev.phase = 'fwd'; rev.t = 0; BC.body.conv = [0, -3.0]; beltMesh.rotation.y = beltMesh.userData.r0 ?? beltMesh.rotation.y; for (const b of beacons) b.material = beaconOff;
+      if (held && !claimed) { const free = allSlots.find((s) => !s.bag); if (free) { free.bag = held; held = null; seat(free); updScale(false); } }
+      rev.phase = 'fwd'; rev.t = 0; setRev(false);
     });
-    beltMesh.userData.r0 = beltMesh.rotation.y;
 
     // =====================================================================================================
-    //  Test hooks + the bot (it walks to every clue a person would have to look at)
+    //  Test hooks + the bot (it walks to every clue a person has to look at)
     // =====================================================================================================
     w.escape = {
-      get code() { return code; }, fake, get doorOpen() { return doorA.open; }, pallets, order, useKeypad: useKeypadA, doorA, doorB, gate,
-      weigh: { bags: wbags, code: wcode, slots: allSlots, scaleSlot, useSlot: (slot) => useSlot(game, slot), get held() { return held; }, get weighed() { return weighed; } },
-      claim, cbags, duck: cbags[duckI], carPos, get claimed() { return claimed; }, useKeypadB, useKeypadC, stages: S, rev, BC, press, bagHz, mimic, goal,
-      get readReport() { return readReport; },
+      get code() { return code; }, fake, get doorOpen() { return doorA.open; }, pallets, order, useKeypad: useKeypadA, doorA, doorB, gate, padA, padB, padC,
+      weigh: { bags: wbags, code: wcode, slots: allSlots, scaleSlot, useSlot: (slot) => useSlot(game, slot), get held() { return held; }, weighed },
+      claim, cbags, duck: cbags[duckI], carPos, get claimed() { return claimed; }, useKeypadB, useKeypadC, stages: S, rev, BC, press, bagHz, mimic: { x: MX, z: MZ }, goal,
+      get readReport() { return readReport; }, get liedA() { return liedA; },
     };
-    const plan = { seq: null, k: 0 };
     const goTo = (x, z, tol = 0.8) => { const p = game.player; return Math.hypot(p.x - x, p.z - z) > tol ? { x, z } : null; };
-    const type = (g, digits) => { for (const d of digits) g.modal.key({ code: 'Digit' + d }); g.modal.key({ code: 'Enter' }); };
-    const carBox = { x0: -4.6, x1: 4.6, z0: -104.6, z1: -87.4 };
-    const crosses = (ax, az, bx, bz) => { for (let k = 0; k <= 20; k++) { const u = k / 20, x = ax + (bx - ax) * u, z = az + (bz - az) * u; if (x > carBox.x0 && x < carBox.x1 && z > carBox.z0 && z < carBox.z1) return true; } return false; };
-    let botStep = 0, botWait = 0, readBack = false, keyBusy = false;
+    let typedFor = null;
+    const keypad = (g, padObj, open, digits) => {
+      const m = goTo(padObj.standAt.x, padObj.standAt.z, 0.6); if (m) return m;
+      if (!g.modal) { open(g); typedFor = null; }
+      else if (typedFor !== g.modal) { typedFor = g.modal; for (const d of digits) g.modal.key({ code: 'Digit' + d }); g.modal.key({ code: 'Enter' }); }
+      return { wait: true, x: padObj.x, z: padObj.z };
+    };
+    const carBox = { x0: -4.7, x1: 4.7, z0: -104.7, z1: -87.3 };
+    const crosses = (ax, az, bx, bz) => { for (let k = 0; k <= 24; k++) { const u = k / 24, x = ax + (bx - ax) * u, z = az + (bz - az) * u; if (x > carBox.x0 && x < carBox.x1 && z > carBox.z0 && z < carBox.z1) return true; } return false; };
+    const around = (p, tx, tz) => {   // walk round the carousel instead of into it
+      if (!crosses(p.x, p.z, tx, tz)) return { x: tx, z: tz };
+      const corners = [[-5.7, -86.4], [5.7, -86.4], [-5.7, -105.6], [5.7, -105.6]];
+      let best = null, bd = Infinity;
+      for (const [cx, cz] of corners) { if (crosses(p.x, p.z, cx, cz)) continue; const d = Math.hypot(cx - p.x, cz - p.z) + Math.hypot(tx - cx, tz - cz) + (crosses(cx, cz, tx, tz) ? 40 : 0); if (d < bd) { bd = d; best = [cx, cz]; } }
+      return best ? { x: best[0], z: best[1] } : { x: tx, z: tz };
+    };
+    let look = 0, weighK = 0, weighT = 0, readBack = false;
     w.botPlan = (g) => {
       const p = g.player;
       if (g.frozen) return { wait: true, x: p.x, z: p.z - 1 };
-      // ---- stage 1: look at the four pallets and the poster, then the keypad (twice: it lies once) ----
+      // ---- stage 1: walk past the four pallets and the poster, then the keypad (twice: it lies once) ----
       if (!doorA.open) {
-        const looks = [[-2.6, 7.5], [-3.2, 5.5], [3.2, 5.5], [3.2, -1.5], [-3.2, -1.5], [-2.6, -4.2], [-6.4, -5.4]];
-        if (botStep < looks.length) { const m = goTo(looks[botStep][0], looks[botStep][1]); if (m) return m; botStep++; return { wait: true, x: p.x, z: p.z - 1 }; }
-        const m = goTo(padA.standAt.x, padA.standAt.z, 0.6); if (m) return m;
-        if (!g.modal && !keyBusy) { keyBusy = true; useKeypadA(g); later(250, () => { if (g.modal) type(g, code); keyBusy = false; }); }
-        return { wait: true, x: padA.x, z: padA.z };
+        const looks = [[-2.6, 7.5], [-3.2, 5.5], [3.2, 5.5], [3.2, -1.5], [-3.2, -1.5], [-2.4, -4.2], [-6.4, -5.4]];
+        if (look < looks.length) { const m = goTo(looks[look][0], looks[look][1]); if (m) return m; look++; return { wait: true, x: p.x, z: p.z - 1 }; }
+        return keypad(g, padA, useKeypadA, code);
       }
       if (doorA.t < 1 && p.z > WA) return p.z > WA + 3 ? { x: 0, z: WA + 2 } : { wait: true, x: 0, z: WA - 2 };
       if (p.z > WA + 0.4) return Math.abs(p.x) > 0.9 ? { x: 0, z: WA + 1.8 } : { x: 0, z: WA - 3 };
-      // ---- stage 2: the belts (follow the route platforms) ----
+      // ---- stage 2: the belts (the route platforms) ----
       if (p.z > BAY_Z0 - 0.6 && !(p.grounded && p.ground === bayEdge.body)) return null;
       // ---- stage 3: weigh all three cases, then the keypad ----
       if (!doorB.open) {
+        if (p.z > -59.4 && p.x < -5) return { x: -3.8, z: -59.2 };
         const seq = [wslots[0], scaleSlot, wslots[1], scaleSlot, wslots[2], scaleSlot];
-        if (botStep < 100) botStep = 100;
-        const k = botStep - 100;
-        if (k < seq.length) {
-          const s = seq[k], sx = s.scale ? s.x : s.x + 2.2, sz = s.scale ? s.z + 2.0 : s.z;
+        if (weighK < seq.length) {
+          const s = seq[weighK], sx = s.scale ? s.x : s.x + 2.2, sz = s.scale ? s.z + 2.0 : s.z;
           const m = goTo(sx, sz, 0.7); if (m) return m;
-          if (botWait <= 0) { useSlot(g, s); botWait = 0.35; } else { botWait -= 1 / 60; if (botWait <= 0) botStep++; }
+          if (weighT === 0) { useSlot(g, s); weighT = 0.3; } else { weighT = Math.max(0, weighT - 1 / 60); if (weighT === 0) weighK++; }
           return { wait: true, x: s.x, z: s.z };
         }
-        const m = goTo(padB.standAt.x, padB.standAt.z, 0.6); if (m) return m;
-        if (!g.modal && !keyBusy) { keyBusy = true; useKeypadB(g); later(250, () => { if (g.modal) type(g, wcode); keyBusy = false; }); }
-        return { wait: true, x: padB.x, z: padB.z };
+        return keypad(g, padB, useKeypadB, wcode);
       }
       if (doorB.t < 1 && p.z > WB) return p.z > WB + 3 ? { x: 0, z: WB + 2 } : { wait: true, x: 0, z: WB - 2 };
-      if (p.z > WC - 1.5) return { x: 0, z: Math.max(WC - 2.5, p.z - 4) };
+      if (p.z > WB + 0.4 && Math.abs(p.x) > 0.8) return { x: 0, z: WB + 1.6 };
+      if (p.z > WC - 1.5) return { x: 0, z: Math.max(WC - 2.6, p.z - 4) };
       // ---- stage 4: the report, the back of the duck case, the claim keypad, the red channel ----
       if (!claimed) {
-        if (!readReport) { const m = goTo(-2.4, -105.6, 0.7); if (m) return m; readReport = true; return { wait: true, x: -2.4, z: -107 }; }
+        if (!readReport) { const t = around(p, -2.4, -105.5); const m = goTo(t.x, t.z, 0.7); if (m) return m; readReport = true; return { wait: true, x: -2.4, z: -107 }; }
         if (!readBack) {
-          const b = cbags[duckI], q = b.pos;
-          const vx = CAR.x - (q.x - CAR.x) * 1.0 + (q.nx === 0 ? 0 : -q.nx * 2.7), vz = q.z + (Math.abs(q.nx) < 0.01 ? -q.nz * (CAR.R * 2 + 2.7) : 0);
-          const view = Math.abs(q.nz) > 0.01 ? { x: q.x - q.nx * (2 * CAR.R + 2.7), z: q.z - q.nz * (2 * CAR.R + 2.7) } : { x: vx, z: vz };
-          view.x = Math.max(-10, Math.min(10, view.x)); view.z = Math.max(-105.4, Math.min(-86.4, view.z));
-          if (Math.hypot(p.x - view.x, p.z - view.z) < 1.6) { readBack = true; return { wait: true, x: q.x, z: q.z }; }
-          if (crosses(p.x, p.z, view.x, view.z)) {
-            const corners = [[-5.6, -86.6], [5.6, -86.6], [-5.6, -105.3], [5.6, -105.3]];
-            let best = null, bd = Infinity;
-            for (const [cx, cz] of corners) { if (crosses(p.x, p.z, cx, cz)) continue; const d = Math.hypot(cx - p.x, cz - p.z) + Math.hypot(view.x - cx, view.z - cz) + (crosses(cx, cz, view.x, view.z) ? 30 : 0); if (d < bd) { bd = d; best = [cx, cz]; } }
-            if (best && Math.hypot(p.x - best[0], p.z - best[1]) > 0.8) return { x: best[0], z: best[1] };
-          }
-          return { x: view.x, z: view.z };
+          const q = cbags[duckI].pos, D = 2 * CAR.R + 2.8;
+          const vx = Math.max(-10, Math.min(10, q.x - q.nx * D)), vz = Math.max(-105.5, Math.min(-86.5, q.z - q.nz * D));
+          if (Math.hypot(p.x - vx, p.z - vz) < 1.7) { readBack = true; return { wait: true, x: q.x, z: q.z }; }
+          return around(p, vx, vz);
         }
-        const tgt = padC.standAt;
-        if (crosses(p.x, p.z, tgt.x, tgt.z)) return { x: p.x > 0 ? 5.6 : -5.6, z: -105.2 };
-        const m = goTo(tgt.x, tgt.z, 0.6); if (m) return m;
-        if (!g.modal && !keyBusy) { keyBusy = true; useKeypadC(g); later(250, () => { if (g.modal) type(g, claim); keyBusy = false; }); }
-        return { wait: true, x: padC.x, z: padC.z };
+        const t = around(p, padC.standAt.x, padC.standAt.z);
+        if (t.x !== padC.standAt.x || t.z !== padC.standAt.z) return t;
+        return keypad(g, padC, useKeypadC, claim);
       }
-      if (gate.t < 1) { const m = goTo(3, -109.5, 0.8); return m || { wait: true, x: 0, z: WD - 2 }; }
-      if (p.z > WD + 0.4) { if (Math.abs(p.x) > 1.0) return { x: 0, z: -109.8 }; return { x: 0, z: WD - 1.4 }; }
-      if (p.z > -115.5 && p.x < 3.5) return { x: 4.5, z: -116.2 };
+      if (p.z > -108.6 && p.x > 3) return p.x < 8.2 ? { x: 8.7, z: p.z } : { x: 8.7, z: -109.8 };    // round the keypad pillar and the desk
+      if (gate.t < 1 && p.z < -109) return { wait: true, x: 0, z: WD - 2 };
+      if (p.z > WD + 0.4) return Math.abs(p.x) > 1.0 ? { x: 0, z: -110.4 } : { x: 0, z: WD - 1.6 };
+      if (p.z > -115.5 && p.x < 3.5) return { x: 4.5, z: -116.4 };
       return { x: goal.x, z: goal.z };
     };
   },
@@ -694,10 +717,10 @@ function carousel(w, C) {
   lip.rotation.x = -Math.PI / 2; lip.position.set(C.x, 0, C.z); w.add(lip);
   // colliders (a straight middle and stepped round ends)
   const R = C.R + 0.85;
-  w.collider({ x: C.x, y: 0.5, z: C.z, w: 2 * R, h: 1.0, d: C.L });
+  w.collider({ x: C.x, y: 1.0, z: C.z, w: 2 * R, h: 2.0, d: C.L });   // (taller than it looks: nobody rides the carousel)
   for (const s of [-1, 1]) {
-    w.collider({ x: C.x, y: 0.5, z: C.z + s * (C.L / 2 + 0.8), w: 2 * R * 0.94, h: 1.0, d: 1.6 });
-    w.collider({ x: C.x, y: 0.5, z: C.z + s * (C.L / 2 + 2.25), w: 2 * R * 0.7, h: 1.0, d: 1.3 });
-    w.collider({ x: C.x, y: 0.5, z: C.z + s * (C.L / 2 + 3.4), w: 2 * R * 0.36, h: 1.0, d: 1.0 });
+    w.collider({ x: C.x, y: 1.0, z: C.z + s * (C.L / 2 + 0.8), w: 2 * R * 0.94, h: 2.0, d: 1.6 });
+    w.collider({ x: C.x, y: 1.0, z: C.z + s * (C.L / 2 + 2.25), w: 2 * R * 0.7, h: 2.0, d: 1.3 });
+    w.collider({ x: C.x, y: 1.0, z: C.z + s * (C.L / 2 + 3.4), w: 2 * R * 0.36, h: 2.0, d: 1.0 });
   }
 }
