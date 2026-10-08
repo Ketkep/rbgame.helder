@@ -98,45 +98,195 @@ suite('souffle', async () => {
   await page.close();
 });
 
-// ---- level 7: Trivia Night ------------------------------------------------------------------------------------
-suite('trivia', async () => {
-  const page = await open(7);
+// ---- quiz levels 2, 7, 13 (the multi-act runner, src/levels/hotel/quiz-show.js) ---------------------------------
+// in-page helpers: window.__T = { g, w, S (the show), sim, at, onPad, island, right, answer }
+const QUIZ_HELP = () => {
+  const g = window.__trust, w = g.world;
+  const T = window.__T = {
+    g, w, S: w.quizShow,
+    sim(sec) { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } },
+    at(x, y, z, ground = null) { g.player.teleport(x, y, z); g.player.grounded = true; g.player.ground = ground; },
+    onPad(p) { const b = p.plat.body; T.at(b.x, b.top, b.z, b); },
+    island(st) { const b = st.isl.body; T.at(0, b.top, st.zS - 1.8, b); },
+    right(st) { return st.pads.find((p) => p.correct && !p.eliminated && p.plat.body.enabled); },
+    answer(st) { T.island(st); T.sim(0.3); T.onPad(T.right(st)); T.sim(1.4); },
+    standOn(b) { T.at(b.x, b.top, b.z, b); },
+  };
+};
+// every key a quiz level can say must exist in SCRIPT (the narrator would print the key)
+async function scriptKeysFor(n, files, dynamic) {
+  const { SCRIPT } = await import('../src/script.js');
+  const fs = await import('node:fs');
+  const used = new Set(dynamic.map((k) => `hotel.l${n}.${k}`));
+  for (const f of files) for (const m of fs.readFileSync(f, 'utf8').matchAll(/['`](hotel\.l\d+\.[\w.]+)['`]/g)) if (m[1].startsWith(`hotel.l${n}.`)) used.add(m[1]);
+  return [...used].filter((k) => !(k in SCRIPT));
+}
+const RUNNER_KEYS = ['right', 'wrong', 'wrong.lie', 'timeup', 'hint', 'hint.none'];
+const fakeOverlay = (page) => page.evaluate(() => !!document.querySelector('.fakewin'));
+
+// ---- level 2: Check-In ---------------------------------------------------------------------------------------------
+suite('checkin', async () => {
+  const miss = await scriptKeysFor(2, ['src/levels/hotel/check-in.js'], [...RUNNER_KEYS, 'hint.mind', 'hint.switch', 'hint.double', 'hint.flip', 'hint.pass', 'hint.poll', 'hint.none.above', 'mind.check', 'mind.flip', 'switch']);
+  ok(miss.length === 0, `checkin: every line the level can say exists in the script (${miss.join(', ') || 'none missing'})`);
+  const page = await open(2); await page.evaluate(QUIZ_HELP);
   const r = await page.evaluate(() => {
-    const g = window.__trust, w = g.world, qz = w.quiz, out = {};
-    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
-    const stand = (pad) => { const b = pad.plat.body; g.player.teleport(b.x, b.top + 0.001, b.z); g.player.grounded = true; g.player.ground = b; };
-    out.rounds = qz.stages.length; out.pads = qz.stages.map((s) => s.pads.length).join(',');
-    // round 2: the host's number is wrong; round 6 asks for exactly that letter
-    const s2 = qz.stages[1], s6 = qz.stages[5];
-    out.lieIsWrong = !!s2.lieLetter && s2.wrongPads.some((p) => p.letter === s2.lieLetter);
-    out.finalAsksForLie = s6.correctPad.letter === s2.lieLetter && s6.correctPad.text === s2.lieLetter;
-    out.lieMatches = w.trivia.lieLetter === s2.lieLetter;
-    // round 3: the pads slide
-    const s3 = qz.stages[2]; const x0 = s3.pads[0].plat.body.x;
-    let moved = 0; for (let i = 0; i < 60 * 6; i++) { g._simulate(1 / 60); moved = Math.max(moved, Math.abs(s3.pads[0].plat.body.x - x0)); }
-    out.slides = moved > 0.8;
-    // clear rounds 1-3 properly (stand on the right pad, then be on the next island)
-    for (let k = 0; k < 3; k++) { stand(qz.stages[k].correctPad); sim(1.2); }
-    out.cleared3 = qz.cleared === 3;
-    g.player.teleport(0, 0.001, qz.islands[3].zN + 3); sim(0.4);
-    // round 4: the clock starts when you are on the island, runs out and takes the pads away, then they come back
-    const s4 = qz.stages[3], tm = s4.timer;
-    out.clockStarted = tm.started;
-    sim(13); out.padsGone = s4.pads.every((p) => p.state === 'gone'); out.downT = tm.downT > 0;
-    sim(4); out.padsBack = s4.pads.every((p) => p.state === 'idle' && p.plat.body.enabled);
-    // round 5 has four answers
-    out.fourPads = qz.stages[4].pads.length === 4;
+    const { g, w, S, sim, island, onPad, right, answer } = window.__T, c = w.checkin, R = S.rounds, out = {};
+    out.rounds = R.length; out.stages = S.stages.length; out.cps = S.stages.filter((s) => s.at).length;
+    out.lieWrong = R[1].lieLetter && R[1].wrong().some((p) => p.letter === R[1].lieLetter);
+    out.honestRight = R[0].claim === R[0].right()[0].letter;
+    out.slide = !!R[2].spec.slide; out.timer = R[3].spec.timer; out.stones = R[3].stones.length;
+    out.none = R[4].right()[0].text === 'None of the above' && R[4].wrong().length === 3;
+    out.flipWrongRight = R[5].spec.flip;
+    out.twoRight = R[6].right().length === 2; out.breathe = !!R[7].spec.breathe; out.mind = !!R[8].spec.mind;
+    // honest hint: removes one WRONG answer, never the right one (and a second one too), never more than what is left
+    island(R[0]); sim(0.3); g.debug = false; g.hintCool = 0; g.useHint();
+    out.hint1 = R[0].pads.filter((p) => p.eliminated).length === 1 && R[0].right().length === 1 && R[0].pads.filter((p) => p.eliminated).every((p) => !p.correct);
+    g.hintCool = 0; g.useHint(); g.hintCool = 0; g.useHint();
+    out.hintNeverRight = R[0].right().length === 1 && R[0].pads.filter((p) => p.eliminated).length === 2;
+    // a wrong pad wobbles and drops
+    const wp = R[0].wrong().find((p) => !p.eliminated); onPad(wp); sim(0.2); out.wobble = wp.state === 'lock' || wp.state === 'wrong'; sim(1.6); out.wrongDrops = wp.plat.body.enabled === false || wp.falling || wp.fallY < -0.5;
+    g.kill('test'); g.state = 'playing'; g.respawnPlayer(false); sim(0.5);
+    // round 1-3 clear in order; the survey comes with the second stage's flag
+    for (let k = 0; k < 3; k++) answer(R[k]);
+    out.cleared3 = S.cleared === 3;
     return out;
   });
-  ok(r.rounds === 6 && r.pads === '3,3,3,3,4,3', `trivia: six rounds with 3/3/3/3/4/3 answers (${r.pads})`);
-  ok(r.lieIsWrong && r.lieMatches, 'trivia: in round 2 the host picks a WRONG letter');
-  ok(r.finalAsksForLie, 'trivia: the final round\'s right answer is the letter the host lied with');
-  ok(r.slides, 'trivia: round 3 pads slide');
-  ok(r.cleared3, 'trivia: rounds 1-3 clear in order');
-  ok(r.clockStarted && r.padsGone && r.downT, 'trivia: round 4: the 12-second clock removes the pads at zero');
-  ok(r.padsBack, 'trivia: ...and they come back so you can try again');
-  ok(r.fourPads, 'trivia: round 5 has four pads');
+  ok(r.rounds === 10 && r.stages === 6 && r.cps === 6, `checkin: 10 questions in 6 stages, a checkpoint per stage (${r.rounds}/${r.stages}/${r.cps})`);
+  ok(r.lieWrong && r.honestRight, 'checkin: Q1 the host is honest, Q2 the host names a WRONG letter');
+  ok(r.slide && r.timer === 16 && r.stones === 2, 'checkin: Q3 slides, Q4 has a 16 s clock over stepping stones');
+  ok(r.none && r.flipWrongRight, 'checkin: Q5 "None of the above" is the answer, Q6 asks for a WRONG answer');
+  ok(r.twoRight && r.breathe && r.mind, 'checkin: Q7 two right answers, Q8 breathing pads, Q9 the host changes his mind');
+  ok(r.hint1 && r.hintNeverRight, 'checkin: the hint removes wrong answers only and never the right one');
+  ok(r.wobble && r.wrongDrops, 'checkin: a wrong pad wobbles (the tell) and drops');
+  ok(r.cleared3, 'checkin: Q1-Q3 clear in order');
+  // stage 2 start shows the survey; rate it; Escape does not close it
+  await page.evaluate(() => { const { S, w } = window.__T; const c = S.stages[1].cp; const g = window.__trust; g.player.teleport(c.x, c.y, c.z); window.__T.sim(0.5); });
+  const sv = await page.evaluate(() => ({ modal: !!window.__trust.modal?.troll, state: window.__trust.state }));
+  ok(sv.modal, 'checkin: the survey modal appears at the start of the luggage hall');
+  await page.evaluate(() => { const g = window.__trust; g.modal.key({ code: 'Escape' }); });
+  ok(await page.evaluate(() => !!window.__trust.modal), 'checkin: Escape does not close the survey');
+  await page.evaluate(() => { window.__trust.modal.key({ code: 'Digit4' }); });
+  ok(await page.evaluate(() => !window.__trust.modal), 'checkin: ...rating it does');
+  // the fake checkpoint (crooked pole) saves nothing
+  const cp = await page.evaluate(() => {
+    const { w, g, sim } = window.__T, c = w.checkin;
+    g.player.teleport(c.fakeCp.x, c.fakeCp.y, c.fakeCp.z); g.player.grounded = true; sim(0.5);
+    return { saved: Math.abs(w.respawn.z - c.fakeCp.z) < 0.5, real: c.fakeCp.real };
+  });
+  ok(!cp.saved && cp.real === false, 'checkin: the crooked-pole checkpoint never saves');
+  // the revolving door swaps A and D for a few seconds, then gives them back
+  const sw = await page.evaluate(() => {
+    const { w, g, sim, standOn } = window.__T, c = w.checkin, out = {};
+    standOn(c.doors[0].door.discs[0].body); sim(0.4); out.swapped = !!g.mods.swapStrafe;
+    standOn(c.doors[0].door.discs[0].body); for (let i = 0; i < 7; i++) { sim(1); standOn(c.doors[0].door.discs[0].body); }
+    out.restored = !g.mods.swapStrafe; return out;
+  });
+  ok(sw.swapped && sw.restored, 'checkin: the revolving door swaps A/D for a few seconds, then gives them back');
+  // every round to the desk, the CHECKED IN screen is a lie, and the register opens
+  const desk = await page.evaluate(() => {
+    const { w, g, S, sim } = window.__T, c = w.checkin; S.cleared = 9; const out = {};
+    out.hiddenBefore = !c.bonusOn && c.finalGoal.trig.enabled === false && w.goalObj === c.deskGoal;
+    g.player.teleport(c.deskGoal.x, 0, c.deskGoal.z); sim(0.4);
+    out.overlay = !!document.querySelector('.fakewin'); out.notDone = g.state === 'playing';
+    return out;
+  });
+  ok(desk.hiddenBefore && desk.overlay && desk.notDone, 'checkin: the desk shows CHECKED IN! (a fake) and the level is not over');
+  await page.waitForTimeout(4600);
+  const reg = await page.evaluate(() => {
+    const { w, g, S, sim } = window.__T, c = w.checkin; const out = {};
+    out.open = c.bonusOn && w.goalObj === c.finalGoal && c.finalGoal.trig.enabled; out.frozen = g.frozen;
+    S.cleared = 10; g.player.teleport(c.finalGoal.x, c.finalGoal.y, c.finalGoal.z); sim(0.4); out.done = g.state === 'complete' || w.completed || g.state === 'ended';
+    return out;
+  });
+  ok(reg.open && !reg.frozen, 'checkin: ...then "just kidding": the register stage opens and the game is playable again');
+  ok(reg.done, 'checkin: the real goal completes the level');
   await page.close();
+  // baby mode: the host does not change his mind
+  const pb = await open(2); await pb.evaluate(QUIZ_HELP);
+  const bm = await pb.evaluate(() => {
+    const { g, S, sim, island, onPad, right } = window.__T; g.baby = true; S.cleared = 8; const st = S.rounds[8];
+    island(st); sim(0.3); onPad(right(st)); sim(4);
+    return { cleared: S.cleared, standing: right(st) && right(st).plat.body.enabled };
+  });
+  ok(bm.cleared === 9 && bm.standing, 'checkin: in Baby Mode the right pad stays right');
+  await pb.close();
+});
+
+// ---- level 7: Trivia Night ------------------------------------------------------------------------------------
+suite('trivia', async () => {
+  const miss = await scriptKeysFor(7, ['src/levels/hotel/trivia-night.js'], [...RUNNER_KEYS, 'hint.switch', 'hint.double', 'hint.poll', 'hint.none.above', 'switch']);
+  ok(miss.length === 0, `trivia: every line the level can say exists in the script (${miss.join(', ') || 'none missing'})`);
+  const page = await open(7); await page.evaluate(QUIZ_HELP);
+  const r = await page.evaluate(() => {
+    const { g, w, S, sim, island, onPad, right, answer, standOn } = window.__T, t = w.trivia, R = S.rounds, out = {};
+    out.rounds = R.length; out.stages = S.stages.length; out.pads = R.map((s) => s.pads.length).join(',');
+    out.lieIsWrong = !!R[1].lieLetter && R[1].wrong().some((p) => p.letter === R[1].lieLetter) && t.lieLetter === R[1].lieLetter;
+    out.callback = R[5].right()[0].text === R[1].lieLetter;                                  // round 6 asks for the letter the host swore by in round 2
+    out.decoyWrong = R[4].claim === t.decoy && R[4].wrong().some((p) => p.letter === t.decoy);
+    out.none = R[6].right()[0].text === 'None of the above' && R[6].wrong().length === 3;
+    out.doubleAdjacent = (() => { const rr = R[7].right(); return rr.length === 2 && Math.abs(rr[0].plat.body.x - rr[1].plat.body.x) < 4; })();
+    out.switchSpec = !!R[8].spec.switch; out.poll = !!R[9].spec.poll && !!R[9].pollLetter && R[9].wrong().some((p) => p.letter === R[9].pollLetter);
+    // round 3 slides; round 4 has a 12 s clock that takes the pads away and brings them back
+    const x0 = R[2].pads[0].plat.body.x; let moved = 0; for (let i = 0; i < 360; i++) { g._simulate(1 / 60); moved = Math.max(moved, Math.abs(R[2].pads[0].plat.body.x - x0)); }
+    out.slides = moved > 0.8;
+    for (let k = 0; k < 3; k++) answer(R[k]);
+    out.cleared3 = S.cleared === 3;
+    island(R[3]); sim(0.4); out.clock = R[3].timer.started && R[3].timer.limit === 12;
+    sim(13); out.padsGone = R[3].pads.every((p) => p.state === 'gone'); sim(4); out.padsBack = R[3].pads.every((p) => p.state === 'idle' && p.plat.body.enabled);
+    out.fourPads = R[4].pads.length === 4;
+    return out;
+  });
+  ok(r.rounds === 10 && r.stages === 6, `trivia: ten rounds in six stages (${r.rounds}/${r.stages})`);
+  ok(r.pads === '3,3,3,3,4,3,4,4,3,3', `trivia: answers per round 3/3/3/3/4/3/4/4/3/3 (${r.pads})`);
+  ok(r.lieIsWrong, 'trivia: in round 2 the host picks a WRONG letter');
+  ok(r.callback, 'trivia: round 6 asks for the letter the host swore by in round 2');
+  ok(r.decoyWrong && r.none && r.doubleAdjacent && r.switchSpec && r.poll, 'trivia: round 5 reverse psychology · 7 none of the above · 8 double or nothing · 9 the question changes · 10 a lying poll');
+  ok(r.slides && r.cleared3, 'trivia: round 3 slides; rounds 1-3 clear in order');
+  ok(r.clock && r.padsGone && r.padsBack, 'trivia: round 4: the 12 s clock removes the pads at zero and they come back');
+  // double or nothing: one foot is not enough, two is
+  const d = await page.evaluate(() => {
+    const { g, S, sim, island, standOn, w } = window.__T; S.cleared = 7; const st = S.rounds[7]; island(st); sim(0.3); const [a, b] = st.right().map((p) => p.plat.body); const out = {};
+    standOn(a); sim(2.2); out.single = S.cleared === 7;
+    window.__T.at((a.x + b.x) / 2, a.top, a.z, a); sim(1.6); out.both = S.cleared === 8; return out;
+  });
+  ok(d.single && d.both, 'trivia: double or nothing needs a foot on both right answers');
+  // the question changes when you sign (not in Baby Mode)
+  const sw = await page.evaluate(() => {
+    const { g, S, sim, island, onPad, right } = window.__T; S.cleared = 8; const st = S.rounds[8]; island(st); sim(0.3); const q0 = st.q.q; const out = {};
+    onPad(right(st)); sim(1.3); out.changed = st.q.q !== q0 && S.cleared === 8; out.clockOn = st.timer.on;
+    onPad(right(st)); sim(1.3); out.then = S.cleared === 9; return out;
+  });
+  ok(sw.changed && sw.clockOn && sw.then, 'trivia: round 9 changes the question after you sign, then lets you re-pick');
+  // the trophy lies; the tie-breaker bridge and round 10 appear
+  const tr = await page.evaluate(() => {
+    const { g, w, S, sim } = window.__T, t = w.trivia, out = {}; S.cleared = 9;
+    out.before = !t.bonusOn && t.rLast.hidden && w.goalObj === t.deskGoal && t.bridge.every((p) => !p.body.enabled);
+    g.player.teleport(t.deskGoal.x, 0, t.deskGoal.z); sim(0.4); out.overlay = !!document.querySelector('.fakewin') && g.state === 'playing'; return out;
+  });
+  ok(tr.before && tr.overlay, 'trivia: the trophy shows CHAMPION! (a fake) and nothing of the tie-breaker is there yet');
+  await page.waitForTimeout(4600);
+  const tb = await page.evaluate(() => {
+    const { g, w, S, sim, island, onPad, right } = window.__T, t = w.trivia, out = {};
+    out.open = t.bonusOn && !t.rLast.hidden && t.bridge.every((p) => p.body.enabled) && !g.frozen;
+    island(t.rLast); sim(0.3); onPad(right(t.rLast)); sim(1.4); out.cleared = S.cleared === 10;
+    g.player.teleport(t.finalGoal.x, t.finalGoal.y, t.finalGoal.z); sim(0.4); out.done = g.state === 'complete' || w.completed || g.state === 'ended'; return out;
+  });
+  ok(tb.open, 'trivia: ...then "a tie-breaker": the chandelier bridge and round 10 appear');
+  ok(tb.cleared && tb.done, 'trivia: round 10 clears and the real goal completes the level');
+  await page.close();
+  // the chandelier hop: the vanishing chandelier shimmers and gives way; the expiring checkpoint forgets itself
+  const p2 = await open(7); await p2.evaluate(QUIZ_HELP);
+  const hop = await p2.evaluate(() => {
+    const { g, w, S, sim, standOn } = window.__T, t = w.trivia, out = {};
+    standOn(t.c4.body); sim(1.6); out.vanished = t.c4.body.enabled === false; sim(3.6); out.back = t.c4.body.enabled === true;
+    const ep = S.stages[3].route.slice(-1)[0].body; const before = { ...w.respawn };
+    g.player.teleport(ep.x, ep.top, ep.z); g.player.grounded = true; g.player.ground = ep; sim(0.5); const set = Math.abs(w.respawn.z - ep.z) < 1.5;
+    sim(21); out.expired = set && Math.abs(w.respawn.z - ep.z) > 1.5;
+    return out;
+  });
+  ok(hop.vanished && hop.back, 'trivia: a chandelier gives way once you are on it, and comes back');
+  ok(hop.expired, 'trivia: the balcony checkpoint expires after 20 s');
+  await p2.close();
 });
 
 // ---- level 8: Dinner Is Served --------------------------------------------------------------------------------
@@ -357,43 +507,73 @@ suite('dnd', async () => {
 
 // ---- level 13: Minibar ------------------------------------------------------------------------------------------
 suite('minibar', async () => {
-  const page = await open(13);
+  const miss = await scriptKeysFor(13, ['src/levels/hotel/minibar.js'], [...RUNNER_KEYS, 'hint.mind', 'hint.switch', 'hint.double', 'hint.flip', 'hint.pass', 'hint.poll', 'hint.none.above', 'mind.check', 'mind.flip', 'switch']);
+  ok(miss.length === 0, `minibar: every line the level can say exists in the script (${miss.join(', ') || 'none missing'})`);
+  const page = await open(13); await page.evaluate(QUIZ_HELP);
   const r = await page.evaluate(() => {
-    const g = window.__trust, w = g.world, mb = w.minibar, qz = mb.quiz, out = {};
-    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
-    out.start = mb.balance;
-    out.hiddenAnswers = qz.stages.every((s) => s.pads.every((p) => !p.tag.visible));
-    // opening the minibar shows the answers and costs MORE than the $4.00 on the door
-    mb.openFridge(0);
-    out.revealed = qz.stages[0].pads.every((p) => p.tag.visible);
-    out.cost = mb.start === undefined ? 45 - mb.balance : 0;
-    out.costMore = out.cost > 8;
-    // a minibar you cannot afford stays shut
-    mb.balance = 3; qz.stages[0].correctPad; const before = mb.opens; mb.openFridge(0);
-    out.noDoubleOpen = mb.opens === before;
-    mb.balance = 45;
-    // hints cost too, and are declined when broke
-    g.debug = false; g.hintCool = 0; const bal0 = mb.balance; g.useHint(); out.hintCharged = mb.balance < bal0 - 9;
-    mb.balance = 2; g.hintCool = 0; const h0 = mb.hints; g.useHint(); out.hintDeclined = mb.hints === h0;
-    // the bill: no tip, no zero tip, only 18/20/25
+    const { g, w, S, sim, island, onPad, right } = window.__T, mb = w.minibar, R = S.rounds, out = {};
+    out.start = mb.balance; out.rounds = R.length; out.stages = S.stages.length; out.cps = S.stages.filter((s) => s.at).length;
+    out.locked = R.filter((s) => s.spec.locked).map((s) => s.k).join(',');
+    out.hidden = R[0].pads.every((p) => !p.tag.visible);
+    out.twists = [R[1].spec.claim, R[2].spec.breathe, R[3].spec.timer, R[4].spec.slide, R[5].spec.poll, R[6].spec.flip, R[7].spec.none, R[8].spec.double, R[9].spec.switch, R[10].spec.mind, R[11].spec.pass].every(Boolean);
+    // minibar 1: opening it reveals the answers and costs MORE than the $4.00 on the door
+    island(R[0]); sim(0.3); mb.openFridge(0);
+    out.revealed = R[0].pads.every((p) => p.tag.visible); out.cost = 80 - mb.balance; out.costMore = out.cost > 8;
+    // round 5: the card is "declined" once, whatever is in it, with a survey; with no money it stays shut until the host takes pity
+    S.cleared = 4; island(R[4]); sim(0.3); const b0 = mb.balance, o0 = mb.opens;
+    mb.openFridge(1); out.declinedOnce = mb.declined && !!g.modal?.troll && mb.opens === o0 && mb.balance === b0;
+    g.modal.key({ code: 'Digit3' }); out.surveyClosed = !g.modal;
+    mb.balance = 3; mb.openFridge(1); out.shut = mb.opens === o0; mb.openFridge(1); out.comp = mb.opens === o0 + 1 && mb.balance === 3;
+    // hints cost money (the hint itself is honest), and are declined when broke
+    S.cleared = 2; island(R[2]); sim(0.3); g.debug = false; mb.balance = 80; g.hintCool = 0; g.useHint();
+    out.hintCharged = mb.balance < 80 - 9.99 && R[2].pads.filter((p) => p.eliminated).length === 1 && R[2].right().length === 1;
+    mb.balance = 2; g.hintCool = 0; const h0 = mb.hints; g.useHint(); out.hintDeclined = mb.hints === h0 && R[2].pads.filter((p) => p.eliminated).length === 1;
+    // pay to skip the ad: 99 cents plus the things
+    mb.balance = 80; mb.setAd(true); mb.skip(); out.skipPaid = mb.balance < 79;
+    return out;
+  });
+  ok(r.rounds === 12 && r.stages === 6 && r.cps === 6, `minibar: twelve rounds in six stages, a checkpoint per stage (${r.rounds}/${r.stages}/${r.cps})`);
+  ok(r.start === 80 && r.hidden && r.locked === '0,4,7,9', `minibar: you start with $80; the answers are locked in the minibars of rounds 1, 5, 8 and 10 (${r.locked})`);
+  ok(r.twists, 'minibar: every round has its own twist (lie, breathe, clock, slide, poll, flip, none, double, switch, mind, pass)');
+  ok(r.revealed && r.costMore, `minibar: opening one reveals the answers and costs more than the $4.00 on the door (paid $${r.cost.toFixed(2)})`);
+  ok(r.declinedOnce && r.surveyClosed, 'minibar: the card is declined once (with a survey)');
+  ok(r.shut && r.comp, 'minibar: with no money the fridge stays shut, then the host waives the fee');
+  ok(r.hintCharged && r.hintDeclined, 'minibar: hints cost money (and still remove one wrong answer, never the right one); they are declined when you are broke');
+  ok(r.skipPaid, 'minibar: skipping the ad costs money');
+  // the lure: a save point (crooked pole) that sends you back to the start of the carousel and saves nothing
+  const lure = await page.evaluate(() => {
+    const { g, w, sim } = window.__T, mb = w.minibar, L = mb.lure.body, before = { ...w.respawn }, out = {};
+    g.player.teleport(L.x, L.top, L.z); g.player.grounded = true; g.player.ground = L; sim(1.4);
+    out.back = g.player.z > L.z + 15; out.notSaved = Math.abs(w.respawn.z - L.z) > 1; return out;
+  });
+  ok(lure.back && lure.notSaved, 'minibar: the SAVE POINT rewinds you to the carousel dock and saves nothing');
+  // the bill: a tip you cannot refuse, then CHECKED OUT! is a lie and the corrected bill follows
+  const b1 = await page.evaluate(() => {
+    const { g, w, S, sim } = window.__T, mb = w.minibar, out = {}; S.cleared = 12; g.player.teleport(0, 0, mb.lobby.body.z); sim(0.3);
     mb.showBill();
     const msg = () => document.querySelector('#panel .kp-msg').textContent;
     g.modal.key({ code: 'Enter' }); out.needsTip = /select a tip/i.test(msg());
     g.modal.key({ code: 'Digit0' }); out.zeroRefused = /zero/i.test(msg());
     g.modal.key({ code: 'Digit1' });
-    out.tipButtons = [...document.querySelectorAll('.bill-tip')].map((b) => b.textContent).join('|');
-    out.total = document.querySelector('.bill-total b').textContent;
-    return out;
+    out.tips = [...document.querySelectorAll('.bill-tip')].map((b) => b.textContent).join('|');
+    g.modal.key({ code: 'Enter' }); return out;
   });
-  ok(r.start === 45 && r.hiddenAnswers, 'minibar: you start with $45 and the answers are locked in the minibars');
-  ok(r.revealed && r.costMore, `minibar: opening one reveals the answers and costs more than the $4.00 on the door (paid $${r.cost.toFixed(2)})`);
-  ok(r.noDoubleOpen, 'minibar: with no money the minibar stays shut');
-  ok(r.hintCharged && r.hintDeclined, 'minibar: hints cost money and are declined when you are broke');
-  ok(r.needsTip && r.zeroRefused, 'minibar: the bill refuses to be paid without a tip (and refuses a zero tip)');
-  ok(r.tipButtons === '1 · 18%|2 · 20%|3 · 25%', `minibar: the tip choices are 18 / 20 / 25 (${r.tipButtons})`);
-  await page.evaluate(() => { window.__trust.modal.key({ code: 'Enter' }); });
-  await page.waitForFunction(() => window.__trust.state === 'complete' || window.__trust.world.completed, null, { timeout: 15000 });
-  ok(true, 'minibar: paying the bill completes the level');
+  ok(b1.needsTip && b1.zeroRefused, 'minibar: the bill refuses to be paid without a tip (and refuses a zero tip)');
+  ok(b1.tips === '1 · 18%|2 · 20%|3 · 25%', `minibar: the tip choices are 18 / 20 / 25 (${b1.tips})`);
+  await page.waitForFunction(() => !!document.querySelector('.fakewin'), null, { timeout: 6000 });
+  ok(await page.evaluate(() => window.__trust.state === 'playing'), 'minibar: CHECKED OUT! is a fake (the level is not over)');
+  await page.waitForTimeout(4600);
+  const b2 = await page.evaluate(() => {
+    const { g, w, sim } = window.__T, mb = w.minibar, out = {};
+    out.open = mb.bonusOn && !g.frozen && mb.deskB.body.enabled && mb.lf3.body.enabled;
+    g.player.teleport(4, 0, mb.deskB.body.z); g.player.grounded = true; g.player.ground = mb.deskB.body; sim(0.3);
+    mb.showBill2(); g.modal.key({ code: 'Digit1' });
+    out.tips = [...document.querySelectorAll('.bill-tip')].map((b) => b.textContent).join('|'); g.modal.key({ code: 'Enter' }); return out;
+  });
+  ok(b2.open, 'minibar: ...a correction: the late-fee stage opens');
+  ok(b2.tips === '1 · 20%|2 · 25%|3 · 30%', `minibar: the second bill wants a bigger tip (${b2.tips})`);
+  await page.waitForFunction(() => window.__trust.state === 'complete' || window.__trust.world.completed || window.__trust.state === 'ended', null, { timeout: 15000 });
+  ok(true, 'minibar: paying the second bill completes the level');
   await page.close();
 });
 

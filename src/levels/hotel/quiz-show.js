@@ -148,8 +148,8 @@ export function quizShow(w, game, opts) {
       return pad;
     });
     if (spec.pass) {   // the way out nobody mentions
-      const px = ((n - 1) / 2) * sp + sp * 0.5 + 2.6;
-      const pass = makePad(w, { x: px, z: padZ, y: padY, wd: 2.6, dp: 2.6, letter: 'P', text: 'PASS', correct: true, tagW: 2.4 });
+      const px = ((n - 1) / 2) * sp + sp * 0.5 + 3.0;
+      const pass = makePad(w, { x: px, z: padZ, y: padY, wd: 3.0, dp: 3.2, letter: 'P', text: 'PASS', correct: true, tagW: 2.8 });
       pass.fallY = 0; pass.k = k; pass.pass = true;
       w.mover(pass.plat, () => ({ y: pass.fallY }));
       piston(pass.plat, padY - 0.6 - (pitY + 0.5));

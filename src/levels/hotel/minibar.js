@@ -90,7 +90,7 @@ export default {
     show.pillars(0, -0.5, z - 13.0, 5, 16);
     stanchions(w, 0, z - 13.0, 5, 16);
     show.route(lane1);
-    const tr1 = trolleyHazard(w, 0, 0.2, z - 12.5, 4.6, (t) => ({ z: 2.4 * Math.sin(t * 0.9) }));
+    const tr1 = trolleyHazard(w, 0, 0.2, z - 12.5, 4.6, (t) => ({ z: 2.4 * Math.sin(t * 0.55) }));
     const tr2 = null;
     twistZone(game, w, { x: 0, y: 1.2, z: z - 13.0, w: 7, h: 2.6, d: 16 }, 'swap', { sec: 6, say: 'hotel.l13.glitch' });
     const slider = deck({ x: 0, y: 0, z: z - 24.2, w: 3.6, d: 3.4, h: 0.4, tex: 'brass', color: 0xffffff, metalness: 0.9, roughness: 0.3 });
@@ -100,7 +100,7 @@ export default {
     const lane2 = belt({ x: 7.2, y: 0, z: z - 33.6, w: 4.6, d: 12, h: 0.5 }, { vz: 2.6 });
     show.pillars(7.2, -0.5, z - 33.6, 4.6, 12, { r: 0.22 });
     stanchions(w, 7.2, z - 33.6, 4.6, 12);
-    const tr3 = trolleyHazard(w, 7.2, 0.2, z - 33.6, 4.2, (t) => ({ z: 2.0 * Math.sin(t * 1.1) }));
+    const tr3 = trolleyHazard(w, 7.2, 0.2, z - 33.6, 4.2, (t) => ({ z: 2.2 * Math.sin(t * 0.6) }));
     const endA = deck({ x: 7.2, y: 0, z: z - 42.8, w: 6, d: 4, h: 0.6 });
     show.pillars(7.2, -0.6, z - 42.8, 6, 4);
     const zA = z;
@@ -399,12 +399,12 @@ function stanchions(w, x, z, wd, len) {
 }
 /** A luggage trolley sliding across the lane: a low, hop-able hazard (about knee high). */
 function trolleyHazard(w, x, y, z, wd, move) {
-  const hz = w.hazard({ x, y, z, w: wd, h: 0.4, d: 0.9, color: 0xff5a4a, move });
+  const hz = w.hazard({ x, y, z, w: wd, h: 0.4, d: 0.5, color: 0xff5a4a, move });
   hz.core.visible = false; hz.shell.visible = false; hz.jumpable = true;
   const brass = plainMaterial(GOLD, { metalness: 1, roughness: 0.3 }), red = plainMaterial(0xb0283a, { roughness: 0.6 });
-  const bar = new THREE.Mesh(new THREE.BoxGeometry(wd, 0.08, 0.5), brass); bar.position.y = -0.14; hz.group.add(bar);
-  for (let i = 0; i < 3; i++) { const bag = new THREE.Mesh(new THREE.BoxGeometry(wd / 3.4, 0.3, 0.7), i === 1 ? red : plainMaterial(0x1a2a4a, { roughness: 0.6 })); bag.position.set((i - 1) * (wd / 3), 0.02, 0); hz.group.add(bag); }
-  const glow = new THREE.Mesh(new THREE.BoxGeometry(wd + 0.1, 0.04, 0.95), glowMaterial(0xff5a4a, 1.2)); glow.position.y = -0.19; hz.group.add(glow);
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(wd, 0.08, 0.3), brass); bar.position.y = -0.14; hz.group.add(bar);
+  for (let i = 0; i < 3; i++) { const bag = new THREE.Mesh(new THREE.BoxGeometry(wd / 3.4, 0.3, 0.45), i === 1 ? red : plainMaterial(0x1a2a4a, { roughness: 0.6 })); bag.position.set((i - 1) * (wd / 3), 0.02, 0); hz.group.add(bag); }
+  const glow = new THREE.Mesh(new THREE.BoxGeometry(wd + 0.1, 0.04, 0.6), glowMaterial(0xff5a4a, 1.2)); glow.position.y = -0.19; hz.group.add(glow);
   return hz;
 }
 /** A suitcase riding the carousel belt: a low, hop-able hazard. */
