@@ -27,6 +27,21 @@ export function generateMaze(N) {
   return { N, east, north, nbrs, open };
 }
 
+/**
+ * A random maze whose solution (cell [0,0] to [N-1,N-1]) is between `lo` and `hi` cells long, so a level's length does not swing
+ * with the dice (still a brand-new maze every attempt). Falls back to the closest one it saw.
+ */
+export function bandMaze(N, lo = 0, hi = Infinity, tries = 600) {
+  let best = null, bestD = Infinity;
+  for (let k = 0; k < tries; k++) {
+    const m = generateMaze(N), len = solveMaze(m, [0, 0]).length;
+    if (len >= lo && len <= hi) return m;
+    const d = len < lo ? lo - len : len - hi;
+    if (d < bestD) { bestD = d; best = m; }
+  }
+  return best;
+}
+
 /** BFS path of cells from `from` to `to` (inclusive). */
 export function solveMaze(maze, from, to = [maze.N - 1, maze.N - 1]) {
   const N = maze.N, key = (c) => c[0] * N + c[1];
