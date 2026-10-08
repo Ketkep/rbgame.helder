@@ -598,19 +598,27 @@ suite('luggage-end', async () => {
     const seen = [pos()];
     for (let k = 0; k < 4; k++) { stand(e.goal.x + 1.5, 7.4, e.goal.z + 1.5); sim(0.9); seen.push(pos()); }
     out.hopsTwice = new Set(seen).size === 3;
-    // the green channel is a closet with no floor
-    g.state = 'playing'; g.respawnPlayer(false);
+    return out;
+  });
+  ok(r.pileCheckpoint, 'luggage: there is a checkpoint at the foot of the pile');
+  ok(r.hopsTwice, 'luggage: the customs stamp hops away twice, then stays');
+  await page.close();
+});
+
+suite('luggage-closet', async () => {
+  const page = await open(3);
+  const r = await page.evaluate(async () => {
+    const g = window.__trust, w = g.world, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const stand = (x, y, z) => { g.player.teleport(x, y + 0.001, z); sim(0.1); };
     const door = w.interactables.find((i) => /EXIT door|staff closet/.test(typeof i.label === 'function' ? i.label() : i.label));
     out.hasDoor = !!door;
     stand(-4.5, 7.4, -136); door.onUse(g); for (let k = 0; k < 20 && g.state !== 'dead'; k++) { await new Promise((res) => setTimeout(res, 300)); sim(0.1); } out.closetKills = g.state === 'dead';
     return out;
   });
-  ok(r.pileCheckpoint, 'luggage: there is a checkpoint at the foot of the pile');
-  ok(r.hopsTwice, 'luggage: the customs stamp hops away twice, then stays');
   ok(r.hasDoor && r.closetKills, 'luggage: NOTHING TO DECLARE is a closet with no floor');
   await page.close();
 });
-
 // <<< escape rooms
 
 const names = Object.keys(suites).filter((n) => n.includes(filter));
