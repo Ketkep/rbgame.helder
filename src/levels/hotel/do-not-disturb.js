@@ -117,15 +117,15 @@ export default {
     w.mover(K2, (t) => ({ x: 1.4 * Math.sin(t * 1.0) }));
     const K3 = mark(w.crumble(machine(6.8, 14.0, 0.6, 2.2, 2.2, 0xd8c8a8), { delay: 0.65, gone: 3 }));
     // the mangles: a long machine with two presses that slam down in turn (a head you can see coming)
-    const PL = mark(machine(2.4, 22.5, 0.6, 3.0, 11));
-    const presses = [-1, 1].map((sgn, k) => press(w, PL, sgn * 2.6, { ph: k * 1.7, period: 3.4 }));
-    const K4 = mark(machine(1.2, 30.9, 0.7, 2.6));
-    const K5 = mark(machine(-0.8, 34.9, 0.75));
+    const PL = mark(machine(2.4, 23.5, 0.6, 3.0, 13));
+    const presses = [-1, 1].map((sgn, k) => press(w, PL, sgn * 3.3, { ph: 0, period: 4.2 }));
+    const K4 = mark(machine(1.2, 32.0, 0.7, 2.6));
+    const K5 = mark(machine(-0.8, 36.0, 0.75));
     w.mover(K5, (t) => ({ x: 1.3 * Math.sin(t * 1.15 + 1.0) }));
-    const K6 = mark(w.crumble(machine(-3.0, 38.9, 0.8, 2.2, 2.2, 0xd8c8a8), { delay: 0.65, gone: 3 }));
-    const V = mark(w.plat({ x: -3.0, y: 0.85, z: zu(44.6), w: 1.8, d: 7.2, h: 0.3, tex: 'metal', color: 0xdfe3e8, roughness: 0.3, metalness: 0.8, radius: 0.1 }));
+    const K6 = mark(w.crumble(machine(-3.0, 40.0, 0.85, 2.2, 2.2, 0xd8c8a8), { delay: 0.65, gone: 3 }));
+    const V = mark(w.plat({ x: -3.0, y: 0.85, z: zu(45.0), w: 1.8, d: 7.2, h: 0.3, tex: 'metal', color: 0xdfe3e8, roughness: 0.3, metalness: 0.8, radius: 0.1 }));
     vanishAfter(w, game, V, { axis: 'z', dir: -1, frac: 0.55, delay: 0.75, back: 3.2, say: 'hotel.l12.bridge' });
-    twistZone(game, w, { x: -0.8, y: 2.4, z: zu(34.9), w: 3, h: 4, d: 3 }, 'lag', { sec: 4, say: 'hotel.l12.lag' });   // K5: the connection drops
+    twistZone(game, w, { x: -0.8, y: 2.4, z: zu(36.0), w: 3, h: 4, d: 3 }, 'lag', { sec: 4, say: 'hotel.l12.lag' });   // K5: the connection drops
     // the laundry trolley on its rail
     const L2X = MB.cx(0), L2Z = WATER_N + 3.3, L2W = 12, L2E = L2X + L2W / 2;
     const cartZ = WATER_N + 4.6, cart0 = -3.0, cartStop = L2E + 1.1;
@@ -597,16 +597,20 @@ export default {
     };
     w.botPlan = (g) => {
       const p = g.player;
-      if (g.mods.swapFwd || g.mods.jumpLag || g.mods.invertX) return { x: p.x, z: p.z, wait: true };
-      if (p.grounded && p.ground === cart.body) return cart.body.x > cartStop + 0.15 ? { x: cart.body.x, z: cart.body.z, wait: true } : { x: L2X + 0.5, z: ZB + 4.7 };
-      if (p.z <= WATER_S && p.z > ZB + 7.0) return null;
+      if (g.mods.swapFwd || g.mods.jumpLag || g.mods.invertX) {         // stand still (on a moving platform: stand on its middle)
+        const gb = p.grounded && p.ground;
+        if (gb && gb.hx && gb.moving !== false && Math.hypot(gb.x - p.x, gb.z - p.z) > 0.35 && p.z < WATER_S) return { x: gb.x, z: gb.z };
+        return { x: p.x, z: p.z, wait: true };
+      }
+      if (p.grounded && p.ground === cart.body) return cart.body.x > cartStop + 0.15 ? { x: cart.body.x, z: cart.body.z, wait: true } : { x: L2X, z: ZB + 5.8 };
+      if (p.z <= WATER_S && (p.z > ZB + 7.0 || (p.x > L2E + 0.3 && p.z > ZB))) return null;
       let M = null;
       if (p.z > WATER_S) M = MA;
       else if (p.z < ZB - 0.2 && p.z > ZB1 - 0.4) M = MB;
       else if (p.z < ZB1 - 0.4) { const e = bonusOn ? finalGoal : firstGoal; return { x: e.x, z: e.z }; }
       else if (p.z <= ZB + 7.2) {
         // the lift lobby: walk into the lift, wait for the doors, go through
-        if (!lift.ridden) return { x: lift.cx, z: lift.cz + 0.2 };
+        if (!lift.ridden) return (Math.abs(p.x - lift.cx) > 1.5 && p.z < ZB + 5.2) ? { x: lift.cx, z: ZB + 5.9 } : (Math.abs(p.x - lift.cx) > 0.8 && p.z > ZB + 4.5) ? { x: lift.cx, z: ZB + 5.9 } : { x: lift.cx, z: lift.cz + 0.2 };
         if (game.frozen || lift.state === 'loading') return { x: p.x, z: p.z, wait: true };
         return MB.steer(p);
       }
