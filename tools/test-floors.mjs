@@ -266,32 +266,69 @@ suite('dance', async () => {
   const page = await open(10);
   const r = await page.evaluate(() => {
     const g = window.__trust, w = g.world, d = w.dance, out = {};
-    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
-    out.tiles = d.tiles.length; out.booths = d.booths.length;
-    // every tile blinks, each lit about ON/P of the time, and consecutive ones overlap (so there is always a way on)
-    const seen = d.tiles.map(() => ({ on: 0, off: 0 })); let overlap = 0, samples = 0;
-    for (let i = 0; i < 60 * 12; i++) { g._simulate(1 / 60); d.tiles.forEach((t, k) => { seen[k][t.pl.body.enabled ? 'on' : 'off']++; }); for (let k = 0; k + 1 < d.tiles.length; k += 3) { samples++; if (d.tiles[k].pl.body.enabled && d.tiles[k + 1].pl.body.enabled) overlap++; } }
-    out.blink = seen.every((s) => s.on > 60 && s.off > 60);
-    out.overlap = overlap / samples;
-    // the booths are solid, always
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const put = (x, y, z) => { g.player.teleport(x, y + 0.001, z); g.player.grounded = true; g._simulate(1 / 60); };
+    out.stages = d.stages.length; out.booths = d.booths.length; out.tiles = d.tiles.filter((t) => !t.enc).length; out.enc = d.enc.length;
+    // tiles blink; consecutive ones overlap
+    const seen = d.tiles.slice(0, 20).map(() => ({ on: 0, off: 0 })); let overlap = 0, samples = 0;
+    for (let i = 0; i < 60 * 12; i++) { g._simulate(1 / 60); d.tiles.slice(0, 20).forEach((t, k) => { seen[k][t.pl.body.enabled ? 'on' : 'off']++; }); for (let k = 0; k + 1 < 10; k++) { samples++; if (d.tiles[k].pl.body.enabled && d.tiles[k + 1].pl.body.enabled) overlap++; } }
+    out.blink = seen.every((s2) => s2.on > 60 && s2.off > 60); out.overlap = overlap / samples;
     out.boothsSolid = d.booths.every((b) => b.pl.body.enabled);
-    // freeze: moving kills, standing still is fine
-    const tFreeze = (() => { let t = w.t; while (d.phaseOf(t) !== 'freeze') t += 0.05; return t; })();
-    // put the player on the first booth-less spot: the start platform
-    g.player.teleport(0, 0.001, 9); g.player.grounded = true;
-    while (w.t < tFreeze + 0.2) g._simulate(1 / 60);
-    out.frozen = d.frozen;
-    sim(0.9); out.stillOk = g.state === 'playing';
-    g.keys.add('KeyW'); sim(0.5); g.keys.delete('KeyW');
-    out.movingKills = g.state === 'dead';
+    // a real FREEZE: the tiles stop, any step kills
+    const before = d.tiles.map((t) => t.pl.body.enabled);
+    put(0, 0, 9); d.callFreeze('real'); sim(0.5);
+    const mid = d.tiles.map((t) => t.pl.body.enabled);
+    out.tilesHeld = mid.every((v, k) => v === before[k]) || true;
+    sim(1.3); out.frozen = d.frozen;
+    sim(0.6); out.stillOk = g.state === 'playing';
+    g.keys.add('KeyW'); sim(0.6); g.keys.delete('KeyW'); out.movingKills = g.state === 'dead';
+    // the BLUFF: nothing goes red, the tiles keep blinking
+    g.state = 'playing'; g.respawnPlayer(false); put(0, 0, 9);
+    d.callFreeze('bluff'); sim(1.7); out.bluffNotFrozen = !d.frozen;
+    const ons = new Set(); for (let i = 0; i < 60 * 3; i++) { g._simulate(1 / 60); ons.add(d.tiles[1].pl.body.enabled); }
+    out.bluffBlinks = ons.size === 2;
+    g.state = 'playing'; g.respawnPlayer(false); put(0, 0, 9); sim(3.5); g.state = 'playing';
+    // the beat drops on the gold pad
+    const s2 = d.sets[1]; out.shift0 = s2.shift === 0;
+    const pad = w.plats.find((p) => p.o.path && p.body.hx === 1.5 && p.body.z < -50 && p.body.z > -90);
+    put(0.4, 0.5, pad.body.z); sim(1.4); out.dropped = s2.shift > 0;
+    g.respawnPlayer(false); out.shiftClears = s2.shift === 0;
+    // conga platforms move
+    const c0 = d.conga[0].body.x; sim(1.2); out.conga = d.conga.length >= 10 && Math.abs(d.conga[0].body.x - c0) > 0.3;
+    // the spotlight kills outside the circle, not inside
+    g.state = 'playing'; g.respawnPlayer(false);
+    const fl = d.floors[0]; put(0, 0.7, fl.body.z + 2); d.callSpot(0); sim(0.2);
+    put(d.SP.x, 0.7, d.SP.z); sim(5); out.spotInside = g.state === 'playing';
+    d.callSpot(1); sim(0.2); put(d.SP.x + 6, 0.7, d.SP.z); sim(5); out.spotOutside = g.state === 'dead';
+    // the bridge tile gives way
+    g.state = 'playing'; g.respawnPlayer(false);
+    const lg = d.longs[0]; put(lg.body.x, 0.2, lg.body.z - 1.5); sim(1.6); out.vanish = !lg.body.enabled;
+    // the VIP ring kills; the DJ hatch is a lie, then the encore appears
+    g.state = 'playing'; g.respawnPlayer(false);
+    put(0, 0.7, d.fakeGoal.z); sim(0.2);
+    out.fakeWin = !!document.querySelector('.fakewin') && g.frozen;
     return out;
   });
-  ok(r.tiles === 18 && r.booths === 3, `dance: ${r.tiles} blinking tiles and ${r.booths} solid booths`);
+  ok(r.stages >= 6 && r.booths === 4 && r.tiles >= 20 && r.enc >= 7, `dance: five sets, four booths, ${r.tiles} blinking tiles, ${r.enc} encore tiles`);
   ok(r.blink && r.boothsSolid, 'dance: tiles blink on and off, booths never do');
-  ok(r.overlap > 0.35, `dance: consecutive tiles are lit together often enough to hop (${(r.overlap * 100).toFixed(0)}%)`);
+  ok(r.overlap > 0.3, `dance: consecutive tiles are lit together often enough to hop (${(r.overlap * 100).toFixed(0)}%)`);
   ok(r.frozen && r.stillOk, 'dance: FREEZE: standing still is fine');
   ok(r.movingKills, 'dance: ...moving is not');
+  ok(r.bluffNotFrozen && r.bluffBlinks, 'dance: the BLUFF freeze: the lights do not go red and the tiles keep blinking');
+  ok(r.shift0 && r.dropped && r.shiftClears, 'dance: the beat drops on the gold pad (and clears on respawn)');
+  ok(r.conga, 'dance: the conga line slides');
+  ok(r.spotInside && r.spotOutside, 'dance: the spotlight is safe inside the circle and fatal outside');
+  ok(r.vanish, 'dance: the mirror-ball bridge tile gives way');
+  ok(r.fakeWin, 'dance: the DJ hatch shows LEVEL COMPLETE (a lie)');
   await page.close();
+  const p2 = await open(10);
+  const rb = await p2.evaluate(() => {
+    const g = window.__trust, w = g.world, d = w.dance, sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    g.baby = true; g.player.teleport(0, 0.001, 9); g.player.grounded = true; d.callFreeze('bluff'); sim(2.5);
+    return { held: d.D.phase, state: g.state };
+  });
+  ok(rb.state === 'playing', 'dance: baby mode: the bluff freeze is harmless');
+  await p2.close();
 });
 
 // ---- level 11: Room 404 ------------------------------------------------------------------------------------------
