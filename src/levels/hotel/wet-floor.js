@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { plainMaterial, glowMaterial } from '../../engine/materials.js';
 import { hotelEnv, lobbyShell, GOLD } from './kit.js';
-import { sofa, coffeeTable, elevatorBank } from './props.js';
+import { sofa, armchair, coffeeTable, elevatorBank } from './props.js';
 import { onPlat } from '../common.js';
-import { trollCheckpoint, fakeExit, evasiveGoal, fakeComplete, twistZone, vanishAfter, stageTitle, stageHint } from './trolls.js';
+import { trollCheckpoint, fakeExit, evasiveGoal, fakeComplete, twistZone, vanishAfter, adBreak, stageTitle, stageHint } from './trolls.js';
 
 // Hotel level 1 — "Wet Floor" (Easy · Mezzanine). The cleaning staff mopped the lobby. All of it. The floor is lethal.
 // Six stages, one checkpoint each (and one liar):
@@ -50,6 +50,9 @@ export default {
     const start = (i, p) => { mark(p); stages[i].at = { x: p.body.x, y: p.top, z: p.body.z }; return p; };
     const pole = (x, z, top, ww, dd) => { for (const sx of [-1, 1]) for (const sz of [-1, 1]) w.box({ x: x + sx * (ww / 2 - 0.15), y: (top - 0.1) / 2, z: z + sz * (dd / 2 - 0.15), w: 0.1, h: top - 0.1, d: 0.1, color: GOLD, metal: 1, rough: 0.28, shadow: true }); };
     const marble = (o) => w.plat({ tex: 'marble', color: 0xc4c4cf, roughness: 0.14, radius: 0.05, ...o });
+    // nothing floats: low slabs stand on a plinth, high ones hang from the ceiling beams on gold rods
+    const plinth = (p) => w.box({ x: p.body.x, y: (p.top - p.o.h) / 2, z: p.body.z, w: p.o.w - 0.5, h: p.top - p.o.h, d: p.o.d - 0.5, tex: 'marble', color: 0x9a9aa8, rough: 0.3, shadow: false });
+    const hang = (p, n = 2) => { for (let k = 0; k < n; k++) { const sx = n === 4 ? (k % 2 ? 1 : -1) : (k ? 1 : -1), sz = n === 4 ? (k < 2 ? -1 : 1) : 0, hw = Math.min(p.o.w / 2 - 0.2, 3.6); w.box({ x: p.body.x + sx * hw, y: (p.top + 12.3) / 2, z: p.body.z + sz * (p.o.d / 2 - 0.2), w: 0.07, h: 12.3 - p.top, d: 0.07, color: GOLD, metal: 1, rough: 0.3, shadow: false }); } };
     const cps = new Map();
     const cp = (i, x, y, z) => { const c = w.checkpoint({ x, y, z, real: true }); cps.set(c, i); return c; };
 
@@ -61,7 +64,10 @@ export default {
     const ottoman = hop(0, w.plat({ x: -0.6, y: 0.45, z: 6.4, w: 1.5, d: 1.5, h: 0.4, tex: 'leather', color: 0x7a1030, roughness: 0.45, radius: 0.15 }));
     pole(-0.6, 6.4, 0.45, 1.5, 1.5);
     hop(0, sofa(w, 2.6, 3.4, 0, { color: 0x10342b, len: 3.2 }).seat);
-    hop(0, coffeeTable(w, -0.6, 0.6, { w: 1.8, d: 1.0, h: 0.6 }));
+    hop(0, armchair(w, 6.4, 2.2, 3, { color: 0x7a1030 }).seat);                                                     // east, around the sofa...
+    hop(0, w.plat({ x: 6.6, y: 0.4, z: -1.2, w: 1.5, d: 1.5, h: 0.4, tex: 'leather', color: 0x1a2a4a, roughness: 0.45, radius: 0.15 }));
+    hop(0, w.plat({ x: 3.0, y: 0.75, z: -2.4, w: 1.1, d: 1.1, h: 0.75, tex: 'wood', color: 0xffffff, roughness: 0.3, radius: 0.05 }));   // a bar stool
+    hop(0, coffeeTable(w, -0.6, 0.6, { w: 1.8, d: 1.0, h: 0.6 }));                                                    // ...and back again
     const trolley = (x, z, top, ww, dd) => {
       const deck = hop(0, w.plat({ x, y: top, z, w: ww, d: dd, h: 0.1, tex: 'brass', color: 0xffffff, roughness: 0.3, metalness: 0.9, radius: 0.03 }));
       pole(x, z, top, ww, dd);
@@ -84,6 +90,7 @@ export default {
     w.rollaway(roll, { dir: [1, 0], dist: 6, accel: 3.5, speed: 5.5, delay: 0.7, hold: 2.6, back: 1.8, onGo: () => game.say('hotel.l1.roll', { priority: 1 }) });
     const R1 = start(2, marble({ x: 12.8, y: 1.5, z: -5.2, w: 3.2, d: 3.2, h: 0.3 }));
     cp(2, 12.8, 1.5, -5.2);
+    plinth(R1);
 
     // ===== stage 3 · mop-bot lane ======================================================================
     const LX = 16.6, LZ0 = -5.6, LZ1 = -20.6;
@@ -91,10 +98,13 @@ export default {
     mark(lane);
     for (const z of [-8, -13, -18]) stages[2].route.push({ x: LX, y: 1.5, z });   // (the lane itself is one platform: route points only)
     w.sign({ text: 'MOP LANE ▸', x: LX, y: 1.52, z: LZ0 + 0.2, w: 3, h: 0.8, rotX: -Math.PI / 2, rotY: 0, color: '#ffd21f', double: false, tw: 512, size: 70 });
-    const mop = w.hazard({ x: LX, y: 1.9, z: -13.1, w: 3.1, h: 0.8, d: 1.3, color: 0xffd21f, move: (t) => ({ z: 6.2 * Math.sin(t * 0.85) }) });
-    mop.core.visible = false; mop.shell.visible = false; mop.jumpable = true;
-    mopBot(mop.group);
+    plinth(lane);
+    const mopA = w.hazard({ x: LX, y: 1.9, z: -9.5, w: 3.1, h: 0.8, d: 1.3, color: 0xffd21f, move: (t) => ({ z: 3.4 * Math.sin(t * 0.95) }) });
+    const mopB = w.hazard({ x: LX, y: 1.9, z: -17.1, w: 3.1, h: 0.8, d: 1.3, color: 0xffd21f, move: (t) => ({ z: 3.4 * Math.sin(t * 0.8 + 2.2) }) });
+    for (const m of [mopA, mopB]) { m.core.visible = false; m.shell.visible = false; m.jumpable = true; mopBot(m.group); }
+    const mop = mopA;
     const E1 = mark(marble({ x: LX, y: 1.5, z: -22.3, w: 3.4, d: 2.3, h: 0.3 }));
+    plinth(E1);
     trollCheckpoint(w, game, { x: LX, y: 1.5, z: -22.3, mode: 'fake' });                            // crooked pole: the second one is real
     const table = (x, z, top, o = {}) => {
       const t = marble({ x, y: top, z, w: 1.7, d: 1.7, h: 0.12, ...o });
@@ -109,31 +119,39 @@ export default {
     w.mover(T4, (t) => ({ z: 1.5 * Math.sin(t * 1.15) }));
     const TA = start(3, marble({ x: 18.4, y: 5.5, z: -7.0, w: 3.6, d: 3.4, h: 0.3 }));
     cp(3, 18.4, 5.5, -7.0);
+    plinth(TA);
 
     // ===== stage 4 · service gantry ====================================================================
     const grate = (o) => w.plat({ tex: 'metal', color: 0xb9a15a, roughness: 0.35, metalness: 0.7, radius: 0.04, ...o });
     const G0 = hop(3, grate({ x: 13.2, y: 5.9, z: -4.4, w: 2.4, d: 2.4, h: 0.3 }));
-    const G1 = hop(3, grate({ x: 9.6, y: 6.2, z: -4.2, w: 2.4, d: 2.4, h: 0.3 }));
-    const G2 = hop(3, grate({ x: 5.4, y: 6.5, z: -4.2, w: 2.4, d: 2.4, h: 0.3 }));
-    w.mover(G2, (t) => ({ x: 1.5 * Math.sin(t * 1.1) }));
-    const G3 = hop(3, w.crumble(grate({ x: 1.4, y: 6.5, z: -4.2, w: 2.4, d: 2.4, h: 0.3 }), { delay: 0.6, gone: 3 }));
-    const G4 = hop(3, marble({ x: -5.0, y: 6.5, z: -4.2, w: 8, d: 2.4, h: 0.3 }));
+    const G1 = hop(3, grate({ x: 9.9, y: 6.2, z: -4.2, w: 2.4, d: 2.4, h: 0.3 }));
+    const GD = hop(3, grate({ x: 6.4, y: 6.4, z: -4.2, w: 3, d: 3, h: 0.3 }));
+    const duster = w.hazard({ x: 6.4, y: 6.4 + 0.3, z: -4.2, w: 3.0, h: 0.5, d: 0.45, color: 0xb98a3c, move: (t) => ({ z: 1.15 * Math.sin(t * 2.1) }) });
+    duster.core.visible = false; duster.shell.visible = false; duster.jumpable = true; featherDuster(duster.group);
+    const G2 = hop(3, grate({ x: 2.6, y: 6.5, z: -4.2, w: 2.4, d: 2.4, h: 0.3 }));
+    w.mover(G2, (t) => ({ x: 1.2 * Math.sin(t * 1.1) }));
+    const G3 = hop(3, w.crumble(grate({ x: -1.2, y: 6.5, z: -4.2, w: 2.4, d: 2.4, h: 0.3 }), { delay: 0.6, gone: 3 }));
+    const G4 = hop(3, marble({ x: -8.0, y: 6.5, z: -4.2, w: 8, d: 2.4, h: 0.3 }));
     vanishAfter(w, game, G4, { axis: 'x', dir: -1, frac: 0.5, delay: 0.7, back: 3.2, say: 'hotel.l1.bridge' });
-    const G5 = hop(3, grate({ x: -12.0, y: 6.5, z: -4.2, w: 3, d: 3, h: 0.3 }));
-    const G6 = start(4, marble({ x: -16.2, y: 6.7, z: -4.6, w: 4, d: 4, h: 0.3 }));
-    cp(4, -16.2, 6.7, -4.6);
-    twistZone(game, w, { x: 9.6, y: 8, z: -4.2, w: 3, h: 4, d: 3 }, 'swap', { sec: 6, say: 'hotel.l1.swap' });   // G1: A and D swap, then wear off on their own
+    const G5 = hop(3, grate({ x: -15.0, y: 6.5, z: -4.2, w: 3, d: 3, h: 0.3 }));
+    const G6 = start(4, marble({ x: -19.0, y: 6.7, z: -4.6, w: 4, d: 4, h: 0.3 }));
+    cp(4, -19.0, 6.7, -4.6);
+    twistZone(game, w, { x: 9.9, y: 8, z: -4.2, w: 3, h: 4, d: 3 }, 'swap', { sec: 6, say: 'hotel.l1.swap' });   // G1: A and D swap, then wear off on their own
+    for (const p of [G0, G1, GD, G3, G5]) hang(p, 2);
+    hang(G4, 4); hang(G6, 4);
     // gold rails + a banner along the gantry, so it reads as a gantry
-    for (const x of [13, 6, -1, -8, -14]) w.box({ x, y: 7.7, z: -2.7, w: 0.12, h: 2.4, d: 0.12, color: GOLD, metal: 1, rough: 0.3 });
+    for (const x of [13, 6, -1, -8, -15]) w.box({ x, y: 7.7, z: -2.7, w: 0.12, h: 2.4, d: 0.12, color: GOLD, metal: 1, rough: 0.3 });
     w.box({ x: 0, y: 8.9, z: -2.7, w: 30, h: 0.1, d: 0.1, color: GOLD, metal: 1, rough: 0.3, shadow: false });
 
     // ===== stage 5 · the climb =========================================================================
     const H1 = hop(4, marble({ x: -18.2, y: 6.9, z: -8.6, w: 2.2, d: 2.2, h: 0.14 }));
+    for (const p of [H1]) hang(p, 2);
     const H2 = hop(4, marble({ x: -15.2, y: 7.3, z: -11.8, w: 2.2, d: 2.2, h: 0.14 }));
     const H3 = hop(4, marble({ x: -18.0, y: 7.5, z: -15.0, w: 2.2, d: 2.2, h: 0.14 }));
     w.mover(H3, (t) => ({ z: 1.5 * Math.sin(t * 1.0) }));
     const H4 = hop(4, marble({ x: -15.6, y: 7.5, z: -18.4, w: 2.2, d: 2.2, h: 0.14 }));
     const H5 = hop(4, marble({ x: -14.0, y: 7.5, z: -22.4, w: 2.4, d: 2.4, h: 0.14 }));
+    for (const p of [H2, H4, H5]) hang(p, 2);
 
     // ===== stage 6 · mezzanine =========================================================================
     const balc = mark(w.plat({ x: 0, y: 7.5, z: -22.9, w: 24, d: 1.8, h: 0.6, tex: 'marble', color: 0xffffff, roughness: 0.15, radius: 0.05 }));
@@ -179,7 +197,9 @@ export default {
     onPlat(w, E1, () => game.say('hotel.l1.fakecp'));
     onPlat(w, T1, () => game.say('hotel.l1.up'));
     onPlat(w, T3, () => game.say('hotel.l1.glide'));
-    onPlat(w, TA, () => game.say('hotel.l1.gantry'));
+    onPlat(w, TA, () => { game.say('hotel.l1.gantry'); });
+    onPlat(w, TA, () => adBreak(game, w, { sec: 5, say: 'hotel.l1.ad', sayAfter: 'hotel.l1.ad.after' }));   // a sponsor's message, on a pad wide enough to wait it out
+    onPlat(w, GD, () => game.say('hotel.l1.duster'));
     onPlat(w, G6, () => game.say('hotel.l1.near'));
     onPlat(w, H3, () => game.say('hotel.l1.climb'));
     onPlat(w, balc, () => game.say('hotel.l1.balcony'));
@@ -206,8 +226,8 @@ export default {
       if (bonusOn || p.z > -21 || p.y < 7) return null;
       return { x: runner.x, z: runner.z };
     };
-    w.wet = { stages, mop, lane, runner, finalGoal, bonus, G4, cps, get bonusOn() { return bonusOn; } };
-    void P0; void R1; void T2; void T4; void G0; void G1; void G2; void G3; void G5; void H1; void H2; void H4; void H5;
+    w.wet = { stages, mop, mopA, mopB, duster, lane, runner, finalGoal, bonus, G4, cps, get bonusOn() { return bonusOn; } };
+    void P0; void T2; void T4; void G2; void H3;
   },
 };
 
@@ -233,4 +253,15 @@ function mopBot(group) {
   for (const sx of [-0.7, 0.7]) { const eye = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), glowMaterial(0xff3a46, 1.8)); eye.position.set(sx, 0.18, -1.0); group.add(eye); }
   const bar = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.07, 0.07), dark); bar.position.set(0, 0.26, 0.2); group.add(bar);
   const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), glowMaterial(0xffa21f, 2.4)); lamp.position.set(0, 0.46, 0.2); group.add(lamp);
+}
+
+// a feather duster as long as the pad is wide (it sweeps across: hop it)
+function featherDuster(group) {
+  const wood = plainMaterial(0x6a3a22, { roughness: 0.6 });
+  const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.1, 8), wood); stick.rotation.z = Math.PI / 2; group.add(stick);
+  const cols = [0xe8e0d0, 0xb98a3c, 0xcc4a3a, 0x3a7a5a];
+  for (let i = 0; i < 14; i++) {
+    const f = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.7, 6), plainMaterial(cols[i % 4], { roughness: 0.9 }));
+    f.position.set(-1.4 + i * 0.215, 0.06, 0); f.rotation.x = Math.PI; group.add(f);
+  }
 }
