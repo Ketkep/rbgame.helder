@@ -325,8 +325,8 @@ export default {
     for (const run of pathRuns(MA, { min: 2, skip: doorEdges, from: midA + 2 }).sort(() => Math.random() - 0.5).slice(0, 4)) {   // (never next to the checkpoint)
       const mx = (MA.cx(run.from[0]) + MA.cx(run.to[0])) / 2, mz = (MA.cz(run.from[1]) + MA.cz(run.to[1])) / 2;
       const alongX = run.dir[0] !== 0, Lr = (Math.abs(run.to[0] - run.from[0]) + Math.abs(run.to[1] - run.from[1])) * C, A = Lr / 2 - C / 2 - 0.3;   // (it never reaches the corner cells at either end)
-      const len = 1.5, wid = 1.9, side = Math.random() < 0.5 ? -1 : 1, ph = Math.random() * 6, sp = 0.55 * (game.baby ? 0.8 : 1);
-      const lx = alongX ? 0 : side * 0.85, lz = alongX ? side * 0.85 : 0;      // the train hugs one wall: the other half of the corridor is yours
+      const len = 1.5, wid = 1.2, side = Math.random() < 0.5 ? -1 : 1, ph = Math.random() * 6, sp = 0.55 * (game.baby ? 0.8 : 1);
+      const lx = alongX ? 0 : side * 1.15, lz = alongX ? side * 1.15 : 0;      // the train hugs one wall: the other half of the corridor is yours
       const hz = w.hazard({ x: mx + lx, y: 0.4, z: mz + lz, w: alongX ? len : wid, h: 0.8, d: alongX ? wid : len, color: 0xff3a46, move: (t) => (alongX ? { x: A * Math.sin(t * sp + ph) } : { z: A * Math.sin(t * sp + ph) }) });
       hz.core.visible = false; hz.shell.visible = false; hz.jumpable = true;
       cartVisual(hz.group, alongX, len, wid);
@@ -505,7 +505,7 @@ export default {
     // ---- the bot: maze steering, the courtyard's platforms (the default), ride the cart, wait for the gate --------------------------
     w.botPlan = (g) => {
       const p = g.player;
-      if (p.z > WATER_S) return laneTarget(p) || MA.steer(p);
+      if (p.z > WATER_S) return MA.steer(p);
       if (p.grounded && p.ground === cart.body) return cart.body.x > cartStop + 0.15 ? { x: cart.body.x, z: cart.body.z, wait: true } : { x: L2X, z: L2Z };
       if (p.z > L2Z + 2.4 || (p.x > L2E && p.z > WATER_N)) return null;
       if (!gate.open) { const at = Math.hypot(p.x - L2X, p.z - (ZB + 2.4)) < 0.6; return { x: L2X, z: ZB + 2.4, wait: at }; }
