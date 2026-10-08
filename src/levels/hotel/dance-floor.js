@@ -51,13 +51,13 @@ export default {
     const path = (p) => { p.o.path = true; return p; };
     const tiles = [], booths = [];
     const sets = [
-      { P: 2.8, ON: 1.8, STEP: 0.8, size: 2.7, shift: 0 },
-      { P: 2.5, ON: 1.55, STEP: 0.7, size: 2.4, shift: 0 },
+      { P: 3.0, ON: 2.0, STEP: 0.9, size: 2.7, shift: 0 },
+      { P: 2.6, ON: 1.7, STEP: 0.8, size: 2.4, shift: 0 },
     ];
     let z = 9, tileN = 0;
     path(w.plat({ x: 0, y: 0, z: 9, w: 12, d: 10, h: 1.4, tex: 'stage', color: 0x4a2a7a, roughness: 0.3, radius: 0.05, trim: 0xff3fa4 }));
     stages[0].at = { x: 0, y: 0, z: 9 };
-    z = 5.35 + 5.0;   // (the first tile is placed 5.0 beyond z, as ever)
+    z = 5.35;   // (each tile is placed 5.0 beyond z)
 
     const addTile = (si, x, n = tileN) => {
       const set = sets[si], size = set.size;
@@ -83,16 +83,17 @@ export default {
       z -= 0.95;
       return b;
     };
+    const onTile = (tl, fn, o = {}) => w.trigger({ x: tl.x, y: 1.3, z: tl.z, w: tl.pl.o.w - 0.8, h: 2.6, d: tl.pl.o.d - 0.8, once: true, resetOnRespawn: true, onEnter: fn, ...o });
     const zone = (zc, fn, o = {}) => w.trigger({ x: 0, y: 1.6, z: zc, w: 34, h: 4, d: 1.4, once: true, resetOnRespawn: true, onEnter: fn, ...o });
 
     // ---- set 1 · warm-up -----------------------------------------------------------------------------------------------
-    for (let k = 0; k < 7; k++) addTile(0, XS[k]);
-    const freezeZ1 = tiles[3].z - 1;
+    for (let k = 0; k < 11; k++) addTile(0, XS[k % XS.length]);
+    const freezeT1 = tiles[6];
     addBooth(0);
     // ---- set 2 · second set ------------------------------------------------------------------------------------------
     const s2tiles = [];
     let pad = null, padZ = null;
-    for (let k = 0; k < 9; k++) {
+    for (let k = 0; k < 13; k++) {
       if (k === 4) {
         // the gold pad: always lit. The DJ drops the beat when you step on it
         z -= 5.0;
@@ -105,39 +106,39 @@ export default {
       const t = addTile(1, XS[(k + 3) % XS.length], tileN); s2tiles.push(t);
       if (padZ !== null) t.after = true;
     }
-    const bluffZ = s2tiles[6].z - 1;
+    const bluffT = s2tiles[9];
     addBooth(1);
     // ---- set 3 · conga line --------------------------------------------------------------------------------------------
     const conga = [];
-    for (let k = 0; k < 8; k++) {
+    for (let k = 0; k < 12; k++) {
       z -= 4.6;
       const col = NEON[(k + 2) % NEON.length];
       const p = path(w.plat({ x: 0, y: 0, z, w: 2.8, d: 2.6, h: 0.5, tex: 'grid', color: col, roughness: 0.25, radius: 0.08, trim: col }));
-      w.mover(p, (t) => ({ x: 3.4 * Math.sin(t * 1.5 - k * 0.8) }));
+      w.mover(p, (t) => ({ x: 2.6 * Math.sin(t * 1.2 - k * 0.7) }));
       conga.push(p); stages[2].route.push({ x: 0, y: 0, z });
     }
-    const mirrorZ = conga[3].body.z - 1;
+    const mirrorZ = conga[5].body.z - 1;
     addBooth(2);
     // ---- set 4 · spotlight ---------------------------------------------------------------------------------------------
     const floors = [];
     const FZ0 = z - 3.25;
-    for (let k = 0; k < 3; k++) {
+    for (let k = 0; k < 4; k++) {
       const p = path(w.plat({ x: 0, y: 0, z: FZ0 - 4.5 - k * 9, w: 16, d: 9, h: 1.4, tex: 'stage', color: 0x2e2060, roughness: 0.3, radius: 0.05, trim: k % 2 ? 0x3fd0ff : 0xff3fa4 }));
       floors.push(p); stages[3].route.push({ x: 0, y: 0, z: FZ0 - 4.5 - k * 9 });
     }
-    const FZ1 = FZ0 - 27;
+    const FZ1 = FZ0 - 36;
     z = FZ1 + 1.75;                       // (the booth below starts 5.95 beyond z)
     addBooth(3);
     // ---- set 5 · mirror ball bridge -------------------------------------------------------------------------------------
     const longs = [];
-    for (let k = 0; k < 4; k++) {
+    for (let k = 0; k < 6; k++) {
       z -= k === 0 ? 5.55 : 6.3;
       const p = path(w.plat({ x: (k % 2 ? 0.4 : -0.4), y: 0, z, w: 2.4, d: 4.6, h: 0.4, tex: 'grid', color: NEON[(k + 1) % NEON.length], roughness: 0.2, radius: 0.08, trim: NEON[(k + 1) % NEON.length] }));
       vanishAfter(w, game, p, { axis: 'z', dir: -1, frac: 0.5, delay: 0.7, back: 3.4, say: k === 0 ? 'hotel.l10.bridge' : null });
       longs.push(p); stages[4].route.push({ x: p.body.x, y: 0, z });
     }
     // the DJ booth
-    const djZ = longs[3].body.z - 8.0;
+    const djZ = longs[5].body.z - 8.0;
     const dj = path(w.plat({ x: 0, y: 0, z: djZ, w: 14, d: 8, h: 1.4, tex: 'stage', color: 0x2a1a5a, roughness: 0.25, radius: 0.05, trim: 0xff3fa4 }));
     const djCp = w.checkpoint({ x: 3.2, y: 0, z: djZ + 2.6, real: true }); cps.set(djCp, 4);
     w.trigger({ x: 0, y: 1.6, z: djZ + 2.6, w: 14, h: 3.4, d: 2.4, once: false, onEnter: () => { if (djCp.used) return; djCp.used = true; game.onCheckpoint(djCp); } });
@@ -156,7 +157,7 @@ export default {
     // the encore: only there once the DJ has been rude
     const enc = [];
     let zz = djZ - 1.85;
-    for (let k = 0; k < 6; k++) {
+    for (let k = 0; k < 8; k++) {
       zz -= 5.0;
       const col = NEON[(k + 3) % NEON.length], size = 2.3, x = XS[(k + 5) % XS.length];
       const pl = path(w.plat({ x, y: 0, z: zz, w: size, d: size, h: 0.5, tex: 'grid', color: col, roughness: 0.25, radius: 0.08 }));
@@ -165,17 +166,17 @@ export default {
       const ghost = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.16, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
       ghost.rotation.x = -Math.PI / 2; ghost.position.set(x, 0.02, zz); w.add(ghost);
       pl.o.moving = true; pl.group.matrixAutoUpdate = true;
-      const tl = { pl, glow, ghost, col, phase: -k * 0.65, idx: tileN++, si: 2, x, z: zz, state: 'on', active: false, enc: true };
+      const tl = { pl, glow, ghost, col, phase: -k * 0.8, idx: tileN++, si: 2, x, z: zz, state: 'on', active: false, enc: true };
       tiles.push(tl); enc.push(tl); stages[5].route.push({ x, y: 0, z: zz });
       pl.body.enabled = false; pl.group.visible = false; ghost.visible = false;
     }
-    sets.push({ P: 2.2, ON: 1.4, STEP: 0.65, size: 2.3, shift: 0 });
+    sets.push({ P: 2.5, ON: 1.7, STEP: 0.8, size: 2.3, shift: 0 });
     zz -= 6.0;
     const finalPl = path(w.plat({ x: 0, y: 0, z: zz, w: 8, d: 6, h: 1.4, tex: 'stage', color: 0x4a2a7a, roughness: 0.3, radius: 0.05, trim: 0xffd23f }));
     finalPl.setEnabled(false);
     const finalGoal = w.goal({ x: 0, y: 0, z: zz, color: GOLD, onReach: () => { game.say('hotel.l10.done', { priority: 2 }); game.completeLevel(); } });
     finalGoal.group.visible = false; finalGoal.trig.enabled = false;
-    const encFreezeZ = enc[3].z - 1;
+    const encFreezeT = enc[3];
     w.goalObj = fakeGoal;
     let encoreOn = false;
     const enableEncore = () => {
@@ -192,7 +193,7 @@ export default {
     w.plat({ x: 0, y: -9.5, z: (zEnd + 17) / 2, w: 34, d: 17 - zEnd, h: 1, tex: 'grid', color: 0x2a1a44, roughness: 0.6 });
     w.sign({ text: 'DANCE FLOOR · NO STANDING', x: 0, y: 6.0, z: 16.4, w: 9, h: 1.0, color: '#ff3fa4', double: false, tw: 1024, size: 66, rotY: Math.PI, glow: true });
     const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(1.6, 2), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 1, roughness: 0.05, flatShading: true, emissive: 0x222244 }));
-    ball.position.set(0, 12.5, longs[1].body.z); w.add(ball);
+    ball.position.set(0, 12.5, longs[2].body.z); w.add(ball);
     const beams = [];
     const nb = Math.min(14, Math.round((17 - zEnd) / 22));
     for (let k = 0; k < nb; k++) {
@@ -220,7 +221,7 @@ export default {
     };
     // spotlight: a circle you must be in when the countdown ends
     const SP = { phase: 'off', t0: 0, x: 0, z: 0, R: 2.5, n: 0 };
-    const floorCols = [-3.0, 3.0, 0.5];
+    const floorCols = [-3.0, 3.0, 0.5, -2.5];
     const discGeo = new THREE.CircleGeometry(1, 40);
     const spotDisc = new THREE.Mesh(discGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 }));
     spotDisc.rotation.x = -Math.PI / 2; spotDisc.position.y = 0.72; spotDisc.scale.setScalar(SP.R); spotDisc.visible = false; w.add(spotDisc);
@@ -236,9 +237,9 @@ export default {
       spotDisc.position.set(SP.x, 0.72, SP.z); spotRing.position.set(SP.x, 0.73, SP.z); spotDisc.visible = true; spotRing.visible = true;
       game.ui.stamp('SPOTLIGHT!'); game.say(n === 0 ? 'hotel.l10.spot1' : 'hotel.l10.spot2', { priority: 2 });
     };
-    zone(freezeZ1, () => callFreeze('real'));
-    zone(bluffZ, () => callFreeze('bluff'));
-    zone(encFreezeZ, () => { if (encoreOn) callFreeze('real'); }, { once: false, resetOnRespawn: false });
+    onTile(freezeT1, () => callFreeze('real'));
+    onTile(bluffT, () => callFreeze('bluff'));
+    onTile(encFreezeT, () => { if (encoreOn) callFreeze('real'); });
     floors.forEach((f, k) => zone(f.body.z + 2.0, () => callSpot(k)));
     // the mirror mode under the strobes (conga line)
     w.trigger({ x: 0, y: 1.6, z: mirrorZ, w: 34, h: 4, d: 1.4, once: true, resetOnRespawn: true, onEnter: () => { D.strobeUntil = w.t + 6; twist(game, w, 'mouseX', { sec: 6, say: 'hotel.l10.mirror' }); } });
@@ -258,23 +259,25 @@ export default {
     const isOn = (tl, t) => mod(t + ph(tl), setOf(tl).P) < ONs(tl);
     const warnOff = (tl, t) => { const u = mod(t + ph(tl), setOf(tl).P); return u > ONs(tl) - 0.45 && u < ONs(tl); };
     const warnOn = (tl, t) => mod(t + ph(tl), setOf(tl).P) > setOf(tl).P - 0.4;
-    let lastBeat = -1, frozenReal = false;
+    let lastBeat = -1, frozenReal = false, pauseAcc = 0;
+    const tclock = () => w.t - pauseAcc;
     w.onUpdate((dt, t) => {
       const beat = Math.floor(t / BEAT), pulse = 0.5 + 0.5 * Math.cos(((t / BEAT) % 1) * Math.PI * 2);
       if (beat !== lastBeat) { lastBeat = beat; if (game.state === 'playing') { if (beat % 2 === 0) game.audio.kick(); else game.audio.hat(); } }
       // the DJ's state machine
-      if (D.phase === 'warn' && t - D.t0 >= WARN) { D.phase = 'freeze'; D.t0 = t; if (D.kind === 'real' || baby()) for (const tl of tiles) D.held.set(tl, tl.state === 'on' || tl.state === 'warnoff'); if (D.kind === 'real') game.say('hotel.l10.freeze', { priority: 1 }); }
+      if (D.phase === 'warn' && t - D.t0 >= WARN) { D.phase = 'freeze'; D.t0 = t; if (D.kind === 'real') game.say('hotel.l10.freeze', { priority: 1 });  }
       if (D.phase === 'freeze' && t - D.t0 >= (baby() ? FREEZE_LEN - 0.4 : FREEZE_LEN)) { const wasBluff = D.kind === 'bluff'; D.phase = 'play'; if (wasBluff) game.say('hotel.l10.bluffend', { priority: 1 }); }
       frozenReal = D.phase === 'freeze' && D.kind === 'real';
-      const holding = D.phase === 'freeze' && (D.kind === 'real' || baby());
+      const holding = D.phase === 'warn' || (D.phase === 'freeze' && (D.kind === 'real' || baby()));
+      if (holding) pauseAcc += dt;                    // the tiles' clock stops while the DJ shouts (a lit tile stays lit, a dark one dark)
+      const tt = t - pauseAcc;
       const strobe = t < D.strobeUntil;
       ball.rotation.y += dt * 0.7;
       for (const b of beams) { b.pivot.rotation.z = frozenReal ? b.pivot.rotation.z : Math.sin(t * 0.9 + b.ph) * 0.6; b.pivot.rotation.x = frozenReal ? b.pivot.rotation.x : Math.cos(t * 0.7 + b.ph) * 0.4; b.cone.material.opacity = frozenReal ? 0.03 : strobe ? 0.1 + 0.1 * (Math.sin(t * 9 + b.ph) > 0 ? 1 : 0) : 0.1; }
       for (const tl of tiles) {
         if (!tl.active && tl.enc) { tl.pl.body.enabled = false; continue; }
         let on, st;
-        if (holding) { on = D.held.get(tl) ?? true; st = on ? 'on' : 'off'; }
-        else { on = isOn(tl, t); st = on ? (warnOff(tl, t) ? 'warnoff' : 'on') : (warnOn(tl, t) ? 'warnon' : 'off'); }
+        on = isOn(tl, tt); st = on ? (warnOff(tl, tt) ? 'warnoff' : 'on') : (warnOn(tl, tt) ? 'warnon' : 'off');
         tl.state = st;
         if (tl.pl.body.enabled !== on) { tl.pl.body.enabled = on; tl.pl.group.visible = on; }
         if (on) tl.glow.material.opacity = st === 'warnoff' ? (Math.floor(t * 12) % 2 ? 0.8 : 0.0) : 0.15 + pulse * 0.35;
@@ -338,15 +341,16 @@ export default {
     };
     // bot: hold still during a real freeze; wait for the next tile to be lit; stand in the spotlight; chase the booth hatch
     w.botPlan = (g) => {
-      const p = g.player, t = w.t;
+      const p = g.player, tn = tclock();
       const still = { wait: true, x: p.x, z: p.z };
-      if (D.kind === 'real' && (D.phase === 'freeze' || (D.phase === 'warn' && t - D.t0 > WARN - 0.4 && p.grounded))) return still;
+      if (D.kind === 'real' && (D.phase === 'warn' || D.phase === 'freeze') && p.grounded) return still;         // a human stands on a lit tile and does not breathe
       if (SP.phase !== 'off' && p.z < FZ0 + 0.5 && p.z > FZ1 - 0.5) return { x: SP.x, z: SP.z };
       if (!encoreOn && p.grounded && p.z < djZ + 4 && p.z > djZ - 5) return { x: fakeGoal.x, z: fakeGoal.z };
       if (!p.grounded) return null;
+      const gb = p.ground, lt = (gb ? Math.max(0, p.z - (gb.z - gb.hz)) / 6.6 : 0) + 0.5;     // run to the edge, then the hop
       const nt = tiles.find((tl) => tl.active && tl.z < p.z - 1);
       const nb = booths.find((b) => b.z < p.z - 1);
-      if (nt && Math.abs(nt.z - p.z) < 6.5 && !(nb && nb.z > nt.z) && !(isOn(nt, t + 0.12) && mod(t + 0.12 + ph(nt), setOf(nt).P) < ONs(nt) - 0.6)) return still;
+      if (nt && Math.abs(nt.z - p.z) < 6.5 && !(nb && nb.z > nt.z) && !(mod(tn + lt + ph(nt), setOf(nt).P) < ONs(nt) - 0.8)) return still;
       return null;
     };
     w.dance = { tiles, booths, isOn, D, SP, sets, conga, floors, longs, stages, cps, enc, finalGoal, fakeGoal, callFreeze, callSpot, get frozen() { return frozenReal; }, get encoreOn() { return encoreOn; }, phaseOf: () => D.phase };
