@@ -148,6 +148,7 @@ export default {
     const loopGlass = new THREE.MeshStandardMaterial({ color: 0xd8b8ff, transparent: true, opacity: 0.26, roughness: 0.05, metalness: 0, side: THREE.DoubleSide, depthWrite: false });
     const doorAt = (M, a, b, { P = 3.4, kind = 'door' } = {}) => {
       const mx = (M.cx(a[0]) + M.cx(b[0])) / 2, mz = (M.cz(a[1]) + M.cz(b[1])) / 2, ew = a[0] !== b[0];
+      if (kind === 'door' && Math.hypot(mx - M.cx(M.mid[0]), mz - M.cz(M.mid[1])) < 2.4) return null;      // (never beside the checkpoint)
       const body = w.collider({ x: mx, y: WH / 2, z: mz, w: ew ? T * 0.9 : C - T + 0.2, h: WH, d: ew ? C - T + 0.2 : T * 0.9 });
       const loop = kind === 'loop', metal = loop ? chrome : brass;
       const g = new THREE.Group(); g.position.set(mx, 0, mz);
@@ -181,7 +182,7 @@ export default {
     // maze A: three doors on the way out (south half), two on the way to nowhere
     const midA = MA.path.length >> 1, midB = MB.path.length >> 1;
     const doorEdges = new Set();
-    const pathDoor = (M, k, opts) => { const e = M.edge(M.path[k], M.path[k + 1]); if (doorEdges.has(e)) return; doorEdges.add(e); doorAt(M, M.path[k], M.path[k + 1], opts); };
+    const pathDoor = (M, k, opts) => { const e = M.edge(M.path[k], M.path[k + 1]); if (doorEdges.has(e)) return; if (doorAt(M, M.path[k], M.path[k + 1], opts)) doorEdges.add(e); };
     for (const f of [0.1, 0.25, 0.4]) pathDoor(MA, Math.max(1, Math.min(midA - 2, Math.round(f * (MA.path.length - 1)))));
     const offEdges = (M, pred) => M.openEdges().filter(([a, b]) => !M.pathEdges.has(M.edge(a, b)) && pred(a, b));
     const offA = offEdges(MA, (a, b) => MA.cz(Math.max(a[1], b[1])) > MA.cz(MA.mid[1]) - 2);
