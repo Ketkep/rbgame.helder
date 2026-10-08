@@ -376,10 +376,10 @@ export default {
     w.sign({ text: 'EXIT', x: 0, y: 11.2, z: -101.7, w: 3, h: 1.0, color: '#6cf0b2', double: false, tw: 512, size: 130, glow: true });
     w.light(0x9affc8, 10, 16, 0, 9.5, -99);
     // the bonus climb: a fake LEVEL COMPLETE first
-    const bonus = [[-4.4, -97.2, 8.9, 2.2], [-4.4, -93.4, 9.8, 2.2], [-4.4, -89.6, 10.7, 2.2], [-1.0, -86.6, 11.4, 3.2]].map(([x, z, top, s]) => {
+    const bonus = [[-4.4, -97.2, 8.7, 2.2], [-4.4, -93.4, 9.4, 2.2], [-4.4, -89.6, 10.1, 2.2], [-1.0, -86.6, 10.7, 3.2]].map(([x, z, top, s]) => {
       const p = w.plat({ x, y: top, z, w: s, d: s, h: 0.3, tex: 'stone', color: 0xc8c0a8, roughness: 0.7, radius: 0.05 }); p.o.path = true; p.setEnabled(false); p.group.visible = false; return p;
     });
-    const finalGoal = w.goal({ x: -1.0, y: 11.4, z: -86.6, color: GOLD, onReach: () => { game.say('hotel.l11.done', { priority: 2 }); game.completeLevel(); } });
+    const finalGoal = w.goal({ x: -1.0, y: 10.7, z: -86.6, color: GOLD, onReach: () => { game.say('hotel.l11.done', { priority: 2 }); game.completeLevel(); } });
     finalGoal.group.visible = false; finalGoal.trig.enabled = false;
     let bonusOn = false;
     const enableBonus = () => {
