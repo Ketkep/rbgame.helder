@@ -291,7 +291,7 @@ export default {
     const chuteState = (c, t) => { const u = ((t + c.phase) % CH.P + CH.P) % CH.P; return u < CH.OPEN ? 'open' : u > CH.P - CH.WARN ? 'warn' : 'shut'; };
     const chuteOpenSoon = (c, t, ahead) => { for (let k = 0; k <= 8; k++) if (chuteState(c, t + (ahead * k) / 8) === 'open') return true; return false; };
     // the towel trolley: low enough to hop, wide enough that you have to
-    const trolley = w.hazard({ x: 0, y: 0.38, z: -21, w: 4.2, h: 0.72, d: 1.1, color: 0xffffff, move: (t) => ({ z: 4.4 * Math.sin(t * 0.9) }) });
+    const trolley = w.hazard({ x: 0, y: 0.38, z: -22, w: 4.2, h: 0.72, d: 1.1, color: 0xffffff, move: (t) => ({ z: 3.6 * Math.sin(t * 0.8) }) });
     trolley.core.visible = false; trolley.shell.visible = false; trolley.jumpable = true;
     towelTrolley(trolley.group);
     // the cart from 309: the door opens (that is the tell), a laundry cart shoots across the corridor and back
