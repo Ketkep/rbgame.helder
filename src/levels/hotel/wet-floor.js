@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { plainMaterial, glowMaterial } from '../../engine/materials.js';
 import { hotelEnv, lobbyShell, GOLD } from './kit.js';
-import { sofa, armchair, coffeeTable, elevatorBank } from './props.js';
+import { sofa, coffeeTable, elevatorBank } from './props.js';
 import { onPlat } from '../common.js';
 import { trollCheckpoint, fakeExit, evasiveGoal, fakeComplete, twistZone, vanishAfter, adBreak, stageTitle, stageHint } from './trolls.js';
 
@@ -64,10 +64,12 @@ export default {
     const ottoman = hop(0, w.plat({ x: -0.6, y: 0.45, z: 6.4, w: 1.5, d: 1.5, h: 0.4, tex: 'leather', color: 0x7a1030, roughness: 0.45, radius: 0.15 }));
     pole(-0.6, 6.4, 0.45, 1.5, 1.5);
     hop(0, sofa(w, 2.6, 3.4, 0, { color: 0x10342b, len: 3.2 }).seat);
-    hop(0, armchair(w, 6.4, 2.2, 3, { color: 0x7a1030 }).seat);                                                     // east, around the sofa...
-    hop(0, w.plat({ x: 6.6, y: 0.4, z: -1.2, w: 1.5, d: 1.5, h: 0.4, tex: 'leather', color: 0x1a2a4a, roughness: 0.45, radius: 0.15 }));
-    hop(0, w.plat({ x: 3.0, y: 0.75, z: -2.4, w: 1.1, d: 1.1, h: 0.75, tex: 'wood', color: 0xffffff, roughness: 0.3, radius: 0.05 }));   // a bar stool
-    hop(0, coffeeTable(w, -0.6, 0.6, { w: 1.8, d: 1.0, h: 0.6 }));                                                    // ...and back again
+    hop(0, coffeeTable(w, -0.6, 0.6, { w: 1.8, d: 1.0, h: 0.6 }));
+    // ...then a detour west across the lounge (all flat tops: no armchair arms to bump into)
+    hop(0, w.plat({ x: -4.4, y: 0.4, z: 1.9, w: 1.5, d: 1.5, h: 0.4, tex: 'leather', color: 0x1a2a4a, roughness: 0.45, radius: 0.15 }));
+    hop(0, w.plat({ x: -7.7, y: 0.75, z: -0.3, w: 1.1, d: 1.1, h: 0.75, tex: 'wood', color: 0xffffff, roughness: 0.3, radius: 0.05 }));   // a bar stool
+    hop(0, w.plat({ x: -7.6, y: 0.55, z: -3.7, w: 1.6, d: 1.0, h: 0.1, tex: 'marble', color: 0xffffff, roughness: 0.1 }));                // a side table
+    for (const sx of [-1, 1]) w.box({ x: -7.6 + sx * 0.65, y: 0.27, z: -3.7, w: 0.08, h: 0.54, d: 0.8, color: GOLD, metal: 1, rough: 0.3 });
     const trolley = (x, z, top, ww, dd) => {
       const deck = hop(0, w.plat({ x, y: top, z, w: ww, d: dd, h: 0.1, tex: 'brass', color: 0xffffff, roughness: 0.3, metalness: 0.9, radius: 0.03 }));
       pole(x, z, top, ww, dd);
