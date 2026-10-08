@@ -560,9 +560,10 @@ suite('bellhop', async () => {
     g.kill('test'); g.state = 'playing'; g.respawnPlayer(false);
     out.stays = c.elev.phase === 'bottom' && !c.gateN.body.enabled && c.bell.pending?.k === 4;
     // the hint: honest and only to the next stage
+    put(-2.7, -21.2, -313.5);
     const pts = w.hintFn(g), last = pts[pts.length - 1];
     out.hintEnd = Math.hypot(last.x - w.goalObj.x, last.z - w.goalObj.z) < 0.2;
-    w.respawn = { ...c.stages[1].at };
+    w.respawn = { ...c.stages[1].at }; put(0, -9, -135);
     const p2 = w.hintFn(g), l2 = p2[p2.length - 1];
     out.hintNext = Math.hypot(l2.x - c.stages[2].at.x, l2.z - c.stages[2].at.z) < 0.2;
     w.respawn = { ...c.stages[4].at };
