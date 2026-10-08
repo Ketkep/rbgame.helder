@@ -128,7 +128,7 @@ export default {
     w.box({ x: 0, y: 8.9, z: -2.7, w: 30, h: 0.1, d: 0.1, color: GOLD, metal: 1, rough: 0.3, shadow: false });
 
     // ===== stage 5 · the climb =========================================================================
-    const H1 = hop(4, marble({ x: -18.2, y: 6.9, z: -4.4, w: 2.2, d: 2.2, h: 0.14 }));
+    const H1 = hop(4, marble({ x: -18.2, y: 6.9, z: -8.6, w: 2.2, d: 2.2, h: 0.14 }));
     const H2 = hop(4, marble({ x: -15.2, y: 7.3, z: -11.8, w: 2.2, d: 2.2, h: 0.14 }));
     const H3 = hop(4, marble({ x: -18.0, y: 7.5, z: -15.0, w: 2.2, d: 2.2, h: 0.14 }));
     w.mover(H3, (t) => ({ z: 1.5 * Math.sin(t * 1.0) }));
