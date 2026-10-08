@@ -402,37 +402,55 @@ suite('hallway', async () => {
   const page = await open(14);
   const r = await page.evaluate(() => {
     const g = window.__trust, w = g.world, h = w.hallway, out = {};
-    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
-    out.anomalies = h.A.length;
-    out.firstLapNormal = h.current === null;
-    // the right answer for the current lap always counts up
-    const right = () => h.decide(h.current === null);              // forward if normal, back if anomalous
-    right(); out.count1 = h.streak === 1;
-    // the wrong answer resets the streak: walk forward through an anomaly, or turn back from nothing
-    let guard = 0; while (h.current === null && guard++ < 50) right();
-    const s0 = h.streak; h.decide(true);                              // there IS something: going forward is wrong
-    out.walkedPastResets = h.streak === 0 && s0 > 0;
-    guard = 0; while (h.current !== null && guard++ < 50) right();
-    h.decide(false);                                                   // nothing there: turning back is wrong
-    out.paranoidResets = h.streak === 0;
-    // the hint is honest: it says whether there is something
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
     const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
-    g.debug = false; g.hintCool = 0; g.useHint();
-    const truthful = h.current === null ? said.includes('hotel.l14.hint.none') : said.includes('hotel.l14.hint.some');
-    out.hintHonest = truthful;
-    // six right in a row opens the exit
-    for (let i = 0; i < 40 && !h.done; i++) right();
-    out.exitOpens = h.done && h.streak >= h.NEED;
-    // every anomaly can be switched on and off
-    out.togglable = true;
+    const go = (r2, id) => { g.state = 'playing'; g.frozen = false; h.setRound(r2, id); };
+    out.kinds = Object.keys(h.A).length;
+    out.acts = new Set(h.route.map((r2, i) => (r2.length ? i : -1))).size;
+    // round 1 is always normal; a right call counts
+    go(1); out.r1Normal = h.cur === null;
+    h.decide(true); out.count1 = h.round === 2;
+    // a wrong call sends you back to the first round of the act (baby: only repeats the round)
+    go(4, 'crooked'); h.decide(true); out.backToAct = h.round === 3;
+    go(4, null); h.decide(false); out.paranoidBack = h.round === 3;
+    g.baby = true; go(4, 'crooked'); h.decide(true); out.babyRepeats = h.round === 4; g.baby = false;
+    // an anomaly can be toggled on and off cleanly
+    out.togglable = Object.values(h.A).every((a) => { try { a.on(); a.off(); return true; } catch (e) { return false; } });
+    // acts: only the current act's floor is solid
+    for (const [round, act] of [[1, 0], [3, 1], [5, 2], [7, 3]]) { go(round); out['act' + act] = h.route.every((rr, k) => rr.every((q) => q.body.enabled === (k === act))); }
+    // the mirrored corridor mirrors the mouse too; the upside-down painting inverts it
+    go(3, 'mirror'); g.player.teleport(0, 0.01, -16); sim(0.2); out.mirrorX = g.mods.invertX === true; go(3, null); sim(0.1);
+    go(5, 'upside'); g.player.teleport(0, 0.01, -20); sim(0.05); out.upY = g.mods.invertY === true; g.respawnPlayer(false); out.twistsReset = !g.mods.invertX && !g.mods.invertY;
+    // round 6's counter expires (Baby Mode: it does not)
+    go(6, null); h.roundT = 46; sim(0.3); out.expires = h.round === 5 && said.includes('hotel.l14.expire');
+    g.baby = true; go(6, null); h.roundT = 46; sim(0.3); out.babyKeeps = h.round === 6; g.baby = false;
+    // round 7 crashes the screen, then a new EXIT door shows (it is an anomaly; behind it: nothing)
+    go(7, 'exitDoor'); g.player.teleport(0, 0.01, -12); sim(0.2); out.crash = g.frozen === true && said.includes('hotel.l14.crash'); g.frozen = false;
+    // the hint is honest, about this round only
+    g.debug = false;
+    const hint = (id, round = 3) => { go(round, id); said.length = 0; g.hintCool = 0; g.useHint(); return said.slice(); };
+    out.hintNone = hint(null).includes('hotel.l14.hint.none');
+    out.hintSome = hint('crooked').includes('hotel.l14.hint.some');
+    g.hintCool = 0; g.useHint(); out.hintWhere = said.includes('hotel.l14.hint.where');
+    // eight right in a row: the far door opens (a fake LEVEL COMPLETE follows, then the encore)
+    go(8, null); h.decide(true); out.exitLap = h.phase === 'exitLap';
+    out.hostLiesSometimes = true;
+    // dying in the corridor has a reason: no death without the floor missing (a gap) or a hazard
+    go(3, null); g.player.teleport(0, 0.01, -9.4); sim(1.2); out.fell = g.deaths > 0 || g.player.y < -1;
     return out;
   });
-  ok(r.anomalies >= 12 && r.firstLapNormal, `hallway: ${r.anomalies} different anomalies; the first lap is always normal`);
-  ok(r.count1, 'hallway: a right call (forward when normal / back when something is off) counts');
-  ok(r.walkedPastResets, 'hallway: walking past an anomaly resets the count');
-  ok(r.paranoidResets, 'hallway: turning back from nothing also resets the count');
-  ok(r.hintHonest, 'hallway: the hint (unlike the host) tells the truth');
-  ok(r.exitOpens, 'hallway: six right in a row opens the way out');
+  ok(r.kinds >= 28, `hallway: ${r.kinds} anomaly kinds in the catalogue`);
+  ok(r.r1Normal && r.count1, 'hallway: round 1 is always normal and a right call counts');
+  ok(r.backToAct && r.paranoidBack, 'hallway: a wrong call (walked past it, or turned back from nothing) goes back to the start of the act');
+  ok(r.babyRepeats, 'hallway: baby mode only repeats the round');
+  ok(r.togglable, 'hallway: every anomaly switches on and off');
+  ok(r.act0 && r.act1 && r.act2 && r.act3, 'hallway: each act has its own floor (parkour acts II-IV)');
+  ok(r.mirrorX && r.upY && r.twistsReset, 'hallway: mirror round twists mouseX, upside-down painting twists mouseY, respawn clears them');
+  ok(r.expires && r.babyKeeps, 'hallway: round 6 counter expires (not in baby mode)');
+  ok(r.crash, 'hallway: round 7 crashes the screen');
+  ok(r.hintNone && r.hintSome && r.hintWhere, 'hallway: the hint is honest (none / some / where)');
+  ok(r.exitLap, 'hallway: eight right calls open the far door');
+  ok(r.fell, 'hallway: the gap in act II is a real gap');
   await page.close();
 });
 
