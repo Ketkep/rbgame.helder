@@ -138,13 +138,15 @@ suite('checkin', async () => {
     out.none = R[4].right()[0].text === 'None of the above' && R[4].wrong().length === 3;
     out.flipWrongRight = R[5].spec.flip;
     out.twoRight = R[6].right().length === 2; out.breathe = !!R[7].spec.breathe; out.mind = !!R[8].spec.mind;
+    // a wrong pad wobbles (the tell) and drops
+    island(R[0]); sim(0.3);
+    const wp = R[0].wrong()[0]; onPad(wp); sim(0.2); out.wobble = wp.state === 'lock' || wp.state === 'wrong'; sim(1.6); out.wrongDrops = wp.plat.body.enabled === false || wp.falling || wp.fallY < -0.5;
+    g.kill('test'); g.state = 'playing'; g.respawnPlayer(false); sim(0.5);
     // honest hint: removes one WRONG answer, never the right one (and a second one too), never more than what is left
     island(R[0]); sim(0.3); g.debug = false; g.hintCool = 0; g.useHint();
     out.hint1 = R[0].pads.filter((p) => p.eliminated).length === 1 && R[0].right().length === 1 && R[0].pads.filter((p) => p.eliminated).every((p) => !p.correct);
     g.hintCool = 0; g.useHint(); g.hintCool = 0; g.useHint();
     out.hintNeverRight = R[0].right().length === 1 && R[0].pads.filter((p) => p.eliminated).length === 2;
-    // a wrong pad wobbles and drops
-    const wp = R[0].wrong().find((p) => !p.eliminated); onPad(wp); sim(0.2); out.wobble = wp.state === 'lock' || wp.state === 'wrong'; sim(1.6); out.wrongDrops = wp.plat.body.enabled === false || wp.falling || wp.fallY < -0.5;
     g.kill('test'); g.state = 'playing'; g.respawnPlayer(false); sim(0.5);
     // round 1-3 clear in order; the survey comes with the second stage's flag
     for (let k = 0; k < 3; k++) answer(R[k]);
