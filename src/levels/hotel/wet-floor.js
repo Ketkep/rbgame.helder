@@ -136,8 +136,8 @@ export default {
     const G4 = hop(3, marble({ x: -8.0, y: 6.5, z: -4.2, w: 8, d: 2.4, h: 0.3 }));
     vanishAfter(w, game, G4, { axis: 'x', dir: -1, frac: 0.5, delay: 0.7, back: 3.2, say: 'hotel.l1.bridge' });
     const G5 = hop(3, grate({ x: -15.0, y: 6.5, z: -4.2, w: 3, d: 3, h: 0.3 }));
-    const G6 = start(4, marble({ x: -19.0, y: 6.7, z: -4.6, w: 4, d: 4, h: 0.3 }));
-    cp(4, -19.0, 6.7, -4.6);
+    const G6 = start(4, marble({ x: -19.0, y: 6.5, z: -4.6, w: 4, d: 4, h: 0.3 }));
+    cp(4, -19.0, 6.5, -4.6);
     twistZone(game, w, { x: 9.9, y: 8, z: -4.2, w: 3, h: 4, d: 3 }, 'swap', { sec: 6, say: 'hotel.l1.swap' });   // G1: A and D swap, then wear off on their own
     for (const p of [G0, G1, GD, G3, G5]) hang(p, 2);
     hang(G4, 4); hang(G6, 4);
