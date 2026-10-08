@@ -346,7 +346,7 @@ export default {
     // the route (stage 3): stones, the fountain's rim, two jets, the cart
     const route = [];
     const mark = (p) => { p.o.path = true; route.push({ x: p.body.x, y: p.top, z: p.body.z }); return p; };
-    const stone = (x, y, z, s = 2.0) => {
+    const stone = (x, y, z, s = 2.4) => {
       const p = w.plat({ x, y, z, w: s, d: s, h: y + 1.4, tex: 'stone', color: 0xcfc3ad, roughness: 0.6, radius: 0.12 });
       const lily = new THREE.Mesh(new THREE.CircleGeometry(0.5, 14), plainMaterial(0x3f8a4a, { roughness: 0.7 })); lily.rotation.x = -Math.PI / 2; lily.position.set(x + s / 2 + 0.25, -0.12, z + 0.3); w.add(lily);
       return p;
@@ -355,9 +355,9 @@ export default {
     const z0 = WATER_S;
     const S1 = mark(stone(12.0, 0.3, z0 - 6.4));
     const S2 = mark(stone(8.8, 0.45, z0 - 8.4));
-    const S3 = mark(w.crumble(stone(5.6, 0.6, z0 - 10.2, 1.9), { delay: 0.65, gone: 3 }));
+    const S3 = mark(w.crumble(stone(5.6, 0.6, z0 - 10.2, 2.2), { delay: 0.65, gone: 3 }));
     // the fountain: a square rim round a tiered column (the rim is the way; the middle is deep)
-    const FX = 0.4, FZ = z0 - 13.2, FR = 3.2, RW = 1.2;
+    const FX = 0.4, FZ = z0 - 13.2, FR = 3.6, RW = 1.8;
     const rim = (x, z, ww, dd) => w.plat({ x, y: 0.75, z, w: ww, d: dd, h: 2.15, tex: 'marble', color: 0xece3cf, roughness: 0.25, radius: 0.08 });
     const FE = mark(rim(FX + FR - RW / 2, FZ, RW, 2 * FR));
     const FS = mark(rim(FX, FZ - FR + RW / 2, 2 * FR - 2 * RW + 0.02, RW));
