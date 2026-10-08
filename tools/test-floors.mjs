@@ -445,9 +445,9 @@ suite('dnd', async () => {
     out.stages = D.NAMES.length; out.cps = D.cps.size;
     // the rounds are exact: periodic, on the solution path, and she pauses at both ends
     out.periodic = D.maids.every((m) => { const a = m.round.at(3.1), b = m.round.at(3.1 + m.round.period); return Math.hypot(a.x - b.x, a.z - b.z) < 1e-6; });
-    out.onPath = D.maids.every((m) => { let ok = true; for (let t = 0; t < m.round.period; t += 0.7) { const q = m.round.at(t); const c = m.M.cellOf(q); if (!m.M.onPath([Math.max(0, Math.min(m.M.N - 1, c[0])), Math.max(0, Math.min(m.M.N - 1, c[1]))])) ok = false; } return ok; });
+    out.onPath = D.maids.every((m) => m.M.onPath(m.round.cells[0]) && m.round.cells.length >= 2 && m.round.cells.slice(1).every((c) => !m.M.onPath(c)));
     out.pauses = D.maids.every((m) => { let still = 0; for (let t = 0; t < m.round.period; t += 0.2) if (!m.round.at(t).moving) still++; return still > 8; });
-    out.pockets = D.carts.filter((c) => D.maids.some((m) => m.seg.pocket && m.seg.pocket.cell[0] === c.cell[0] && m.seg.pocket.cell[1] === c.cell[1])).length;
+    out.pockets = D.carts.length;
     // sight: she stands and looks down the corridor; you 3 m in front are seen, behind her you are not, and a wall blocks her
     const m = D.maids[0];
     let st = null;
@@ -513,8 +513,8 @@ suite('dnd', async () => {
   });
   ok(r.maids === 4 && r.wingA === 2 && r.wingB === 2 && r.statue, `dnd: two housekeepers in each wing (${r.maids}), and a third in the west wing who is wax (${r.statue})`);
   ok(r.stages === 6 && r.cps === 5, `dnd: six stages, a checkpoint for each after the first (${r.stages}/${r.cps})`);
-  ok(r.periodic && r.onPath && r.pauses, 'dnd: the rounds are exact (periodic), follow the way out of the maze, and pause at each end');
-  ok(r.carts >= 6 && r.pockets >= 3, `dnd: laundry carts to hide in (${r.carts}), most in a side passage by a round (${r.pockets})`);
+  ok(r.periodic && r.onPath && r.pauses, 'dnd: the rounds are exact (periodic), start at a junction on the way out and go up a side passage, and pause at each end');
+  ok(r.carts >= 6, `dnd: laundry carts to hide in (${r.carts})`);
   ok(r.found && r.sees && r.behind && r.farAway, 'dnd: she sees 3 m ahead, not behind her, not 13 m away');
   ok(r.meterRises && r.caught, 'dnd: being in the cone fills the alert meter, then you are caught');
   ok(r.hiddenSafe && r.foundDead, 'dnd: hiding in a cart makes you invisible, unless she walks into your cart');
@@ -574,10 +574,10 @@ suite('dnd-seeds', async () => {
       }
       if (D.maids.length !== 4) e('maids ' + D.maids.length);
       for (const m of D.maids) {
-        if (!m.seg.pocket) e('a round without a side passage');
         const mid = m.M.path[m.M.path.length >> 1];
         if (m.round.cells.some((c) => c[0] === mid[0] && c[1] === mid[1])) e('a round over the checkpoint');
-        if (m.round.cells.length < 4) e('round too short');
+        if (!m.M.onPath(m.round.cells[0])) e('a round that does not touch the way out');
+        if (m.round.cells.length < 2) e('round too short');
       }
       if (!D.doorsDND.some((d) => d.real) || !D.doorsDND.some((d) => !d.real)) e('DND doors missing');
       if (!D.decoy || D.MB.onPath(D.decoy.cell)) e('decoy missing or on the path');

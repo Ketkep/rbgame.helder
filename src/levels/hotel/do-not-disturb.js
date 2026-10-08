@@ -296,43 +296,53 @@ export default {
 
     // choose each round: a stretch of the solution path with a side passage near its start (a place to wait, or a cart)
     const midA = MA.path.length >> 1, midB = MB.path.length >> 1;
-    const pick = (M, lo, hi, len, avoid) => {
-      const ok = [], any = [];
-      for (let k1 = lo; k1 + len <= hi; k1++) {
-        const k2 = k1 + len;
-        if (avoid.some((a) => a >= k1 - 2 && a <= k2 + 2)) continue;
-        // a side passage (off the path) from cells k1-1 … k1+1
-        let pocket = null;
-        for (let j = k1 - 2; j <= k1 + 3 && !pocket; j++) { const c = M.path[j]; if (!c) continue; const n = M.maze.nbrs(c[0], c[1]).find((q) => !M.onPath(q)); if (n) pocket = { from: c, cell: n, j }; }
-        (pocket ? ok : any).push({ k1, k2, pocket });
+    // a round: out of a junction on the way out, along a side passage (up to four cells) and back. Crossing her junction is the puzzle:
+    // she is only in your corridor for a moment each time round.
+    const usedKeys = new Set();
+    const pickBranch = (M, lo, hi, avoid, minLen = true) => {
+      const cands = [];
+      for (let k = lo; k <= hi; k++) {
+        if (avoid.some((a) => Math.abs(a - k) <= 1)) continue;
+        const c = M.path[k];
+        for (const n of M.maze.nbrs(c[0], c[1])) {
+          if (M.onPath(n)) continue;
+          const cells = [c, n], seen = new Set([M.key(c), M.key(n)]);
+          let cur = n;
+          while (cells.length < 5) { const nx = M.maze.nbrs(cur[0], cur[1]).find((q) => !seen.has(M.key(q)) && !M.onPath(q)); if (!nx) break; seen.add(M.key(nx)); cells.push(nx); cur = nx; }
+          if (cells.some((q, i) => i > 0 && usedKeys.has(M.key(q)))) continue;
+          cands.push({ k, cells, n, from: c });
+        }
       }
-      return ok.length ? ok[rnd(ok.length)] : any.length ? any[rnd(any.length)] : null;
+      const good = cands.filter((q) => q.cells.length >= 4), mid = cands.filter((q) => q.cells.length === 3);
+      const pool = good.length ? good : mid;
+      return pool.length ? pool[rnd(pool.length)] : (minLen ? null : cands.length ? cands[rnd(cands.length)] : null);
     };
     const usedPockets = [];
     const addMaid = (M, walls, seg, o) => {
-      const cells = M.path.slice(seg.k1, seg.k2 + 1);
-      const round = makeRound(M, cells, o);
+      seg.cells.forEach((q) => usedKeys.add(M.key(q)));
+      const round = makeRound(M, seg.cells, o);
       const { mesh, legs, bang } = maidMesh(false), cn = makeCone(false);
-      const m = { M, walls, round, mesh, legs, bang, ...cn, seen: 0, off: 0, offUntil: 0, fade: 1, seg, name: o.name, statue: false, st: round.at(0) };
+      const m = { M, walls, round, mesh, legs, bang, ...cn, seen: 0, off: 0, offUntil: 0, fade: 1, seg: { k1: seg.k }, name: o.name, statue: false, st: round.at(0) };
       maids.push(m);
-      if (seg.pocket) { usedPockets.push({ M, ...seg.pocket, maid: m }); addCart(M, seg.pocket.cell); }
+      usedPockets.push({ M, from: seg.from, cell: seg.n, maid: m });
+      // a laundry cart in another side passage close by (not on her round)
+      for (const dk of [-1, 1, -2, 2, 0]) {
+        const c = M.path[seg.k + dk]; if (!c) continue;
+        const n = M.maze.nbrs(c[0], c[1]).find((q) => !M.onPath(q) && !usedKeys.has(M.key(q)));
+        if (n && addCart(M, n)) break;
+      }
       return m;
     };
-    const lenA = baby() ? 5 : 6;
     const avoidA = [0, 1, 2, 3, midA, MA.path.length - 1, MA.path.length - 2];
     const avoidB = [0, 1, 2, 3, midB, MB.path.length - 1, MB.path.length - 2];
-    const pickAny = (M, lo, hi, avoid, lens) => { for (const l of lens) { const r = pick(M, lo, hi, l, avoid); if (r && r.pocket) return r; } for (const l of lens) { const r = pick(M, lo, hi, l, avoid); if (r) return r; } return null; };
-    const sA1 = pickAny(MA, 5, midA - 2, avoidA, [lenA, 5, 4]) || pickAny(MA, 4, midA, avoidA, [4]);
-    const sA2 = pickAny(MA, midA + 4, MA.path.length - 4, avoidA, [lenA, 5, 4]) || pickAny(MA, midA + 3, MA.path.length - 2, avoidA, [4]);
-    const sB1 = pickAny(MB, 5, midB - 2, avoidB, [lenA, 5, 4]) || pickAny(MB, 4, midB, avoidB, [4]);
-    const sB2 = pickAny(MB, midB + 4, MB.path.length - 5, avoidB, [lenA + 1, lenA, 5, 4]) || pickAny(MB, midB + 3, MB.path.length - 2, avoidB, [4]);
     const spd = 2.4 * (baby() ? 0.85 : 1);
-    const rA1 = addMaid(MA, wallsA, sA1, { speed: spd, wait: 1.8, phase: Math.random() * 30, name: 'Rosa' });
-    const rA2 = addMaid(MA, wallsA, sA2, { speed: spd + 0.2, wait: 1.6, phase: Math.random() * 30, name: 'Dolores' });
-    const rB1 = addMaid(MB, wallsB, sB1, { speed: spd, wait: 1.8, phase: Math.random() * 30, name: 'Ines' });
-    const rB2 = addMaid(MB, wallsB, sB2, { speed: spd + 0.2, wait: 1.6, phase: Math.random() * 30, name: 'Pilar' });
+    const mk = (M, walls, lo, hi, avoid, o) => { const sg = pickBranch(M, lo, hi, avoid) || pickBranch(M, 4, M.path.length - 4, avoid) || pickBranch(M, 4, M.path.length - 4, avoid, false); return addMaid(M, walls, sg, o); };
+    const rA1 = mk(MA, wallsA, 5, midA - 3, avoidA, { speed: spd, wait: 1.8, phase: Math.random() * 30, name: 'Rosa' });
+    const rA2 = mk(MA, wallsA, midA + 3, MA.path.length - 4, avoidA, { speed: spd + 0.2, wait: 1.6, phase: Math.random() * 30, name: 'Dolores' });
+    const rB1 = mk(MB, wallsB, 5, midB - 3, avoidB, { speed: spd, wait: 1.8, phase: Math.random() * 30, name: 'Ines' });
+    const rB2 = mk(MB, wallsB, midB + 3, MB.path.length - 5, avoidB, { speed: spd + 0.2, wait: 1.6, phase: Math.random() * 30, name: 'Pilar' });
     for (const M of [MA, MB]) {   // a few more carts in dead ends
-      const des = M.deadEnds.filter((c) => !usedPockets.some((q) => q.M === M && q.cell[0] === c[0] && q.cell[1] === c[1])).sort(() => Math.random() - 0.5);
+      const des = M.deadEnds.filter((c) => !usedKeys.has(M.key(c))).sort(() => Math.random() - 0.5);
       for (const c of des.slice(0, 3)) addCart(M, c);
     }
 
