@@ -4,7 +4,7 @@ import { hotelHalo, citySkyline, GOLD } from './kit.js';
 import { palm } from './props.js';
 import { onPlat } from '../common.js';
 import { mazeSection, pathRuns, sectionHint, routeHint } from './mazestage.js';
-import { fakeExit, adBreak, stageTitle } from './trolls.js';
+import { fakeExit, adBreak, stageTitle, vanishAfter } from './trolls.js';
 
 // Hotel level 4 — "Revolving Door" (Easy · Mezzanine). The rooftop garden: two hedge mazes (new ones every attempt) with a fountain
 // courtyard between them. Both mazes are sealed rooms: the hedges run on into the garden walls, so the only way is through.
@@ -17,16 +17,18 @@ import { fakeExit, adBreak, stageTitle } from './trolls.js';
 // Tricks: the host's confident directions (wrong), "the fountain is shallow", the ad gate, the loop door, the decoy EXIT arch.
 // Baby Mode: the loop door is locked and labelled, the decoy says "(decoy)", the ad is shorter, the jets are slower.
 
-const NAMES = ['Hedge Maze', 'Cart Track', 'The Fountain', 'Dusk Maze', 'The Shortcut'];
+const NAMES = ['Hedge Maze', 'Cart Track', 'The Fountain', 'Dusk Maze', 'The Shortcut', 'The Revolving Door'];
 const C = 4.4, T = 0.8, WH = 3.6;
-const NA = 7, NB = 9;
+const NA = 8, NB = 9;
 const XW = 25;                       // inner faces of the garden walls (x = ±XW)
 const ZA = 0;                        // maze A: south wall line
-const ZA1 = ZA - NA * C;             //         north wall line (-30.8)
-const ZB = ZA1 - 25.6;               // maze B: south wall line (-56.4)
-const ZB1 = ZB - NB * C;             //         north wall line (-96.0)
-const ZS = ZA + 13, ZE = ZB1 - 13;   // the parapets at the two ends of the roof
-const WATER_N = ZB + T / 2, WATER_S = ZA1 - T / 2;   // the courtyard pool, wall to wall (-56.0 … -31.2)
+const ZA1 = ZA - NA * C;             //         north wall line (-35.2)
+const ZB = ZA1 - 44;                 // maze B: south wall line (-79.2)
+const ZB1 = ZB - NB * C;             //         north wall line (-118.8)
+const ZV0 = ZB1 - 7.2, ZV1 = ZV0 - 16;   // the glass vestibule (three revolving doors) into the roof pavilion
+const ZP1 = ZV1 - 8;                 // the pavilion's back wall
+const ZS = ZA + 13, ZE = ZP1 - 4;    // the parapets at the two ends of the roof
+const WATER_N = ZB + T / 2, WATER_S = ZA1 - T / 2;   // the courtyard pool, wall to wall (-78.8 … -35.6)
 const rnd = (n) => Math.floor(Math.random() * n);
 
 export default {
@@ -77,8 +79,8 @@ export default {
     }
 
     // ---- the two mazes ----------------------------------------------------------------------------------
-    const MA = mazeSection(w, { N: NA, C, T, WH, Z0: ZA, band: [23, 29], walls: { tex: 'hedge', color: 0xffffff, roughness: 0.95, radius: 0.1, reach: [-XW, XW] } });
-    const MB = mazeSection(w, { N: NB, C, T, WH, Z0: ZB, band: [35, 43], walls: { tex: 'hedge', color: 0x9fb4c4, roughness: 0.95, radius: 0.1, reach: [-XW, XW] } });
+    const MA = mazeSection(w, { N: NA, C, T, WH, Z0: ZA, band: [37, 43], walls: { tex: 'hedge', color: 0xffffff, roughness: 0.95, radius: 0.1, reach: [-XW, XW] } });
+    const MB = mazeSection(w, { N: NB, C, T, WH, Z0: ZB, band: [51, 57], walls: { tex: 'hedge', color: 0x9fb4c4, roughness: 0.95, radius: 0.1, reach: [-XW, XW] } });
     const lanterns = (M, glow, poolColor) => {
       for (let i = 0; i <= M.N; i++) for (let j = 0; j <= M.N; j++) if ((i + j) % 2 === 0) w.box({ x: M.X0 + i * C, y: WH + 0.35, z: M.Z0 - j * C, w: 0.22, h: 0.5, d: 0.22, glow, glowIntensity: 1.6, shadow: false });
       const poolMat = new THREE.MeshBasicMaterial({ map: softTexture('glow'), color: poolColor, transparent: true, opacity: 0.16, depthWrite: false, blending: THREE.AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
@@ -106,11 +108,37 @@ export default {
     // the stair house you came up by (a door that does not open)
     w.box({ x: MA.cx(0), y: 1.6, z: ZS - 1.4, w: 4.2, h: 3.2, d: 1.6, tex: 'stone', color: 0xe4d8c0, rough: 0.5 });
     w.box({ x: MA.cx(0), y: 1.25, z: ZS - 2.25, w: 1.4, h: 2.5, d: 0.1, color: 0x2a1a12, rough: 0.5 });
-    w.sign({ text: 'STAIRS · LOBBY', x: MA.cx(0), y: 2.9, z: ZS - 2.32, w: 2.2, h: 0.45, color: '#f1d28a', double: false, rotY: 0, tw: 512, size: 60 });
-    const exitX = MB.cx(NB - 1), exitZ = ZB1 - 5;
+    w.sign({ text: 'STAIRS · LOBBY', x: MA.cx(0), y: 2.9, z: ZS - 2.32, w: 2.2, h: 0.45, color: '#f1d28a', double: false, rotY: Math.PI, tw: 512, size: 60 });
+    const exitX = MB.cx(NB - 1);
     w.sign({ text: 'EXIT', x: exitX, y: 4.2, z: ZB1 - 1.0, w: 4, h: 1.2, color: '#6cf0b2', double: true, tw: 512, size: 100, glow: true });
-    palm(w, exitX - 6, exitZ, 1.1); palm(w, exitX + 6 > XW - 1 ? exitX - 12 : exitX + 6, exitZ, 1.1);
-    const goal = w.goal({ x: exitX, y: 0, z: exitZ, color: GOLD, onReach: () => { game.say('hotel.l4.done', { priority: 2 }); game.completeLevel(); } });
+    palm(w, exitX - 7, ZB1 - 4, 1.1); palm(w, exitX - 13, ZB1 - 4, 1.1);
+    // the way back in: a glass vestibule with three big revolving doors, into the roof pavilion (the real exit is inside)
+    const VX = exitX, VW = 5.0, PX0 = VX - 6, PX1 = VX + 6;
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0xcfe8ff, transparent: true, opacity: 0.16, roughness: 0.05, metalness: 0.1, side: THREE.DoubleSide, depthWrite: false });
+    for (const sx of [-1, 1]) {
+      const x = VX + sx * (VW / 2 + 0.1);
+      w.collider({ x, y: 2.2, z: (ZV0 + ZV1) / 2, w: 0.2, h: 4.4, d: ZV0 - ZV1 });
+      const pane = new THREE.Mesh(new THREE.PlaneGeometry(ZV0 - ZV1, 4.3), glassMat); pane.rotation.y = Math.PI / 2; pane.position.set(x, 2.2, (ZV0 + ZV1) / 2); w.add(pane);
+      for (let z = ZV0; z >= ZV1 - 0.01; z -= 4) w.box({ x, y: 2.2, z, w: 0.16, h: 4.4, d: 0.16, color: GOLD, metal: 1, rough: 0.3 });
+      w.box({ x, y: 4.45, z: (ZV0 + ZV1) / 2, w: 0.22, h: 0.14, d: ZV0 - ZV1 + 0.2, color: GOLD, metal: 1, rough: 0.3, shadow: false });
+      w.box({ x, y: 0.08, z: (ZV0 + ZV1) / 2, w: 0.22, h: 0.16, d: ZV0 - ZV1 + 0.2, color: GOLD, metal: 1, rough: 0.3, shadow: false });
+    }
+    const roof = new THREE.Mesh(new THREE.PlaneGeometry(VW + 0.4, ZV0 - ZV1), glassMat); roof.rotation.x = -Math.PI / 2; roof.position.set(VX, 4.5, (ZV0 + ZV1) / 2); w.add(roof);
+    for (let z = ZV0; z >= ZV1 - 0.01; z -= 4) w.box({ x: VX, y: 4.5, z, w: VW + 0.4, h: 0.12, d: 0.14, color: GOLD, metal: 1, rough: 0.3, shadow: false });
+    w.sign({ text: 'HOTEL · LOBBY', x: VX, y: 5.2, z: ZV0 + 0.05, w: 4.6, h: 0.9, color: '#f1d28a', double: true, tw: 1024, size: 80 });
+    // the pavilion
+    const pav = (x, z, ww, dd) => w.plat({ x, y: 5.2, z, w: ww, d: dd, h: 5.2, tex: 'stone', color: 0xe4d8c0, roughness: 0.5 });
+    pav((PX0 + VX - VW / 2 - 0.2) / 2, ZV1 - 0.3, VX - VW / 2 - 0.2 - PX0, 0.6);
+    pav((VX + VW / 2 + 0.2 + PX1) / 2, ZV1 - 0.3, PX1 - VX - VW / 2 - 0.2, 0.6);
+    pav(VX, ZP1 + 0.3, PX1 - PX0, 0.6);
+    pav(PX0 + 0.3, (ZV1 + ZP1) / 2, 0.6, ZV1 - ZP1);
+    pav(PX1 - 0.3, (ZV1 + ZP1) / 2, 0.6, ZV1 - ZP1);
+    w.box({ x: VX, y: 5.35, z: (ZV1 + ZP1) / 2, w: PX1 - PX0 + 0.4, h: 0.3, d: ZV1 - ZP1 + 0.4, tex: 'stone', color: 0xe4d8c0, rough: 0.5 });
+    w.box({ x: VX, y: 5.55, z: (ZV1 + ZP1) / 2, w: PX1 - PX0 + 0.5, h: 0.12, d: ZV1 - ZP1 + 0.5, color: GOLD, metal: 1, rough: 0.35, shadow: false });
+    w.box({ x: VX, y: 1.6, z: ZP1 + 0.62, w: 2.6, h: 3.2, d: 0.08, color: 0x8a6a3a, metal: 0.8, rough: 0.3 });
+    w.sign({ text: 'LOBBY ↓', x: VX, y: 3.6, z: ZP1 + 0.68, w: 2.2, h: 0.5, color: '#f1d28a', double: false, tw: 512, size: 70 });
+    w.light(0xffd9a0, 10, 14, VX, 4.2, (ZV1 + ZP1) / 2);
+    const goal = w.goal({ x: VX, y: 0, z: ZP1 + 3.2, color: GOLD, onReach: () => { game.say('hotel.l4.done', { priority: 2 }); game.completeLevel(); } });
 
     // ---- revolving doors ------------------------------------------------------------------------------------
     const doors = [];
@@ -138,11 +166,11 @@ export default {
       const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 10), loop ? LAMP.loop : LAMP.stop); lamp.position.y = WH + 0.55; g.add(lamp);
       const lampPost = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.5, 8), metal); lampPost.position.y = WH + 0.25; g.add(lampPost);
       w.add(g);
-      const d = { M, a, b, body, wings, lamp, phase: Math.random() * P, P, open: false, mx, mz, ew, kind, locked: false };
+      const d = { M, a, b, body, wings, lamp, phase: Math.random() * P, P, win: M === MB ? 0.2 : 0.22, open: false, mx, mz, ew, kind, locked: false };
       doors.push(d);
       return d;
     };
-    const doorOpenAt = (d, t) => { const u = (((t + d.phase) % d.P) + d.P) % d.P / d.P; return u > 0.28 && u < 0.72; };
+    const doorOpenAt = (d, t) => { const u = (((t + d.phase) % d.P) + d.P) % d.P / d.P, o = d.win ?? 0.22; return u > 0.5 - o && u < 0.5 + o; };   // open for 2·win of each quarter turn
     w.onUpdate((dt, t) => {
       for (const d of doors) {
         d.wings.rotation.y = (d.kind === 'loop' ? -1 : 1) * ((t + d.phase) / d.P) * (Math.PI / 2);
@@ -159,11 +187,87 @@ export default {
     const offA = offEdges(MA, (a, b) => MA.cz(Math.max(a[1], b[1])) > MA.cz(MA.mid[1]) - 2);
     for (let n = 0; n < 2 && offA.length; n++) { const [a, b] = offA.splice(rnd(offA.length), 1)[0]; doorAt(MA, a, b); doorEdges.add(MA.edge(a, b)); }
     // maze B: six doors on the path (faster), avoiding the cells next to the mid-point checkpoint
-    for (const f of [0.08, 0.2, 0.32, 0.6, 0.72, 0.84]) {
+    for (const f of [0.07, 0.17, 0.27, 0.37, 0.6, 0.7, 0.8, 0.9]) {
       let k = Math.max(1, Math.min(MB.path.length - 3, Math.round(f * (MB.path.length - 1))));
       if (Math.abs(k - midB) <= 1) k = k < midB ? midB - 2 : midB + 2;
-      pathDoor(MB, k, { P: 2.9 });
+      pathDoor(MB, k, { P: 3.2 });
     }
+
+    // ---- the vestibule's three big revolving doors (each on its own schedule; the middle one spins you round) ----------
+    const bigDoor = (z, P, phase) => {
+      const body = w.collider({ x: VX, y: 2.0, z, w: VW + 0.2, h: 4.0, d: 0.6 });
+      const g = new THREE.Group(); g.position.set(VX, 0, z);
+      const R = VW / 2 - 0.05;
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.1, 36), brass); base.position.y = 0.05; g.add(base);
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.35, 36), brass); cap.position.y = 4.2; g.add(cap);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 4.1, 12), brass); pole.position.y = 2.1; g.add(pole);
+      const wings = new THREE.Group();
+      for (let k = 0; k < 4; k++) {
+        const wing = new THREE.Group(); wing.rotation.y = (k * Math.PI) / 2;
+        const pane = new THREE.Mesh(new THREE.BoxGeometry(R - 0.2, 3.6, 0.05), glass); pane.position.set((R - 0.2) / 2 + 0.15, 2.05, 0); wing.add(pane);
+        for (const yy of [0.3, 3.8]) { const bar = new THREE.Mesh(new THREE.BoxGeometry(R - 0.2, 0.1, 0.1), brass); bar.position.set((R - 0.2) / 2 + 0.15, yy, 0); wing.add(bar); }
+        const edge = new THREE.Mesh(new THREE.BoxGeometry(0.09, 3.6, 0.09), brass); edge.position.set(R - 0.05, 2.05, 0); wing.add(edge);
+        wings.add(wing);
+      }
+      g.add(wings);
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 10), LAMP.stop); lamp.position.y = 4.85; g.add(lamp);
+      const lampPost = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.5, 8), brass); lampPost.position.y = 4.55; g.add(lampPost);
+      w.add(g);
+      const d = { M: null, a: null, b: null, body, wings, lamp, phase, P, win: 0.18, open: false, mx: VX, mz: z, ew: false, kind: 'big', locked: false };
+      doors.push(d);
+      return d;
+    };
+    const vest = [bigDoor(ZV0 - 2.6, 3.0, Math.random() * 3), bigDoor(ZV0 - 13.4, 2.6, Math.random() * 2.6)];
+    // the Grand Revolving Door: a glass drum between them with four wings that turn all the time. Inside, you are in one of its four
+    // compartments and you go round with it (the wing behind you pushes, the one in front blocks; the hub keeps you out of the middle). The way out is
+    // the opening on the far side, when your compartment gets there. (Boxes cannot turn, so the drum is a constraint on the player.)
+    const DR = 2.4, DZ = ZV0 - 8, DW = -2 * Math.PI / 15;
+    const drum = { x: VX, z: DZ, R: DR, w: DW, phi0: Math.random() * Math.PI, phi: 0, inside: false, entered: 0 };
+    {
+      const g = new THREE.Group(); g.position.set(VX, 0, DZ);
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(DR, DR, 0.1, 40), brass); base.position.y = 0.05; g.add(base);
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(DR + 0.08, DR + 0.08, 0.4, 40), brass); cap.position.y = 4.25; g.add(cap);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 4.1, 14), brass); pole.position.y = 2.1; g.add(pole);
+      // the drum's glass sides (east and west; in three.js theta is measured from +z toward +x)
+      for (const t0 of [Math.PI / 4, Math.PI * 5 / 4]) {
+        const arc = new THREE.Mesh(new THREE.CylinderGeometry(DR + 0.04, DR + 0.04, 4.0, 20, 1, true, t0, Math.PI / 2), glass); arc.position.y = 2.1; g.add(arc);
+        for (const yy of [0.2, 4.0]) { const rib = new THREE.Mesh(new THREE.CylinderGeometry(DR + 0.07, DR + 0.07, 0.1, 20, 1, true, t0, Math.PI / 2), brass); rib.position.y = yy; g.add(rib); }
+        for (const tt of [t0, t0 + Math.PI / 2]) { const post = new THREE.Mesh(new THREE.BoxGeometry(0.14, 4.1, 0.14), brass); post.position.set(Math.sin(tt) * (DR + 0.05), 2.05, Math.cos(tt) * (DR + 0.05)); g.add(post); }
+      }
+      const wings = new THREE.Group();
+      for (let k = 0; k < 4; k++) {
+        const wing = new THREE.Group(); wing.rotation.y = (k * Math.PI) / 2;
+        const pane = new THREE.Mesh(new THREE.BoxGeometry(DR - 0.25, 3.7, 0.05), glass); pane.position.set((DR - 0.25) / 2 + 0.17, 2.0, 0); wing.add(pane);
+        for (const yy of [0.25, 3.85]) { const bar = new THREE.Mesh(new THREE.BoxGeometry(DR - 0.25, 0.1, 0.1), brass); bar.position.set((DR - 0.25) / 2 + 0.17, yy, 0); wing.add(bar); }
+        const edge = new THREE.Mesh(new THREE.BoxGeometry(0.1, 3.7, 0.1), brass); edge.position.set(DR - 0.1, 2.0, 0); wing.add(edge);
+        const push = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.06, 0.12), brass); push.position.set(DR - 0.8, 1.2, 0.08); wing.add(push);
+        wings.add(wing);
+      }
+      g.add(wings); w.add(g);
+      drum.wings = wings;
+      w.sign({ text: 'GRAND REVOLVING DOOR · PLEASE KEEP MOVING', x: VX, y: 4.75, z: DZ + DR + 0.1, w: 4.4, h: 0.4, color: '#f1d28a', bg: '#1a1420', double: true, tw: 1024, size: 40 });
+    }
+    const wrapA = (a) => ((((a + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI;
+    w.onUpdate((dt, t) => {
+      drum.phi = drum.phi0 + drum.w * t;
+      drum.wings.rotation.y = -drum.phi;
+      const p = game.player;
+      const dx = p.x - drum.x, dz = p.z - drum.z, r = Math.hypot(dx, dz);
+      if (game.state !== 'playing' || r >= drum.R - 0.02 || p.y > 4) { drum.inside = false; return; }
+      let th = Math.atan2(dz, dx);
+      const inWall = Math.abs(wrapA(th)) < Math.PI / 4 || Math.abs(wrapA(th - Math.PI)) < Math.PI / 4;
+      let rr = Math.max(1.0, r);
+      if (inWall) rr = Math.min(rr, drum.R - 0.42);
+      const Q = Math.PI / 2, rel = (((th - drum.phi) % Q) + Q) % Q;           // where you are in your compartment (0 to 90 degrees)
+      const m = Math.asin(Math.min(0.99, 0.44 / rr));
+      const nrel = m >= Q / 2 ? Q / 2 : Math.min(Math.max(rel, m), Q - m);
+      th += nrel - rel;
+      p.x = drum.x + Math.cos(th) * rr; p.z = drum.z + Math.sin(th) * rr;
+      if (!drum.inside) {
+        drum.inside = true; drum.entered++;
+        if (drum.entered === 1 && !game.baby) { game.ui.toast('↻ You are being revolved', 'bad'); game.say('hotel.l4.spun', { priority: 1 }); }
+      }
+    });
 
     // ---- maze B: the SHORTCUT door (a loop) and the EXIT arch in a dead end -------------------------------------
     // the loop: an off-path edge from the north half of the path, the side that looks like it heads for the exit
@@ -218,7 +322,7 @@ export default {
 
     // ---- maze A, north half: luggage-cart trains ------------------------------------------------------------------
     const carts = [];
-    for (const run of pathRuns(MA, { min: 2, skip: doorEdges, from: midA + 1 }).sort(() => Math.random() - 0.5).slice(0, 3)) {
+    for (const run of pathRuns(MA, { min: 2, skip: doorEdges, from: midA + 2 }).sort(() => Math.random() - 0.5).slice(0, 4)) {   // (never next to the checkpoint)
       const mx = (MA.cx(run.from[0]) + MA.cx(run.to[0])) / 2, mz = (MA.cz(run.from[1]) + MA.cz(run.to[1])) / 2;
       const alongX = run.dir[0] !== 0, Lr = (Math.abs(run.to[0] - run.from[0]) + Math.abs(run.to[1] - run.from[1])) * C, A = Lr / 2 - 0.2;
       const len = 1.5, wid = 3.2, ph = Math.random() * 6, sp = 0.55 * (game.baby ? 0.8 : 1);
@@ -248,11 +352,12 @@ export default {
       return p;
     };
     const L1 = mark(w.plat({ x: MA.exit.x, y: 0, z: WATER_S - 2.2, w: 5, d: 4.4, h: 1.4, tex: 'stone', color: 0xd9cdb5, roughness: 0.55 }));
-    const S1 = mark(stone(10.6, 0.3, -38.0));
-    const S2 = mark(stone(7.4, 0.45, -40.2));
-    const S3 = mark(w.crumble(stone(4.2, 0.6, -41.6, 1.9), { delay: 0.65, gone: 3 }));
+    const z0 = WATER_S;
+    const S1 = mark(stone(12.0, 0.3, z0 - 6.4));
+    const S2 = mark(stone(8.8, 0.45, z0 - 8.4));
+    const S3 = mark(w.crumble(stone(5.6, 0.6, z0 - 10.2, 1.9), { delay: 0.65, gone: 3 }));
     // the fountain: a square rim round a tiered column (the rim is the way; the middle is deep)
-    const FX = -1.0, FZ = -43.8, FR = 3.2, RW = 1.2;
+    const FX = 0.4, FZ = z0 - 13.2, FR = 3.2, RW = 1.2;
     const rim = (x, z, ww, dd) => w.plat({ x, y: 0.75, z, w: ww, d: dd, h: 2.15, tex: 'marble', color: 0xece3cf, roughness: 0.25, radius: 0.08 });
     const FE = mark(rim(FX + FR - RW / 2, FZ, RW, 2 * FR));
     const FS = mark(rim(FX, FZ - FR + RW / 2, 2 * FR - 2 * RW + 0.02, RW));
@@ -260,13 +365,24 @@ export default {
     rim(FX, FZ + FR - RW / 2, 2 * FR - 2 * RW + 0.02, RW);
     w.collider({ x: FX, y: 1.6, z: FZ, w: 1.4, h: 4.0, d: 1.4 });
     fountainVisual(w, FX, FZ);
-    const S4 = mark(stone(-6.4, 0.55, -47.4));
-    const S5 = mark(stone(-9.6, 0.5, -49.8));
+    const S4 = mark(stone(-5.0, 0.55, z0 - 17.0));
+    const S5 = mark(stone(-8.2, 0.5, z0 - 19.4));
     // two jets: a stone with a geyser under it (it bubbles first)
-    const jets = [S4, S5].map((s, k) => jet(w, s, { period: game.baby ? 4.2 : 3.2, on: game.baby ? 0.7 : 0.95, warn: 0.7, phase: k * 1.55 }));
+    const jets = [S4, S5].map((s, k) => jet(w, s, { period: game.baby ? 4.2 : 3.2, on: game.baby ? 0.7 : 0.95, warn: 0.7, phase: -0.45 * k }));   // a wave: the second fires just after the first
+    // two lily pads that drift from side to side
+    const pad = (x, z, ph) => {
+      const p = mark(w.plat({ x, y: 0.4, z, w: 2.0, d: 2.0, h: 0.3, tex: 'leather', color: 0x3f8a4a, roughness: 0.7, radius: 0.3 }));
+      w.mover(p, (t) => ({ x: 1.2 * Math.sin(t * 1.0 + ph) }));
+      const flower = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), plainMaterial(0xf4a8c8, { roughness: 0.6 })); flower.position.set(0.55, 0.22, -0.5); p.group.add(flower);
+      return p;
+    };
+    const P1 = pad(-10.6, z0 - 23.0, 0), P2 = pad(-7.6, z0 - 26.8, Math.PI);
+    // a long lily-pad bridge that gives way once you are half over (it shimmers: that is the tell; keep running)
+    const V = mark(w.plat({ x: -6.0, y: 0.4, z: z0 - 32.6, w: 1.8, d: 7.2, h: 0.3, tex: 'leather', color: 0x4f9a5a, roughness: 0.7, radius: 0.2 }));
+    vanishAfter(w, game, V, { axis: 'z', dir: -1, frac: 0.55, delay: 0.75, back: 3.2, say: 'hotel.l4.bridge' });
     // the luggage cart on a rail: it rolls to the gate with you on it (and back without you)
     const L2X = MB.cx(0), L2Z = WATER_N + 2.4, L2E = L2X + 2.5;
-    const cartZ = L2Z + 0.4, cart0 = -10.2, cartStop = L2E + 1.1;
+    const cartZ = WATER_N + 4.2, cart0 = -6.0, cartStop = L2E + 1.1;
     const cart = mark(w.plat({ x: cart0, y: 0.6, z: cartZ, w: 2.2, d: 1.6, h: 0.1, tex: 'brass', color: 0xffffff, roughness: 0.3, metalness: 0.9, radius: 0.03 }));
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
       cart.attach(w.box({ x: cart0 + sx * 1.0, y: 1.25, z: cartZ + sz * 0.7, w: 0.08, h: 1.2, d: 0.08, color: GOLD, metal: 1, rough: 0.28, static: false }));
@@ -275,9 +391,9 @@ export default {
     cart.attach(w.box({ x: cart0, y: 1.85, z: cartZ, w: 2.1, h: 0.06, d: 0.06, color: GOLD, metal: 1, rough: 0.3, static: false }));
     for (const sz of [-0.55, 0.55]) w.box({ x: (cart0 + cartStop) / 2, y: 0.2, z: cartZ + sz, w: cartStop - cart0 + 3, h: 0.08, d: 0.1, color: 0x8a7a50, metal: 1, rough: 0.4, shadow: false });
     for (let x = cart0 + 1; x > cartStop - 2; x -= 2.2) w.box({ x, y: -0.6, z: cartZ, w: 0.25, h: 1.6, d: 1.3, color: 0x4a4a52, rough: 0.6, shadow: false });
-    w.rollaway(cart, { dir: [-1, 0], dist: cart0 - cartStop, accel: 3, speed: 3.6, delay: 0.5, hold: 3.2, back: 1.6, onGo: () => game.say('hotel.l4.trolley', { priority: 1 }) });
+    w.rollaway(cart, { dir: [-1, 0], dist: cart0 - cartStop, accel: 2.4, speed: 3.0, delay: 0.5, hold: 3.2, back: 1.6, onGo: () => game.say('hotel.l4.trolley', { priority: 1 }) });
     const L2 = mark(w.plat({ x: L2X, y: 0, z: WATER_N - 0.0 + 2.4, w: 5, d: 4.8, h: 1.4, tex: 'stone', color: 0xd9cdb5, roughness: 0.55 }));
-    void S1; void S2; void FS; void FW; void S5;
+    void S1; void S2; void FS; void FW; void S5; void P1; void P2; void V;
 
     // ---- the garden gate: ad-supported -------------------------------------------------------------------------------
     const gate = { open: false, at: 0, body: w.collider({ x: MB.cx(0), y: WH / 2, z: ZB, w: C - T + 0.2, h: WH, d: T * 0.9 }), leaves: [] };
@@ -318,10 +434,11 @@ export default {
     cp(2, L1.body.x, L1.body.z);
     cp(3, L2X, L2Z);
     cp(4, MB.cx(MB.mid[0]), MB.cz(MB.mid[1]));
+    cp(5, VX, ZB1 - 3.6);
     w.hooks.onCheckpoint = (c) => {
       const i = cps.get(c); if (i === undefined) return;
       stageTitle(game, w, i + 1, NAMES.length, NAMES[i]);
-      const line = [null, 'hotel.l4.half', 'hotel.l4.fountain', null, 'hotel.l4.halfB'][i];   // (stage 4: the gate's ad does the talking)
+      const line = [null, 'hotel.l4.half', 'hotel.l4.fountain', null, 'hotel.l4.halfB', 'hotel.l4.vestibule'][i];   // (stage 4: the gate's ad does the talking)
       if (line) game.say(line, { priority: 1 });
     };
 
@@ -366,27 +483,39 @@ export default {
     };
 
     // ---- the hint: the way out of the maze you are in, or across the fountain; never further ------------------------------------
-    const goalPt = { x: exitX, y: 0.25, z: exitZ };
     sectionHint(w, [
       { zS: 1e9, zN: WATER_S, hint: (p) => MA.hint(p) },
       { zS: WATER_S, zN: L2Z + 2.4, flat: false, hint: routeHint(route.slice(1, -1), { x: L2X, y: 0, z: L2Z }) },
-      { zS: L2Z + 2.4, zN: -1e9, hint: (p) => [...MB.hint(p), goalPt] },
+      { zS: L2Z + 2.4, zN: ZB1 - 0.4, hint: (p) => MB.hint(p) },
+      { zS: ZB1 - 0.4, zN: -1e9, hint: routeHint([{ x: VX, y: 0.1, z: ZV0 + 1 }, { x: VX, y: 0.1, z: vest[0].mz - 1.4 }, { x: VX, y: 0.1, z: DZ + DR + 0.3 }, { x: VX, y: 0.1, z: DZ - DR - 0.6 }, { x: VX, y: 0.1, z: vest[1].mz - 1.2 }], { x: VX, y: 0.1, z: goal.z }) },
     ]);
 
+    // a human sees a cart trundling away down the corridor and waits for it to come back (hopping one from behind is hard)
+    const cartWait = (p, tgt) => {
+      const dx = tgt.x - p.x, dz = tgt.z - p.z, len = Math.hypot(dx, dz) || 1, ux = dx / len, uz = dz / len;
+      for (const c of carts) {
+        const hb = c.hz.body, rx = hb.x - p.x, rz = hb.z - p.z, ahead = rx * ux + rz * uz, lat = Math.abs(rx * uz - rz * ux);
+        if (ahead < 0.3 || ahead > 7.5 || lat > 2.2) continue;
+        const o0 = c.hz.move(w.t), o1 = c.hz.move(w.t + 0.1);
+        const v = (((o1.x || 0) - (o0.x || 0)) * ux + ((o1.z || 0) - (o0.z || 0)) * uz) / 0.1;
+        if (v > -0.4) return { x: p.x, z: p.z, wait: true };
+      }
+      return tgt;
+    };
     // ---- the bot: maze steering, the courtyard's platforms (the default), ride the cart, wait for the gate --------------------------
     w.botPlan = (g) => {
       const p = g.player;
-      if (p.z > WATER_S) return MA.steer(p);
+      if (p.z > WATER_S) return cartWait(p, MA.steer(p));
       if (p.grounded && p.ground === cart.body) return cart.body.x > cartStop + 0.15 ? { x: cart.body.x, z: cart.body.z, wait: true } : { x: L2X, z: L2Z };
       if (p.z > L2Z + 2.4 || (p.x > L2E && p.z > WATER_N)) return null;
       if (!gate.open) { const at = Math.hypot(p.x - L2X, p.z - (ZB + 2.4)) < 0.6; return { x: L2X, z: ZB + 2.4, wait: at }; }
-      if (p.z < ZB1 - 0.4) return { x: exitX, z: exitZ };
+      if (p.z < ZB1 - 0.4) return p.z > ZV0 - 0.5 && Math.abs(p.x - VX) > 0.4 ? { x: VX, z: ZV0 - 1 } : { x: VX, z: goal.z };
       return MB.steer(p);
     };
 
     // ---- test handles (tools/test-floors.mjs) ------------------------------------------------------------------------------
     w.maze = { path: MA.path, N: NA, C, X0: MA.X0, Z0: ZA, grid: MA.grid, cx: MA.cx, cz: MA.cz, doors: doors.filter((d) => d.M === MA), carts, nbrs: MA.maze.nbrs, solve: MA.solve, cellOf: MA.cellOf };
-    w.l4 = { MA, MB, doors, carts, loopDoor, loopCells, decoy, gate, cart, cartStop, jets, water, route, cps, goal, L1, L2, NAMES, get loops() { return loops; }, loopBack, doorOpenAt, ZB, WATER_S, WATER_N };
+    w.l4 = { MA, MB, doors, carts, loopDoor, loopCells, decoy, gate, cart, cartStop, jets, water, route, cps, goal, L1, L2, NAMES, vest, drum, VX, ZV0, ZV1, get loops() { return loops; }, loopBack, doorOpenAt, ZB, WATER_S, WATER_N };
   },
 };
 

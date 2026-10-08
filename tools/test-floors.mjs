@@ -468,6 +468,171 @@ suite('ledge', async () => {
   await page.close();
 });
 
+// =====================================================================================================================
+//  Levels 4, 9 and 12 (the multi-maze levels): sealed second mazes, logic, many seeds
+// =====================================================================================================================
+// The same flood fill as mazeseal-*, but for any maze `m` ({X0, Z0, N, C}), starting from (sx, sz), over floors near `fy`.
+// `open` = bodies to treat as open (doors). Returns the number of cells reached beside the maze, and how many cells were filled.
+async function sealFill(page, js) {
+  return page.evaluate(`(() => { const g = window.__trust, w = g.world; const spec = (${js})(g, w);
+    const { m, sx, sz, fy = 0, open = [] } = spec, step = 0.5, openSet = new Set(open);
+    const bodies = w.bodies.filter((b) => b.solid && !openSet.has(b));
+    const blocked = (x, z) => bodies.some((b) => b.top > fy + 1.6 && b.top - b.hy * 2 < fy + 1.0 && Math.abs(x - b.x) < b.hx + 0.4 && Math.abs(z - b.z) < b.hz + 0.4);
+    const floor = (x, z) => bodies.some((b) => Math.abs(b.top - fy) < 0.6 && Math.abs(x - b.x) < b.hx && Math.abs(z - b.z) < b.hz);
+    const key = (i, j) => i * 10000 + j, seen = new Set([key(0, 0)]), q = [[0, 0]], side = [];
+    while (q.length) {
+      const [i, j] = q.pop(); const x = sx + i * step, z = sz + j * step;
+      if ((x < m.X0 - 0.8 || x > m.X0 + m.N * m.C + 0.8) && z < m.Z0 - 1 && z > m.Z0 - m.N * m.C + 1) side.push([x, z]);
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const ni = i + di, nj = j + dj, nx = sx + ni * step, nz = sz + nj * step;
+        if (Math.abs(nx) > 60 || Math.abs(nz - sz) > 90 || seen.has(key(ni, nj))) continue;
+        if (blocked(nx, nz) || !floor(nx, nz)) continue;
+        seen.add(key(ni, nj)); q.push([ni, nj]);
+      }
+    }
+    return { side: side.length, cells: seen.size, ex: side[0] || null }; })()`);
+}
+const reloadLevel = (page) => page.evaluate(async () => { const g = window.__trust; await g.loadLevel(g.levelIndex); g.state = 'playing'; g.manual = true; g.respawnPlayer(true); });
+
+// ---- level 4: Revolving Door ---------------------------------------------------------------------------------------
+suite('mazeseal2-revolving', async () => {
+  const page = await open(4);
+  const r = await sealFill(page, `(g, w) => { const L = w.l4; return { m: L.MB, sx: L.L2.body.x, sz: L.L2.body.z, open: [...L.doors.map((d) => d.body), L.gate.body] }; }`);
+  ok(r.cells > 400, `revolving maze B: the fill covers a real area (${r.cells} cells)`);
+  ok(r.side === 0, `revolving maze B: nowhere beside the dusk maze can be reached from the garden gate (${r.side} cells leak${r.ex ? ' e.g. ' + r.ex : ''})`);
+  // the courtyard cannot be walked round either: from the first maze's exit nothing reaches the second maze's gate on foot
+  const c = await sealFill(page, `(g, w) => { const L = w.l4; return { m: { X0: -1e3, Z0: -1e3, N: 0, C: 1 }, sx: L.L1.body.x, sz: L.L1.body.z, open: L.doors.map((d) => d.body) }; }`);
+  const reach = await page.evaluate(() => { const L = window.__trust.world.l4; return { l2z: L.L2.body.z, waterN: L.WATER_N }; });
+  ok(c.cells < 200, `revolving: the courtyard is water wall to wall (${c.cells} dry cells round the first landing, gate at z ${reach.l2z.toFixed(1)})`);
+  await page.close();
+});
+
+suite('revolving', async () => {
+  const page = await open(4);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, L = w.l4, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
+    out.stages = L.NAMES.length; out.cps = L.cps.size;
+    out.lenA = L.MA.path.length; out.lenB = L.MB.path.length;
+    out.solved = L.MA.solve([0, 0]).slice(-1)[0].join() === `${L.MA.N - 1},${L.MA.N - 1}` && L.MB.solve([0, 0]).slice(-1)[0].join() === `${L.MB.N - 1},${L.MB.N - 1}`;
+    // every door sits on an open edge; maze doors open and close on their schedule
+    const mazeDoors = L.doors.filter((d) => d.M);
+    out.doorsOnEdges = mazeDoors.every((d) => d.M.maze.open(d.a[0], d.a[1], d.b[0], d.b[1]));
+    const seen = L.doors.map(() => new Set());
+    for (let i = 0; i < 60 * 5; i++) { g._simulate(1 / 60); L.doors.forEach((d, k) => { if (!d.locked) seen[k].add(d.body.enabled); }); }
+    out.doorsCycle = L.doors.every((d, k) => d.locked || seen[k].size === 2);
+    out.doorsB = mazeDoors.filter((d) => d.M === L.MB && d.kind === 'door').length;
+    // the loop door is off the path and sends you back to the start of the maze
+    out.loopOff = !!L.loopDoor && !L.MB.pathEdges.has(L.MB.edge(L.loopDoor.a, L.loopDoor.b));
+    L.loopBack(); out.looped = Math.hypot(g.player.x - L.MB.entry.x, g.player.z - L.MB.entry.z) < 1.5 && L.loops === 1 && g.state === 'playing';
+    sim(0.6); out.glitchGone = document.getElementById('ov-glitch')?.classList.contains('hidden') ?? true;
+    // the decoy EXIT arch: in a dead end, off the path, not behind the loop door, and it kills
+    out.decoyDead = !!L.decoy && L.MB.deadEnds.some((c) => c[0] === L.decoy.cell[0] && c[1] === L.decoy.cell[1]) && !L.MB.onPath(L.decoy.cell) && !L.loopCells.has(L.MB.key(L.decoy.cell));
+    g.player.teleport(L.decoy.x, 0.001, L.decoy.z); sim(0.1); out.decoyKills = g.state === 'dead';
+    g.state = 'playing'; g.respawnPlayer(false);
+    // the water kills; the jets fire on their schedule (and their prediction matches)
+    g.player.teleport(0, 0.001, (L.WATER_S + L.WATER_N) / 2 + 3); sim(0.6); out.waterKills = g.state === 'dead';
+    g.state = 'playing'; g.respawnPlayer(false);
+    let agree = 0, n = 0, on = 0; for (let i = 0; i < 60 * 7; i++) { g._simulate(1 / 60); for (const j of L.jets) { n++; if (j.hz.enabled === j.hz.predict(w.t)) agree++; if (j.hz.enabled) on++; } }
+    out.jets = agree === n && on > 30 && on < n * 0.5;
+    // the gate stays shut until the ad has run (5 s), then opens; the ad overlay goes
+    g.player.teleport(L.L2.body.x, 0.001, L.L2.body.z); sim(0.3);
+    out.gateShut = L.gate.body.enabled && !L.gate.open; out.adOn = !document.getElementById('ov-ad').classList.contains('hidden');
+    sim(4.0); out.stillShut = !L.gate.open;
+    sim(1.4); out.gateOpens = L.gate.open && !L.gate.body.enabled;
+    out.adSec = said.includes('hotel.l4.gate');
+    // the Grand Revolving Door: hold W from its south side and it carries you round and out of the north side; you can never be
+    // between two wings' blades, and never in the hub
+    const D = L.drum; g.player.teleport(L.VX, 0.001, D.z + D.R + 1.2); g.yaw = 0; g.keys.add('KeyW');
+    let through = 0, okWings = true;
+    for (let i = 0; i < 60 * 16 && !through; i++) {
+      g._simulate(1 / 60);
+      const dx = g.player.x - D.x, dz = g.player.z - D.z, r = Math.hypot(dx, dz);
+      if (D.inside && r < 0.99) okWings = false;
+      if (D.inside) { const Q = Math.PI / 2, rel = (((Math.atan2(dz, dx) - D.phi) % Q) + Q) % Q; if (rel < 0.15 || rel > Q - 0.15) okWings = false; }
+      if (g.player.z < D.z - D.R - 0.5) through = i / 60;
+    }
+    g.keys.delete('KeyW'); out.drum = through > 0 && through < 14; out.drumWings = okWings; out.drumT = through;
+    // respawn leaves nothing behind
+    g.player.teleport(L.L2.body.x, 0.001, L.L2.body.z); L.gate.open = false; L.gate.at = 0; L.gate.body.enabled = true;
+    g.kill('test'); g.state = 'playing'; g.respawnPlayer(false); sim(0.2);
+    out.clean = !g.frozen && document.getElementById('ov-ad').classList.contains('hidden') && !document.querySelector('.fakewin') && !g.mods.invertX && !g.mods.swapStrafe && !g.mods.swapFwd;
+    // every line the level says exists
+    out.said = [...new Set(said)];
+    return out;
+  });
+  ok(r.stages === 6 && r.cps === 5, `revolving: six stages, a checkpoint for each after the first (${r.stages}/${r.cps})`);
+  ok(r.solved && r.lenA >= 37 && r.lenA <= 43 && r.lenB >= 51 && r.lenB <= 57, `revolving: both mazes solvable, lengths in their bands (${r.lenA}, ${r.lenB})`);
+  ok(r.doorsOnEdges && r.doorsCycle && r.doorsB >= 6, `revolving: revolving doors sit in passages and open/close on a schedule (${r.doorsB} on the dusk maze's path)`);
+  ok(r.loopOff && r.looped && r.glitchGone, 'revolving: the SHORTCUT door is off the path and loops you to the start of the dusk maze');
+  ok(r.decoyDead && r.decoyKills, 'revolving: the decoy EXIT arch sits in a dead end (off the path) and is fatal');
+  ok(r.waterKills, 'revolving: the fountain pool is deep');
+  ok(r.jets, 'revolving: the jets fire on a schedule the bot can read (predict) and are mostly off');
+  ok(r.gateShut && r.adOn && r.stillShut && r.gateOpens && r.adSec, 'revolving: the garden gate opens when the 5-second ad is over');
+  ok(r.drum && r.drumWings, `revolving: the Grand Revolving Door carries you round and out (${r.drumT.toFixed(1)} s), never through a wing`);
+  ok(r.clean, 'revolving: a respawn leaves no overlay, freeze or control twist behind');
+  await page.close();
+});
+
+suite('revolving-baby', async () => {
+  const page = await open(4);
+  const r = await page.evaluate(async () => {
+    const g = window.__trust; g.baby = true; await g.loadLevel(g.levelIndex); g.state = 'playing'; g.manual = true; g.respawnPlayer(true);
+    const w = g.world, L = w.l4, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    out.locked = L.loopDoor.locked && L.loopDoor.body.enabled; sim(4); out.stillLocked = L.loopDoor.body.enabled;
+    L.loopBack(); out.noLoop = L.loops === 0;
+    g.player.teleport(L.L2.body.x, 0.001, L.L2.body.z); sim(3.3); out.shortAd = L.gate.open;
+    g.baby = false;
+    return out;
+  });
+  ok(r.locked && r.stillLocked && r.noLoop, 'revolving baby: the loop door is locked (no surprise trip back)');
+  ok(r.shortAd, 'revolving baby: the gate\'s ad is 3 seconds');
+  await page.close();
+});
+
+// hint honesty and the many-seed check: 12 fresh builds; each must be solvable, keep its tricks off the path, and the hint must
+// follow the maze you are in (cell by cell, adjacent cells only) up to that maze's exit and never into the next section
+suite('revolving-seeds', async () => {
+  const page = await open(4);
+  const bad = [];
+  for (let s = 0; s < 12; s++) {
+    if (s) await reloadLevel(page);
+    const r = await page.evaluate(() => {
+      const g = window.__trust, w = g.world, L = w.l4, out = { errs: [] };
+      const e = (m) => out.errs.push(m);
+      for (const M of [L.MA, L.MB]) {
+        if (M.solve([0, 0]).slice(-1)[0].join() !== `${M.N - 1},${M.N - 1}`) e('unsolvable');
+        // hint from three random cells of this maze: adjacent steps, ends at this maze's exit, never past it
+        for (let k = 0; k < 3; k++) {
+          const c = [Math.floor(Math.random() * M.N), Math.floor(Math.random() * M.N)];
+          g.player.teleport(M.cx(c[0]), 0.001, M.cz(c[1]));
+          const pts = g._hintPoints();
+          if (!pts) { e('no hint'); continue; }
+          const last = pts[pts.length - 1];
+          if (Math.hypot(last.x - M.exit.x, last.z - M.exit.z) > 0.1) e('hint does not end at the maze exit');
+          for (let i = 2; i < pts.length - 1; i++) if (Math.abs(pts[i].x - pts[i - 1].x) + Math.abs(pts[i].z - pts[i - 1].z) > M.C + 0.01) e('hint jumps a wall');
+          if (pts.some((q) => q.z < M.zN - 3)) e('hint goes past this maze');
+        }
+      }
+      // tricks stay off the path; nothing sits next to the mid-point checkpoints
+      if (!L.loopDoor || L.MB.pathEdges.has(L.MB.edge(L.loopDoor.a, L.loopDoor.b))) e('loop door missing or on the path');
+      if (!L.decoy || L.MB.onPath(L.decoy.cell) || L.loopCells.has(L.MB.key(L.decoy.cell))) e('decoy missing or misplaced');
+      for (const M of [L.MA, L.MB]) for (const d of L.doors.filter((q) => q.M === M)) if (Math.hypot(d.mx - M.cx(M.mid[0]), d.mz - M.cz(M.mid[1])) < 2.3) e('door next to the checkpoint');
+      for (const c of L.carts) { const k0 = c.run.k0; if (k0 <= (L.MA.path.length >> 1) + 1) e('cart next to the checkpoint'); }
+      // the courtyard hint ends at the gate landing; in the vestibule it ends at the goal
+      g.player.teleport(L.L1.body.x, 0.001, L.L1.body.z); const ph = g._hintPoints();
+      if (!ph || Math.hypot(ph[ph.length - 1].x - L.L2.body.x, ph[ph.length - 1].z - L.L2.body.z) > 0.6) e('courtyard hint does not end at the gate');
+      out.len = [L.MA.path.length, L.MB.path.length];
+      return out;
+    });
+    if (r.errs.length) bad.push(`seed ${s}: ${[...new Set(r.errs)].join(', ')} (${r.len})`);
+  }
+  ok(bad.length === 0, `revolving: 12 fresh mazes are solvable, honest and well placed${bad.length ? '\n    ' + bad.join('\n    ') : ''}`);
+  await page.close();
+});
+
 // ---- the lobby hub: every elevator can be called, walked into (no gap in the floor) and ridden --------------------
 suite('lobby', async () => {
   const page = await browser.newPage({ viewport: { width: 320, height: 180 } });
