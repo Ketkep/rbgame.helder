@@ -52,7 +52,7 @@ export default {
     for (const sx of [-1, 1]) {   // side strips so nothing is a cliff
       w.plat({ x: sx * ((W / 2 + N * C / 2) / 2), y: 0, z: Z0 - (N * C) / 2, w: W / 2 - N * C / 2, d: N * C, h: 1.2, tex: 'tile', color: 0xd8dde2, roughness: 0.45 });
     }
-    buildMazeWalls(w, maze, grid, { tex: 'tile', color: 0xf4f8ff, roughness: 0.4, radius: 0.06 });
+    buildMazeWalls(w, maze, grid, { tex: 'tile', color: 0xf4f8ff, roughness: 0.4, radius: 0.06, reach: [-W / 2, W / 2] });
     // steel cap on the walls + stainless trim
     // lights: strips above the maze + a pool of light per cell
     const poolMat = new THREE.MeshBasicMaterial({ map: softTexture('glow'), color: 0xdfeaff, transparent: true, opacity: 0.16, depthWrite: false, blending: THREE.AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });

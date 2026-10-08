@@ -21,6 +21,45 @@ async function open(level) {
 const suites = {};
 const suite = (name, fn) => { suites[name] = fn; };
 
+// ---- the mazes (4, 9, 12): no walking round the outside --------------------------------------------------
+// Flood-fills the floor from the spawn point at 0.5 m resolution. Anything solid that rises more than a jump above the
+// floor blocks; every door that can open is treated as open. The cells beside the maze must stay unreachable except via the
+// maze, i.e. the fill must not get from the spawn row to the exit row without entering the maze's columns.
+for (const [lvl, name] of [[4, 'revolving'], [9, 'kitchen-maze'], [12, 'dnd-maze']]) {
+  suite('mazeseal-' + name, async () => {
+    const page = await open(lvl);
+    const r = await page.evaluate(() => {
+      const g = window.__trust, w = g.world, step = 0.5;
+      const M = w.maze || (() => { const gr = w.dnd.grid; return { grid: gr, N: gr.N, C: gr.C, doors: [] }; })();
+      const doorBodies = new Set((M.doors || []).map((d) => d.body));
+      const bodies = w.bodies.filter((b) => b.solid && !doorBodies.has(b) && (b.enabled || b.top - b.hy * 2 > -50));
+      const blocked = (x, z) => bodies.some((b) => b.top > 1.6 && b.top - b.hy * 2 < 1.0 && Math.abs(x - b.x) < b.hx + 0.4 && Math.abs(z - b.z) < b.hz + 0.4);
+      const floor = (x, z) => bodies.some((b) => Math.abs(b.top) < 0.6 && Math.abs(x - b.x) < b.hx && Math.abs(z - b.z) < b.hz);   // (off the edge is a long fall, not a way round)
+      const sx = g.player.x, sz = g.player.z;
+      const half = 40, key = (i, j) => i * 1000 + j;
+      const seen = new Set([key(0, 0)]), q = [[0, 0]];
+      const sideReached = [];
+      const x0 = M.grid ? M.grid.X0 : M.X0, N = M.N, C = M.C, Z0 = M.grid ? M.grid.Z0 : M.Z0;
+      while (q.length) {
+        const [i, j] = q.pop();
+        const x = sx + i * step, z = sz + j * step;
+        // beside the maze: west or east of its footprint, between its south and north walls
+        if ((x < x0 - 0.8 || x > x0 + N * C + 0.8) && z < Z0 - 1 && z > Z0 - N * C + 1) sideReached.push([x, z]);
+        for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const ni = i + di, nj = j + dj, nx = sx + ni * step, nz = sz + nj * step;
+          if (Math.abs(nx) > half || Math.abs(nz - sz) > 60 || seen.has(key(ni, nj))) continue;
+          if (blocked(nx, nz) || !floor(nx, nz)) continue;
+          seen.add(key(ni, nj)); q.push([ni, nj]);
+        }
+      }
+      return { side: sideReached.length, cells: seen.size, ex: sideReached[0] || null };
+    });
+    ok(r.cells > 400, `${name}: the fill covers a real area (${r.cells} cells)`);
+    ok(r.side === 0, `${name}: nowhere beside the maze can be reached from the spawn (${r.side} cells leak${r.ex ? ' e.g. ' + r.ex : ''})`);
+    await page.close();
+  });
+}
+
 // ---- level 6: Soufflé ------------------------------------------------------------------------------------
 suite('souffle', async () => {
   const page = await open(6);

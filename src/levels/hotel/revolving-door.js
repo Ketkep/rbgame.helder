@@ -59,7 +59,7 @@ export default {
     }
 
     // ---- walls (merged into long hedge runs) ---------------------------------------------------------
-    buildMazeWalls(w, maze, grid, { tex: 'hedge', color: 0xffffff, roughness: 0.95, radius: 0.1 });
+    buildMazeWalls(w, maze, grid, { tex: 'hedge', color: 0xffffff, roughness: 0.95, radius: 0.1, reach: [-tW / 2, tW / 2] });
     // little lanterns on the hedge corners + a warm pool of light in every cell
     for (let i = 0; i <= N; i += 1) for (let j = 0; j <= N; j += 1) if ((i + j) % 2 === 0) {
       w.box({ x: X0 + i * C, y: WH + 0.35, z: Z0 - j * C, w: 0.22, h: 0.5, d: 0.22, glow: 0xffd8a0, glowIntensity: 1.6, shadow: false });

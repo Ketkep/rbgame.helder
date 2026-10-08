@@ -44,7 +44,7 @@ export default {
     // the hotel corridor carpet
     w.plat({ x: 0, y: 0, z: (zNear + zFar) / 2, w: W, d: zNear - zFar, h: 1.2, tex: 'carpet', color: 0x8a3040, roughness: 0.95 });
     const nb = w.bodies.length;
-    buildMazeWalls(w, maze, grid, { tex: 'damask', color: 0xffe8d8, roughness: 0.7, radius: 0.05 });
+    buildMazeWalls(w, maze, grid, { tex: 'damask', color: 0xffe8d8, roughness: 0.7, radius: 0.05, reach: [-W / 2, W / 2] });
     const walls = w.bodies.slice(nb).filter((b) => b.solid);
     // little decorations: numbered doors with Do Not Disturb signs, wall lamps
     const plate = (x, y, z, rotY, text, color = '#d8a94a') => w.sign({ text, x, y, z, w: 0.9, h: 0.4, rotY, color, double: false, tw: 256, size: 70 });

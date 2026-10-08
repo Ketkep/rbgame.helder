@@ -422,6 +422,7 @@ function ceilingMural(w) {
 export function roomShell(w, o = {}) {
   const { x0 = -14, x1 = 14, z0 = -40, z1 = 14, yb = -10, H = L.H, wallTex = 'damask', wallColor = 0xffffff, ceilColor = 0xffffff, beamEvery = 8, pilasterEvery = 10, lamps = true } = o;
   const T = 1, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, W = x1 - x0, D = z1 - z0, hh = H - yb;
+  w.room = { x0, x1, z0, z1, H };   // (tests and screenshots find the room's walls here)
   const wallMat = { tex: wallTex, color: wallColor, roughness: 0.65 };
   w.plat({ x: x0 - T / 2, y: H, z: cz, w: T, d: D + 2 * T, h: hh, ...wallMat });
   w.plat({ x: x1 + T / 2, y: H, z: cz, w: T, d: D + 2 * T, h: hh, ...wallMat });
@@ -451,9 +452,10 @@ export function roomShell(w, o = {}) {
   }
   for (const z of [z0, z1]) {
     const n = z === z0 ? 0.12 : -0.12;
-    w.box({ x: cx, y: 1.3, z: z - n, w: W, h: 2.6, d: 0.24, tex: 'panel', color: 0xffffff, shadow: false });
-    w.box({ x: cx, y: 2.7, z: z - n * 1.6, w: W, h: 0.12, d: 0.34, color: GOLD, metal: 1, rough: 0.3, shadow: false });
-    w.box({ x: cx, y: H - 0.35, z: z - n * 3, w: W, h: 0.7, d: 0.8, color: 0xece3cf, rough: 0.35, shadow: false });
+    // (n points into the room: the trim has to stand in front of the wall, not inside it, or it z-fights with the wall's own face)
+    w.box({ x: cx, y: 1.3, z: z + n, w: W - 0.5, h: 2.6, d: 0.24, tex: 'panel', color: 0xffffff, shadow: false });
+    w.box({ x: cx, y: 2.7, z: z + n * 1.6, w: W - 0.8, h: 0.12, d: 0.34, color: GOLD, metal: 1, rough: 0.3, shadow: false });
+    w.box({ x: cx, y: H - 0.35, z: z + n * 3, w: W - 1.6, h: 0.7, d: 0.8, color: 0xece3cf, rough: 0.35, shadow: false });
   }
   for (let z = z1 - 2; z > z0 + 1; z -= beamEvery) {
     w.box({ x: cx, y: H - 0.5, z, w: W, h: 0.9, d: 1.4, color: 0xe3d7bd, rough: 0.5, shadow: false });
