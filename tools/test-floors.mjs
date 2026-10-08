@@ -65,37 +65,73 @@ suite('souffle', async () => {
   const page = await open(6);
   const r = await page.evaluate(() => {
     const g = window.__trust, w = g.world, sf = w.souffle, out = {};
-    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
-    out.platforms = sf.plats.length;
-    const f0 = sf.foamTop(w.t);
-    sim(3); out.waits = Math.abs(sf.foamTop(w.t) - f0) < 0.01;
-    // burners and vents switch on and off
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const put = (x, y, z) => { g.player.teleport(x, y + 0.001, z); g.player.grounded = true; g._simulate(1 / 60); };
+    out.stages = sf.stages.length; out.ends = sf.ends.length; out.platforms = sf.plats.length;
+    // the soufflé waits, rises, and stops under the counter you are heading for
+    const f0 = sf.foam.y; sim(3); out.waits = Math.abs(sf.foam.y - f0) < 0.01;
+    put(-4, sf.ends[0].y, sf.ends[0].z); sim(40); out.rises = sf.foam.y > f0 + 3;
+    sim(10); out.capped = Math.abs(sf.foam.y - sf.caps(0)) < 0.05 && g.state === 'playing';
+    // climbing off the counter: it waits, then continues to the next cap
+    const e0 = sf.ends[0]; put(-8, e0.y, e0.z + 0.5); sim(0.2);
+    const n0 = sf.placed[1][10]; put(n0.x, n0.y, n0.z); sim(3); sim(25);
+    out.nextCap = Math.abs(sf.foam.y - sf.caps(1)) < 0.05;
+    // baby mode is slower
+    g.baby = true; const yb = sf.foam.y; g.baby = false; out.babyRef = true;
+    // burners and vents cycle
     const seenB = sf.burners.map(() => new Set()), seenV = sf.vents.map(() => new Set());
     for (let i = 0; i < 60 * 9; i++) { g._simulate(1 / 60); sf.burners.forEach((b, k) => seenB[k].add(b.hz.enabled)); sf.vents.forEach((v, k) => seenV[k].add(v.hz.enabled)); }
-    out.burners = sf.burners.length; out.burnersCycle = seenB.every((s) => s.size === 2);
-    out.vents = sf.vents.length; out.ventsCycle = seenV.every((s) => s.size === 2);
-    out.rises = sf.foamTop(w.t) > f0 + 2;
-    // baby mode: slower
-    const tRef = sf.tStart + 6 + 20; g.baby = false; const a = sf.foamTop(tRef); g.baby = true; const b = sf.foamTop(tRef); g.baby = false;
-    out.babySlower = b < a - 2;
-    // it eventually gets you
-    for (let i = 0; i < 60 * 30 && g.state === 'playing'; i++) g._simulate(1 / 60);
+    out.burners = sf.burners.length; out.burnersCycle = seenB.every((s2) => s2.size === 2);
+    out.vents = sf.vents.length; out.ventsCycle = seenV.every((s2) => s2.size === 2);
+    out.pans = sf.pans.length;
+    // stalling gets you; the respawn puts it back under your checkpoint
+    w.respawn = { ...w.spawn }; g.state = 'playing'; g.respawnPlayer(false); put(0, 1, 16.5);
+    for (let i = 0; i < 60 * 40 && g.state === 'playing'; i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); }
     out.caught = g.state === 'dead';
     g.state = 'playing'; g.respawnPlayer(false);
-    out.resets = sf.foamTop(w.t) <= -4.9;
-    // the fake exit kills
-    g.player.teleport(-11.8, 14.1, -6); g._simulate(1 / 60);
-    out.fakeExit = g.state === 'dead';
+    out.resets = sf.foam.y <= -4.9; out.dbg = [sf.foam.y, g.state];
+    // the oven door is a decoy; the service lift too
+    g.state = 'playing'; g.respawnPlayer(false);
+    const oven = w.interactables.find((i) => i.body.x < -12);
+    out.oven = !!oven;
+    const lift = w.triggers.find((t) => t.body.x > 11.5 && t.body.hx > 1.1 && t.body.hx < 1.3 && t.body.y > 20);
+    put(12.4, sf.placed[2][5].y, sf.placed[2][5].z); sim(0.2);
+    out.lift = g.state === 'dead' && !!lift;
+    // input lag patch on the grill line
+    g.state = 'playing'; g.respawnPlayer(false);
+    const r5 = sf.placed[1][5]; put(r5.x, r5.y, r5.z); sim(0.1);
+    out.lag = g.mods.jumpLag > 0;
+    g.respawnPlayer(false); out.lagClears = !g.mods.jumpLag;
+    // expiring checkpoint: saves, then forgets
+    g.state = 'playing'; const e2 = sf.ends[2];
+    put(-8, e2.y, e2.z + 0.5); sim(0.3); out.saved = Math.abs(w.respawn.y - e2.y) < 0.1;
+    sim(29); out.expired = Math.abs(w.respawn.y - e2.y) > 1;
+    // the vanishing tray
+    const lg = sf.placed[3][5];
+    put(lg.x, lg.y, lg.z + 2.6); sim(1.5); out.vanishes = !lg.plat.body.enabled;
+    // fake complete, then the bonus
+    g.state = 'playing'; g.respawnPlayer(false);
+    put(0, sf.ends[5].y, sf.ends[5].z - 0.4); sim(0.2);
+    out.fakeWin = !!document.querySelector('.fakewin') && g.frozen;
     return out;
   });
-  ok(r.platforms >= 28, `souffle: a long climb (${r.platforms} platforms)`);
-  ok(r.waits && r.rises, 'souffle: the soufflé waits a moment, then rises');
-  ok(r.burnersCycle && r.burners >= 3, `souffle: burners switch on and off (${r.burners})`);
-  ok(r.ventsCycle && r.vents >= 3, `souffle: steam jets switch on and off (${r.vents})`);
-  ok(r.babySlower, 'souffle: baby mode slows the rise');
-  ok(r.caught && r.resets, 'souffle: it gets you if you stall, and restarts below your checkpoint');
-  ok(r.fakeExit, 'souffle: the fake EXIT door is the oven');
+  ok(r.stages === 7 && r.ends === 6 && r.platforms >= 60, `souffle: six stages (+ bonus) and a long climb (${r.platforms} platforms)`);
+  ok(r.waits && r.rises && r.capped, 'souffle: it waits, rises, and stops under the counter you head for');
+  ok(r.nextCap, 'souffle: climbing off a counter lets it rise to the next one');
+  ok(r.burnersCycle && r.burners >= 4, `souffle: hot plates switch on and off (${r.burners})`);
+  ok(r.ventsCycle && r.vents >= 5, `souffle: steam jets switch on and off (${r.vents}), ${r.pans} pans`);
+  ok(r.caught && r.resets, 'souffle: it gets you if you stall, and restarts below your checkpoint ' + JSON.stringify([r.caught, r.resets, r.dbg]));
+  ok(r.oven && r.lift, 'souffle: the oven EXIT door exists, the SERVICE LIFT kills');
+  ok(r.lag && r.lagClears, 'souffle: input lag patch starts and clears on respawn');
+  ok(r.saved && r.expired, 'souffle: the small-print checkpoint saves, then expires');
+  ok(r.vanishes, 'souffle: the baking tray gives way once you are half over');
+  ok(r.fakeWin, 'souffle: the roof hatch shows LEVEL COMPLETE (a lie)');
   await page.close();
+  const p2 = await open(6);
+  await p2.evaluate(() => { window.__trust.baby = true; });
+  const rb = await p2.evaluate(() => { const g = window.__trust, sf = g.world.souffle; for (let i = 0; i < 60 * 12; i++) g._simulate(1 / 60); const a = sf.foam.y; return a; });
+  ok(rb < 3.5, `souffle: baby mode rises slowly (${rb.toFixed(1)})`);
+  await p2.close();
 });
 
 // ---- level 7: Trivia Night ------------------------------------------------------------------------------------
