@@ -211,7 +211,7 @@ export default {
     const vs1 = L('vanish', 6, 2.5, 0, { say: 'hotel.l15.vanish' });
     const pp = L('pipe', 9, 2.7, 0); gust(pp.x0, pp.x1, pp.y, 18, { period: 5.4, on: 1.8, phase: 1.6 });
     L('sill', 4.5, 2.6, 0.4);
-    tram(20, 22, 3);
+    tram(16, 18, 3);
     L('sill', 5, 0, 0);
     const cr1 = [L('crumble', 1.9, 2.5, 0.5), L('crumble', 1.9, 2.5, 0.5), L('crumble', 1.9, 2.5, 0.5)];
     const paintSill = L('sill', 7, 2.5, 0.5, { noWin: true });
@@ -220,8 +220,8 @@ export default {
 
     // ---------------- stage 3 · the cleaner's lift -------------------------------------------------------------------------------
     const lowSill = L('sill', 5, 2.6, 0.4);
-    lift(12, 26);
-    const upSill = L('sill', 6, 0, 12);
+    lift(10, 20);
+    const upSill = L('sill', 6, 0, 10);
     const c3 = L('cornice', 8, 2.5, 0.4); gust(c3.x0, c3.x1, c3.y, 17, { period: 5.4, on: 1.9, phase: 3.0 });
     const preG = L('sill', 4, 2.6, 0);
     // the gondola: swings between two sills across a wide gap
@@ -249,7 +249,7 @@ export default {
     const vs2 = L('vanish', 5, 2.5, 0, { say: null });
     L('perch', 1.3, 3.0, 0.4); L('perch', 1.3, 3.1, 0.4);
     L('sill', 4, 3.0, 0.4);
-    tram(16, 20, 9);
+    tram(14, 18, 9);
     L('sill', 5, 0, 0);
     const e4 = L('sill', 6, 2.6, 0.4, { noWin: true });
     endStage(e4, 4);
@@ -258,7 +258,7 @@ export default {
     const rung1 = L('rung', 3, 2.6, 1.0); const rung2 = L('rung', 3, 2.6, 1.0); L('rung', 3, 2.6, 1.0); L('rung', 3, 2.6, 1.0); L('rung', 3, 2.6, 1.0);
     const c5 = L('cornice', 9, 2.5, 0.4); gust(c5.x0, c5.x1, c5.y, 19, { period: 5.2, on: 2.0, phase: 0.9 });
     L('sill', 4, 2.5, 0.4);
-    lift(8, 19, 7, 'HOIST · RIDE AT OWN RISK');
+    lift(8, 16, 7, 'HOIST · RIDE AT OWN RISK');
     L('sill', 4, 0, 8);
     L('crumble', 1.9, 2.5, 0.5); L('crumble', 1.9, 2.5, 0.5);
     gate(18, 2.5, 0.4, { phase: 5 });
