@@ -260,7 +260,7 @@ export default {
     L('sill', 4, 2.5, 0.4);
     lift(8, 16, 7, 'HOIST · RIDE AT OWN RISK');
     L('sill', 4, 0, 8);
-    L('crumble', 1.9, 2.5, 0.5); L('crumble', 1.9, 2.5, 0.5);
+    L('cornice', 6, 2.5, 0.5);
     gate(18, 2.5, 0.4, { phase: 5 });
     const last = L('sill', 8, 2.6, 0.5, { noWin: true });
     windowAt(last.x, last.y, true, 'ROOM 1502');
