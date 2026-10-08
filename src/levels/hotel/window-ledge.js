@@ -185,7 +185,7 @@ export default {
       const xa = l.x0 + 3.2, xb = l.x1 - 3.2;
       const wi = w.wind({ x: (xa + xb) / 2, y: l.y + 1.2, z: l.zc, w: xb - xa, h: 3.2, d: l.dep + 1.2, dx: -1, dz: 0, strength: 40, period: 10, on: 4.8, phase: o.phase ?? 0 });
       const g = { wi, base: 40, period: 10, on: 4.8, phase: o.phase ?? 0, xa, xb, y: l.y, sock: sock(xa + 0.2, l.y + 2.6), forced: 0, k: 0, gate: true, ledge: l };
-      w.sign({ text: 'GALE GATE\nwait for the lull', x: xa - 1.2, y: l.y + 1.9, z: -0.14, w: 2.6, h: 1.0, rotY: Math.PI, color: '#111', bg: '#ffd21f', double: false, tw: 512, size: 56 });
+      w.sign({ text: 'GALE GATE\nwait for the lull', x: xa - 1.6, y: l.y + 1.9, z: -0.14, w: 2.6, h: 1.0, rotY: Math.PI, color: '#111', bg: '#ffd21f', double: false, tw: 512, size: 40 });
       gusts.push(g); gates.push(g);
       return l;
     };
