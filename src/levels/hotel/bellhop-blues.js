@@ -258,7 +258,8 @@ export default {
         L.bulb.material = on ? bulbM.on : warn ? bulbM.warn : bulbM.off;
       }
     });
-    const F9 = path(2, floor(-187.4, -201, Y2, { color: 0xb04a3a, rough: 0.7 }));
+    const F9 = floor(-187.4, -201, Y2, { color: 0xb04a3a, rough: 0.7 });          // (not a bot waypoint: it is flush with the counter's end)
+    stages[2].route.push({ x: 0, y: Y2, z: -192 }, { x: 0, y: Y2, z: -199 });
     for (const z of [-191.5, -197]) w.plat({ x: 0, y: Y2 + 0.9, z, w: 2 * HW, d: 0.8, h: 0.9, tex: 'metal', color: 0xb8c0c8, roughness: 0.3, metalness: 0.7, radius: 0.05 });
     const mop = path(2, floor(-201, -211, Y2, { tex: 'marble', color: 0xd0d0dc, rough: 0.14, slippery: 0.8 }));
     w.sign({ text: 'CAUTION · JUST MOPPED', x: 0, y: Y2 + 0.02, z: -201.6, w: 4.6, h: 0.7, rotX: -Math.PI / 2, color: '#ffd21f', double: false, tw: 1024, size: 70 });
