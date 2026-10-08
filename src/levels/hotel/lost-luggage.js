@@ -3,7 +3,7 @@ import { plainMaterial, glowMaterial, surfaceMaterial } from '../../engine/mater
 import { hotelEnv, hotelHalo, GOLD } from './kit.js';
 import { luggageCart } from './props.js';
 import { openKeypad } from '../../engine/keypad.js';
-import { trollCheckpoint, fakeExit, loadingScreen } from './trolls.js';
+import { trollCheckpoint, fakeExit, loadingScreen, evasiveGoal } from './trolls.js';
 import { shuffle, rint, roomBox, wallZ, wallX, slideDoor, doorFrame, keypadBox, escapeStages, canvasPlane, readModal } from './escape-kit.js';
 
 // Hotel level 3 — "Lost Luggage" (Easy · Mezzanine). An escape room in five stages, one checkpoint each:
@@ -215,11 +215,11 @@ export default {
     trollCheckpoint(w, game, { x: 0, y: 0, z: -25.8, mode: 'expire', ttl: 15, say: 'hotel.l3.expired' });
 
     // luggage traffic on belt A: one suitcase rides it toward you, out of one flap curtain and into the other (hop it, or step round it)
-    const BA_N = -23.6, BA_RUN = 7.8;
+    const BA_N = -23.6, BA_RUN = 6.2;
     const bagHz = w.hazard({ x: 0.6, y: 0.3, z: BA_N, w: 1.0, h: 0.6, d: 0.5, color: 0xff3a46, move: (t) => ({ z: (t * 2.8) % BA_RUN }) });
     bagHz.core.visible = false; bagHz.shell.visible = false; bagHz.jumpable = true;
     { const m = bagMesh({ color: 0x7a2a52, s: 1.05 }); m.position.y = -0.3; bagHz.group.add(m); }
-    for (const fz of [-15.45, -23.95]) flapCurtain(w, 0, fz, 6.2);
+    for (const fz of [-17.15, -23.95]) flapCurtain(w, 0, fz, 6.2);
     // the press over belt B
     const press = w.hazard({ x: 0, y: 3.2, z: PRESS_Z, w: 6.2, h: 1.1, d: 2.2, color: 0xff3a4a, move: (t) => ({ y: -2.3 * Math.max(0, Math.sin(t * 1.6) * 1.4 - 0.4) }) });
     for (const sx of [-1, 1]) w.box({ x: sx * 3.4, y: 1.5, z: PRESS_Z, w: 0.4, h: 21, d: 0.4, color: 0x5a6070, metal: 0.7, rough: 0.4 });
@@ -449,14 +449,47 @@ export default {
       gate.openDoor();
       w.after(0.5, () => g.say('hotel.l3.claimed', { priority: 2 }));
     };
-    // customs: two channels, a counter between them. You are carrying a suitcase. You have something to declare.
-    w.plat({ x: 0, y: 1.05, z: -120.7, w: 0.8, d: 10.8, h: 1.05, tex: 'marble', color: 0xffffff, roughness: 0.2, radius: 0.04 });
-    w.box({ x: 4.5, y: 0.012, z: -120, w: 5, h: 0.02, d: 11.6, color: 0x8a1a22, rough: 0.9, shadow: false });
-    w.box({ x: -4.5, y: 0.012, z: -120, w: 5, h: 0.02, d: 11.6, color: 0x1a6a3a, rough: 0.9, shadow: false });
-    fakeExit(w, game, { x: -4.5, y: 0, z: -125.75, kind: 'door', label: 'NOTHING TO DECLARE', color: 0x2dd47f, say: 'hotel.l3.green' });
-    w.sign({ text: 'GOODS TO DECLARE', x: 4.5, y: 4.95, z: -125.55, w: 3.4, h: 0.9, color: '#ff8a8a', double: false, tw: 512, size: 70, glow: true });
-    w.sign({ text: '(say, a suitcase)', x: 4.5, y: 4.38, z: -125.55, w: 3.4, h: 0.4, color: '#ffc8c8', double: false, tw: 512, size: 40 });
-    const goal = w.goal({ x: 4.5, y: 0, z: -122.6, color: GOLD, onReach: () => { game.say('hotel.l3.done', { priority: 2 }); game.completeLevel(); } });
+    // ---- stage 5 · the pile: unclaimed luggage up to the customs mezzanine (the stacks are solid; the cardboard box is a lie of sorts) ----
+    const cpPile = w.checkpoint({ x: 0, y: 0, z: -114.6, real: true });
+    const stackCols = [0x6a3a2a, 0x2a4a6a, 0x5a2a4a, 0x3a5a3a, 0x7a5a2a, 0x4a3a5a, 0x8a3a30];
+    const stack = (x, z, top, ww, dd, i, o = {}) => {
+      const p = path(w.plat({ x, y: top, z, w: ww, d: dd, h: 0.5, tex: 'leather', color: stackCols[i % stackCols.length], roughness: 0.6, radius: 0.1, ...o }));
+      if (!o.noColumn) for (const sx of [-1, 1]) for (const sz of [-1, 1]) w.box({ x: x + sx * (ww / 2 - 0.35), y: (top - 0.5) / 2, z: z + sz * (dd / 2 - 0.35), w: 0.7, h: top - 0.5, d: 0.7, tex: 'leather', color: stackCols[(i + 2) % stackCols.length], rough: 0.6, shadow: false });
+      w.box({ x: x + ww * 0.2, y: top + 0.04, z: z - dd * 0.15, w: 0.5, h: 0.06, d: 0.06, color: 0x1a1a1a, shadow: false });    // a handle, sticking out
+      return p;
+    };
+    const K1 = stack(-6.0, -115.4, 0.7, 3.2, 3.0, 0);
+    const K2 = stack(-2.6, -116.6, 1.4, 2.8, 2.6, 1);
+    const K3 = path(w.plat({ x: 2.2, y: 2.1, z: -116.2, w: 2.6, d: 2.4, h: 0.16, tex: 'wood', color: 0xa8864e, roughness: 0.8, radius: 0.04 }));   // an overhead pallet on a crane cable
+    K3.attach(w.box({ x: 2.2, y: 9, z: -116.2, w: 0.07, h: 14, d: 0.07, color: 0x30343c, metal: 0.6, static: false, shadow: false }));
+    for (const [dx, dz] of [[-0.9, -0.8], [0.9, 0.8]]) K3.attach(w.box({ x: 2.2 + dx, y: 1.88, z: -116.2 + dz, w: 0.3, h: 0.1, d: 0.3, color: 0x6a4a28, static: false, shadow: false }));
+    w.mover(K3, (t) => ({ x: 1.5 * Math.sin(t * 0.85) }));
+    const K4 = stack(6.2, -117.2, 2.8, 2.8, 2.6, 3);
+    const K5 = stack(7.0, -120.8, 3.5, 2.6, 2.6, 5);
+    const K6 = w.crumble(stack(3.6, -121.8, 4.2, 2.8, 2.6, 4, { tex: 'wood', color: 0xb89a6a, noColumn: true }), { delay: 0.7, gone: 3 });          // the cardboard box (FRAGILE: it means it)
+    w.sign({ text: 'FRAGILE', x: 3.6, y: 4.72, z: -121.8, w: 2.2, h: 0.7, rotX: -Math.PI / 2, color: '#a02a1a', double: false, tw: 512, size: 110 });
+    const K7 = stack(0.2, -120.4, 4.9, 2.8, 2.6, 6);
+    const K8 = stack(-3.6, -121.2, 5.6, 2.6, 2.6, 2);
+    const K9 = stack(-7.2, -118.8, 6.3, 2.4, 2.4, 1);
+    const K10 = stack(-6.4, -122.8, 7.0, 2.4, 2.4, 0);
+    const K11 = path(w.plat({ x: -1.8, y: UP, z: -124.2, w: 3.8, d: 1.7, h: 0.5, tex: 'marble', color: 0xdddddd, roughness: 0.3, radius: 0.04 }));
+    w.box({ x: -1.8, y: UP / 2 - 0.2, z: -124.2, w: 3.6, h: UP - 0.4, d: 1.5, tex: 'leather', color: 0x4a3a2a, rough: 0.7, shadow: false });
+    const mezzIn = path(w.plat({ x: 0, y: UP, z: -127.2, w: 3.0, d: 2.2, h: 0.2, tex: 'marble', color: 0xffffff }));
+    mezzIn.group.visible = false;
+    const cpTop = w.checkpoint({ x: 0, y: UP, z: -128.2, real: true });
+    w.sign({ text: 'UNCLAIMED · 30 DAYS · THEN THEY ARE MINE', x: 0, y: 3.4, z: -112.95, w: 9, h: 0.7, rotY: Math.PI, color: '#f1d28a', double: false, tw: 1024, size: 44 });
+    for (const [x, z, c] of [[-8.6, -114, 0], [8.4, -113.8, 1], [-8.8, -121, 2], [8.8, -122, 3], [9, -117, 4], [-9, -117.6, 5]]) { suitcase(w, x, z, stackCols[c], 0, 1.4); suitcase(w, x + 0.2, z - 0.1, stackCols[(c + 3) % 7], 0.9, 1.2); }
+
+    // ---- customs, on the mezzanine: two channels, a counter between them. You are carrying a suitcase. You have something to declare.
+    w.plat({ x: 0, y: UP + 1.05, z: -133, w: 0.8, d: 9, h: 1.05, tex: 'marble', color: 0xffffff, roughness: 0.2, radius: 0.04 });
+    w.box({ x: 4.5, y: UP + 0.012, z: -133.4, w: 5, h: 0.02, d: 11.6, color: 0x8a1a22, rough: 0.9, shadow: false });
+    w.box({ x: -4.5, y: UP + 0.012, z: -133.4, w: 5, h: 0.02, d: 11.6, color: 0x1a6a3a, rough: 0.9, shadow: false });
+    fakeExit(w, game, { x: -4.5, y: UP, z: -138.55, kind: 'door', label: 'NOTHING TO DECLARE', color: 0x2dd47f, say: 'hotel.l3.green' });
+    w.sign({ text: 'GOODS TO DECLARE', x: 4.5, y: UP + 4.1, z: -138.7, w: 3.4, h: 0.9, color: '#ff8a8a', double: false, tw: 512, size: 70, glow: true });
+    w.sign({ text: '(say, a suitcase)', x: 4.5, y: UP + 3.5, z: -138.7, w: 3.4, h: 0.4, color: '#ffc8c8', double: false, tw: 512, size: 40 });
+    // the customs officer's idea of a joke: the stamp (the goal) keeps being somewhere else, twice
+    const goal = evasiveGoal(w, game, { spots: [{ x: 4.5, y: UP, z: -136.2 }, { x: 7.0, y: UP, z: -129.6 }, { x: 2.6, y: UP, z: -134.2 }], radius: 5, color: GOLD, say: ['hotel.l3.hop1', 'hotel.l3.hop2'], onReach: () => { game.say('hotel.l3.done', { priority: 2 }); game.completeLevel(); } });
+    w.goalObj = goal;
 
     // =====================================================================================================
     //  The host, the stages, the hint
@@ -465,9 +498,10 @@ export default {
       { name: NAMES[0], at: { x: 0, y: 0, z: 11 }, clues: ['hotel.l3.hint1', 'hotel.l3.hint2', 'hotel.l3.hint3'], vars: () => ({ a: code[0], b: code[1], code }), solved: () => doorA.open, trail: [{ x: 0, y: 0, z: -6.5 }, { x: 0, y: 0, z: -9.6 }] },
       { name: NAMES[1], at: { x: 0, y: 0, z: -11.2 }, trail: [{ x: 0, y: 0, z: -16 }, { x: 0, y: 0, z: -23 }, { x: 0, y: 0, z: -27.5 }, { x: 0, y: 0, z: -33 }, { x: 0, y: 0, z: -40 }, { x: 0, y: 0, z: -45.5 }, { x: -6.5, y: 0, z: -45.5 }, { x: BELT_C.x, y: 0, z: -45.5 }, { x: BELT_C.x, y: 0, z: -50 }, { x: BELT_C.x, y: 0, z: -55 }] },
       { name: NAMES[2], at: { x: BELT_C.x, y: 0, z: -58.8 }, clues: ['hotel.l3.w.hint1', 'hotel.l3.w.hint2', 'hotel.l3.w.hint3'], vars: () => ({ code: wcode }), solved: () => doorB.open, trail: [{ x: 0, y: 0, z: -70.5 }, { x: 0, y: 0, z: -74 }, { x: 0, y: 0, z: -80 }] },
-      { name: NAMES[3], at: { x: 0, y: 0, z: -85.6 }, clues: ['hotel.l3.lp.hint1', 'hotel.l3.lp.hint2', 'hotel.l3.lp.hint3'], vars: () => ({ code: claim }), solved: () => claimed, trail: [{ x: 8.2, y: 0, z: -105.6 }, { x: 8.2, y: 0, z: -109.6 }, { x: 0, y: 0, z: -110.2 }, { x: 0, y: 0, z: -114 }, { x: 4.5, y: 0, z: -116.5 }], end: { x: goal.x, y: 0, z: goal.z } },
+      { name: NAMES[3], at: { x: 0, y: 0, z: -85.6 }, clues: ['hotel.l3.lp.hint1', 'hotel.l3.lp.hint2', 'hotel.l3.lp.hint3'], vars: () => ({ code: claim }), solved: () => claimed, trail: [{ x: 8.2, y: 0, z: -105.6 }, { x: 8.2, y: 0, z: -109.6 }, { x: 0, y: 0, z: -110.2 }] },
+      { name: NAMES[4], at: { x: 0, y: 0, z: -114.6 }, trail: [K1, K2, K3, K4, K5, K6, K7, K8, K9, K10, K11].map((k) => ({ x: k.body.x, y: k.top, z: k.body.z })).concat([{ x: 0, y: UP, z: -127.2 }]), end: () => ({ x: goal.x, y: UP, z: goal.z }) },
     ]);
-    const cps = new Map([[cpBelts, 1], [cpWeigh, 2], [cpLP, 3]]);
+    const cps = new Map([[cpBelts, 1], [cpWeigh, 2], [cpLP, 3], [cpPile, 4]]);
     w.hooks.onCheckpoint = (c) => {
       const i = cps.get(c);
       if (i === undefined) return;
@@ -475,6 +509,7 @@ export default {
       if (i === 1) game.say('hotel.l3.belt', { priority: 1 });
       if (i === 2) { game.say('hotel.l3.weigh', { priority: 1 }); game.say('hotel.l3.big', { priority: 1 }); }
       if (i === 3) game.say('hotel.l3.lp', { priority: 1 });
+      if (i === 4) game.say('hotel.l3.pile', { priority: 1 });
     };
     // (the expiring checkpoint announces itself with the kit's toast; the host adds his bit)
     w.trigger({ x: 0, y: 1.2, z: -27.5, w: 2.4, h: 3.2, d: 2.4, once: true, onEnter: () => { if (!game.baby) game.say('hotel.l3.exp', { priority: 1 }); } });
@@ -527,7 +562,7 @@ export default {
       for (const [cx, cz] of corners) { if (crosses(p.x, p.z, cx, cz)) continue; const d = Math.hypot(cx - p.x, cz - p.z) + Math.hypot(tx - cx, tz - cz) + (crosses(cx, cz, tx, tz) ? 40 : 0); if (d < bd) { bd = d; best = [cx, cz]; } }
       return best ? { x: best[0], z: best[1] } : { x: tx, z: tz };
     };
-    let look = 0, weighK = 0, weighT = 0, readBack = false;
+    let pileSync = false, look = 0, weighK = 0, weighT = 0, readBack = false;
     w.botPlan = (g) => {
       const p = g.player;
       if (g.frozen) return { wait: true, x: p.x, z: p.z - 1 };
@@ -572,8 +607,9 @@ export default {
       if (p.z > -108.6 && p.x > 3) return p.x < 8.2 ? { x: 8.7, z: p.z } : { x: 8.7, z: -109.8 };    // round the keypad pillar and the desk
       if (gate.t < 1 && p.z < -109) return { wait: true, x: 0, z: WD - 2 };
       if (p.z > WD + 0.4) return Math.abs(p.x) > 1.0 ? { x: 0, z: -110.4 } : { x: 0, z: WD - 1.6 };
-      if (p.z > -115.5 && p.x < 3.5) return { x: 4.5, z: -116.4 };
-      return { x: goal.x, z: goal.z };
+      if (window.__bot && !pileSync) { pileSync = true; window.__bot.i = w.plats.filter((q) => q.o.path).indexOf(K1); }   // (test bot: start the route at the pile)
+      if (p.y > UP - 0.5 && p.z < -125.5) return { x: goal.x, z: goal.z };      // the stamp runs away from you (twice)
+      return null;        // the pile: follow the route platforms
     };
   },
 };
