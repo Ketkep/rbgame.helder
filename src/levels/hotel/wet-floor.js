@@ -96,13 +96,13 @@ export default {
 
     // ===== stage 3 · mop-bot lane ======================================================================
     const LX = 16.6, LZ0 = -5.6, LZ1 = -20.6;
-    const lane = marble({ x: LX, y: 1.5, z: (LZ0 + LZ1) / 2, w: 3.4, d: LZ0 - LZ1, h: 0.3, slippery: true });
+    const lane = marble({ x: LX, y: 1.5, z: (LZ0 + LZ1) / 2, w: 3.4, d: LZ0 - LZ1, h: 0.3 });
     mark(lane);
     for (const z of [-8, -13, -18]) stages[2].route.push({ x: LX, y: 1.5, z });   // (the lane itself is one platform: route points only)
     w.sign({ text: 'MOP LANE ▸', x: LX, y: 1.52, z: LZ0 + 0.2, w: 3, h: 0.8, rotX: -Math.PI / 2, rotY: 0, color: '#ffd21f', double: false, tw: 512, size: 70 });
     plinth(lane);
-    const mopA = w.hazard({ x: LX, y: 1.9, z: -9.5, w: 3.1, h: 0.8, d: 1.3, color: 0xffd21f, move: (t) => ({ z: 3.4 * Math.sin(t * 0.95) }) });
-    const mopB = w.hazard({ x: LX, y: 1.9, z: -17.1, w: 3.1, h: 0.8, d: 1.3, color: 0xffd21f, move: (t) => ({ z: 3.4 * Math.sin(t * 0.8 + 2.2) }) });
+    const mopA = w.hazard({ x: LX, y: 1.9, z: -9.5, w: 3.1, h: 0.8, d: 1.3, color: 0xffd21f, move: (t) => ({ z: 3.4 * Math.sin(t * 0.7) }) });
+    const mopB = w.hazard({ x: LX, y: 1.9, z: -17.1, w: 3.1, h: 0.8, d: 1.3, color: 0xffd21f, move: (t) => ({ z: 3.4 * Math.sin(t * 0.6 + 2.2) }) });
     for (const m of [mopA, mopB]) { m.core.visible = false; m.shell.visible = false; m.jumpable = true; mopBot(m.group); }
     const mop = mopA;
     const E1 = mark(marble({ x: LX, y: 1.5, z: -22.3, w: 3.4, d: 2.3, h: 0.3 }));
