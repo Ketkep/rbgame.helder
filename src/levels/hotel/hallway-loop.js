@@ -9,23 +9,25 @@ import { twist, crash, fakeComplete, stageTitle, ghostPlat } from './trolls.js';
 // corridor gets worse every act, and the host's opinion is worth exactly nothing.
 //
 //   Act I   Night Shift        rounds 1–2  the plain corridor: learn it (round 1 is always normal)
-//   Act II  Mind the Gap       rounds 3–4  the carpet is up: gaps, a stack of carpet rolls, a joist, a carpet dolly on rails.
+//   Act II  Mind the Gap       rounds 3–4  the carpet is up: gaps, a stack of carpet rolls, a joist, two carpet dollies on rails.
 //                                          One of the two rounds is a MIRRORED corridor (and mirrors your mouse, too)
-//   Act III Turndown Service   rounds 5–6  laundry chutes that open on a cycle, a towel trolley to hop, a cart that bursts out of 311.
-//                                          A painting hangs upside down in one round (and so does your mouse). Round 6's counter EXPIRES
-//   Act IV  Reality Unstable   rounds 7–8  a floor that does not render, crumbling carpet, a bridge that gives way. Round 7: the screen
-//                                          crashes, and afterwards a lovely glowing EXIT door appears. It is new. New things are anomalies
+//   Act III Turndown Service   rounds 5–6  four laundry chutes that open on a cycle (amber light blinks first), a towel trolley to hop,
+//                                          a cart that bursts out of 309 (the door opens first). A painting hangs upside down in one round
+//                                          (and so does your mouse). Round 6's counter EXPIRES if you dawdle: it drops back to 5
+//   Act IV  Reality Unstable   rounds 7–8  a floor that does not render (its rim glows), crumbling carpet, a floor that blinks in and out
+//                                          (it flickers first), an invisible dolly, a bridge that gives way. Round 7: the screen crashes,
+//                                          and when it comes back a lovely glowing EXIT door has appeared. It is new. New is an anomaly
 //   Encore  Round 9 of 8       after the stairs and a LEVEL COMPLETE that is not: the counter says 9/8. That is different. Turn back:
-//                                          the way out was behind you, up the fire stairs.
+//                                          the way out was behind you, up four broken flights of fire stairs.
 // A wrong call sends you back to the first round of the act (the act is the checkpoint). Baby Mode: a wrong call only repeats the round,
 // nothing expires, the decoy EXIT says so, the twists and the crash are short.
 
-const LC = 56, X = 2.4, H = 4.4, PIT = -7;              // corridor length (z 0 → -LC), half width, ceiling, pit floor
+const LC = 64, X = 2.4, H = 4.4, PIT = -7;              // corridor length (z 0 → -LC), half width, ceiling, pit floor
 const NEED = 8;
 const ACTS = ['Night Shift', 'Mind the Gap', 'Turndown Service', 'Reality Unstable', 'Encore · Round 9 of 8'];
 const ACT_OF = [0, 0, 0, 1, 1, 2, 2, 3, 3];               // round -> act
 const FIRST_OF = [1, 3, 5, 7];                            // act -> its first round
-const DOOR_Z = [-6, -14, -22, -30, -38, -46];
+const DOOR_Z = [-6, -14, -22, -30, -38, -46, -54];
 const EXPIRE = 45;                                        // round 6: the round-5 point is valid for this long
 const rnd = (n) => Math.floor(Math.random() * n);
 
@@ -63,10 +65,17 @@ export default {
     // the pit (only ever seen through gaps): a dark subfloor with old joists
     w.plat({ x: 0, y: PIT, z: -LC / 2, w: 2 * X, d: LC, h: 0.4, tex: 'wood', color: 0x2a1c16, roughness: 0.9 });
     for (let z = -2; z > -LC; z -= 2.2) w.box({ x: 0, y: -2.6, z, w: 2 * X, h: 0.22, d: 0.18, color: 0x3a281c, rough: 0.9, shadow: false });
-    // wainscot + chair rail + cornice along both walls (symmetric, so they stay out of the mirror group)
+    // wainscot + chair rail (cut at every door) + cornice along both walls (symmetric, so they stay out of the mirror group)
     for (const sx of [-1, 1]) {
-      w.box({ x: sx * (X - 0.06), y: 0.55, z: -LC / 2, w: 0.12, h: 1.1, d: LC, tex: 'panel', color: 0xfff4e8, shadow: false });
-      w.box({ x: sx * (X - 0.09), y: 1.14, z: -LC / 2, w: 0.18, h: 0.08, d: LC, color: GOLD, metal: 1, rough: 0.3, shadow: false });
+      let z = 0;
+      for (const dz of [...DOOR_Z, -LC]) {
+        const z1 = dz === -LC ? -LC : dz + 0.76, len = z - z1;
+        if (len > 0.05) {
+          w.box({ x: sx * (X - 0.06), y: 0.55, z: (z + z1) / 2, w: 0.12, h: 1.1, d: len, tex: 'panel', color: 0xfff4e8, shadow: false, radius: 0.02 });
+          w.box({ x: sx * (X - 0.09), y: 1.14, z: (z + z1) / 2, w: 0.18, h: 0.08, d: len, color: GOLD, metal: 1, rough: 0.3, shadow: false, radius: 0.02 });
+        }
+        z = dz - 0.76;
+      }
       w.box({ x: sx * (X - 0.15), y: H - 0.2, z: -LC / 2, w: 0.3, h: 0.4, d: LC, color: 0xece3cf, rough: 0.4, shadow: false });
     }
     // end walls (a doorway each) and the vestibules behind them
@@ -85,7 +94,7 @@ export default {
       w.plat({ x: 0, y: DH + 1.2, z: zc, w: 2 * VW + 1.2, d, h: 0.6, tex: 'coffer', color: 0x8a8070 });
       return back ? w.plat({ x: 0, y: DH + 0.6, z: back, w: 2 * VW + 1.2, d: 0.5, h: DH + 0.6 - PIT, ...wallM, color: 0x6a5048 }) : null;
     };
-    const southBack = vest(0.4, 4.6, 4.85);
+    const southBack = vest(0.4, 4.5, 4.75);
     vest(-LC - 0.4, -LC - 4.6, -LC - 4.85);
     // light: a few real lights down the middle (symmetric) + the sconces' glow
     const lights = [-6, -20, -34, -48].map((z) => w.light(0xffd8a8, 7, 16, 0, H - 0.5, z));
@@ -115,7 +124,7 @@ export default {
       for (const [py, ph] of [[1.75, 0.9], [0.62, 0.9]]) M(BX(0.8, ph, 0.02), plainMaterial(0x6a4028, { roughness: 0.4 }), 0.56, py, 0.04, { to: hinge });
       M(BX(0.12, 0.05, 0.08), goldM, 1.0, 1.05, 0.06, { to: hinge });
       const pmat = new THREE.MeshBasicMaterial({ map: plateTex(String(num)), toneMapped: false });
-      const plate = M(new THREE.PlaneGeometry(0.42, 0.21), pmat, 0.56, 1.6, 0.045, { to: hinge });
+      const plate = M(new THREE.PlaneGeometry(0.42, 0.21), pmat, 0.56, 1.6, 0.058, { to: hinge });
       const glow = M(BX(1.0, 0.025, 0.02), glowMaterial(0xffc070, 1.2), 0, 0.02, 0.02, { to: g });    // light under the door
       const spill = M(new THREE.PlaneGeometry(1.12, 2.38), new THREE.MeshBasicMaterial({ color: 0xffd9a0, toneMapped: false }), 0, 1.19, 0.012, { to: g }); spill.visible = false;
       const d = { g, hinge, leaf, plate, pmat, glow, spill, side, z, num, frame: [frameT, frameL, frameR] };
@@ -133,7 +142,7 @@ export default {
       const g = onWall(side, z); const inner = new THREE.Group(); inner.position.set(0, 1.78, 0.04); g.add(inner);
       M(BX(1.34, 0.98, 0.06), goldM, 0, 0, 0, { to: inner });
       const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 });
-      M(new THREE.PlaneGeometry(1.12, 0.78), mat, 0, 0, 0.032, { to: inner });
+      M(new THREE.PlaneGeometry(1.12, 0.78), mat, 0, 0, 0.036, { to: inner });
       paintings[key] = { g, inner, mat, tex, side, z };
     };
     painting('portrait', -1, -10, PT.portrait);
@@ -141,10 +150,16 @@ export default {
     painting('hotel', -1, -26, PT.hotel);
     painting('fruit', 1, -34, PT.fruit);
     painting('moon', -1, -42, PT.moon);
+    painting('lighthouse', 1, -50, PT.lighthouse);
+    // the evacuation plan (YOU ARE HERE, on floor 3, in a corridor shaped like a loop)
+    const planG = onWall(-1, -50);
+    M(BX(1.0, 0.72, 0.03), plainMaterial(0xe8e4d8, { roughness: 0.6 }), 0, 1.78, 0.03, { to: planG });
+    const planMat = new THREE.MeshBasicMaterial({ map: PT.plan3, toneMapped: false });
+    M(new THREE.PlaneGeometry(0.92, 0.64), planMat, 0, 1.78, 0.05, { to: planG });
 
     // ---- sconces: a pair at every gap between doors ------------------------------------------------------------------------------------
     const sconces = [];
-    for (const z of [-10, -18, -26, -34, -42, -51]) for (const side of [-1, 1]) {
+    for (const z of [-10, -18, -26, -34, -42, -50, -62]) for (const side of [-1, 1]) {
       const g = onWall(side, z);
       M(BX(0.16, 0.34, 0.05), goldM, 0, 2.95, 0.03, { to: g });
       const mat = glowMaterial(0xffd8a0, 1.6);
@@ -158,21 +173,22 @@ export default {
     const setSconce = (s, on, color = null) => { s.shade.visible = on; s.halo.visible = on; s.off.visible = !on; if (color !== null) s.mat.color.copy(color); };
 
     // ---- the furniture of a hotel corridor (wall-mounted, so the floor can come and go) --------------------------------------------------
-    const extinguisher = (z) => { const g = onWall(-1, z); M(BX(0.5, 0.9, 0.18), plainMaterial(0xd8d4cc, { roughness: 0.5 }), 0, 1.25, 0.09, { to: g }); M(new THREE.CylinderGeometry(0.1, 0.1, 0.6, 12), plainMaterial(0xc0202a, { roughness: 0.35 }), 0, 1.2, 0.2, { to: g, cast: true }); M(new THREE.PlaneGeometry(0.4, 0.12), new THREE.MeshBasicMaterial({ map: textTexture('FIRE', { w: 128, h: 40, color: '#fff', bg: '#b0101c', size: 30 }), toneMapped: false }), 0, 1.82, 0.19, { to: g }); return g; };
-    const ext1 = extinguisher(-18), ext2 = extinguisher(-20.6); ext2.visible = false;
-    const vaseShelf = onWall(1, -10); M(BX(0.9, 0.05, 0.3), goldM, 0, 1.2, 0.15, { to: vaseShelf });
+    // (all of it sits above the chair rail at 1.18 m, so nothing pokes through the panelling)
+    const extinguisher = (z) => { const g = onWall(-1, z); M(BX(0.5, 0.86, 0.18), plainMaterial(0xd8d4cc, { roughness: 0.5 }), 0, 1.68, 0.09, { to: g }); M(new THREE.CylinderGeometry(0.1, 0.1, 0.58, 12), plainMaterial(0xc0202a, { roughness: 0.35 }), 0, 1.64, 0.21, { to: g, cast: true }); M(new THREE.PlaneGeometry(0.4, 0.12), new THREE.MeshBasicMaterial({ map: textTexture('FIRE', { w: 128, h: 40, color: '#fff', bg: '#b0101c', size: 30 }), toneMapped: false }), 0, 2.24, 0.19, { to: g }); return g; };
+    const ext1 = extinguisher(-18), ext2 = extinguisher(-20.4); ext2.visible = false;
+    const vaseShelf = onWall(1, -10); M(BX(0.9, 0.05, 0.3), goldM, 0, 1.36, 0.15, { to: vaseShelf });
     const vase = new THREE.Group(); vaseShelf.add(vase);
-    M(new THREE.CylinderGeometry(0.09, 0.13, 0.4, 14), plainMaterial(0x2a4aa0, { roughness: 0.2, metalness: 0.2 }), 0, 1.43, 0.15, { to: vase });
-    for (let k = 0; k < 5; k++) M(new THREE.SphereGeometry(0.07, 8, 6), plainMaterial([0xffe0e8, 0xff5a7a, 0xffffff][k % 3], { roughness: 0.6 }), Math.cos(k * 1.3) * 0.12, 1.72 + (k % 2) * 0.08, 0.15 + Math.sin(k * 1.3) * 0.08, { to: vase });
-    const planter = onWall(1, -26); M(BX(0.8, 0.32, 0.3), plainMaterial(0x3a2a20, { roughness: 0.6 }), 0, 1.0, 0.16, { to: planter });
-    for (let k = 0; k < 9; k++) { const lf = M(new THREE.SphereGeometry(0.17, 8, 6), plainMaterial(0x2a6a3a, { roughness: 0.7 }), -0.3 + (k % 5) * 0.15, 1.3 + (k % 3) * 0.16, 0.16 + ((k * 7) % 3 - 1) * 0.05, { to: planter }); lf.scale.y = 1.5; }
-    const phoneG = onWall(-1, -34); M(BX(0.5, 0.05, 0.26), goldM, 0, 1.0, 0.13, { to: phoneG });
-    const phone = new THREE.Group(); phoneG.add(phone);
+    M(new THREE.CylinderGeometry(0.09, 0.13, 0.4, 14), plainMaterial(0x2a4aa0, { roughness: 0.2, metalness: 0.2 }), 0, 1.59, 0.15, { to: vase });
+    for (let k = 0; k < 5; k++) M(new THREE.SphereGeometry(0.07, 8, 6), plainMaterial([0xffe0e8, 0xff5a7a, 0xffffff][k % 3], { roughness: 0.6 }), Math.cos(k * 1.3) * 0.12, 1.88 + (k % 2) * 0.08, 0.15 + Math.sin(k * 1.3) * 0.08, { to: vase });
+    const planter = onWall(1, -26); M(BX(0.8, 0.32, 0.3), plainMaterial(0x3a2a20, { roughness: 0.6 }), 0, 1.42, 0.16, { to: planter });
+    for (let k = 0; k < 9; k++) { const lf = M(new THREE.SphereGeometry(0.17, 8, 6), plainMaterial(0x2a6a3a, { roughness: 0.7 }), -0.3 + (k % 5) * 0.15, 1.72 + (k % 3) * 0.16, 0.16 + ((k * 7) % 3 - 1) * 0.05, { to: planter }); lf.scale.y = 1.5; }
+    const phoneG = onWall(-1, -34); M(BX(0.5, 0.05, 0.26), goldM, 0, 1.32, 0.13, { to: phoneG });
+    const phone = new THREE.Group(); phone.position.y = 0.32; phoneG.add(phone);
     M(BX(0.3, 0.12, 0.22), plainMaterial(0xe8dcc0, { roughness: 0.4 }), 0, 1.09, 0.13, { to: phone });
     const handset = M(BX(0.34, 0.06, 0.08), plainMaterial(0xe8dcc0, { roughness: 0.4 }), 0, 1.18, 0.13, { to: phone });
     const alarm = onWall(1, -42); M(BX(0.22, 0.28, 0.08), plainMaterial(0xc81a24, { roughness: 0.4 }), 0, 1.45, 0.04, { to: alarm }); M(new THREE.PlaneGeometry(0.18, 0.07), new THREE.MeshBasicMaterial({ map: textTexture('FIRE', { w: 128, h: 50, color: '#fff', size: 36 }), toneMapped: false, transparent: true }), 0, 1.53, 0.085, { to: alarm });
     const tray = (x, z) => { const g = new THREE.Group(); g.position.set(x, 0, z); deco.add(g); M(new THREE.CylinderGeometry(0.32, 0.32, 0.03, 20), plainMaterial(0xd8dce4, { metalness: 0.9, roughness: 0.2 }), 0, 0.03, 0, { to: g }); M(new THREE.SphereGeometry(0.22, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), plainMaterial(0xd8dce4, { metalness: 0.9, roughness: 0.2 }), 0, 0.04, 0, { to: g }); return g; };
-    const tray1 = tray(-1.9, -3.6), tray2 = tray(-1.9, -4.5); tray2.visible = false;
+    const tray1 = tray(1.85, -57.2), tray2 = tray(1.85, -56.4); tray2.visible = false;     // outside 314, at the far end
     // the ceiling speaker (it plays the music; a green light says so)
     const speaker = M(new THREE.CircleGeometry(0.22, 18), plainMaterial(0x2a2a2a, { roughness: 0.6 }), 0, H - 0.012, -4.2, { rx: Math.PI / 2 });
     void speaker;
@@ -180,16 +196,16 @@ export default {
     // carpet arrows ("this way"): two gold arrows at the start
     const arrowTex = textTexture('▲', { w: 128, h: 128, color: '#e8c673', size: 110 });
     const arrows = [-4.6, -7.0].map((z) => M(new THREE.PlaneGeometry(0.7, 0.7), new THREE.MeshBasicMaterial({ map: arrowTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }), 0, 0.012, z, { rx: -Math.PI / 2 }));
-    // wet footprints into 301 (an anomaly) and a stain on the ceiling (another)
+    // wet footprints from the far door into 314 (an anomaly) and a stain on the ceiling (another)
     const prints = new THREE.Group(); deco.add(prints); prints.visible = false;
     const printMat = new THREE.MeshBasicMaterial({ color: 0x0c0608, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 });
-    for (let k = 0; k < 7; k++) { const u = k / 6; M(new THREE.CircleGeometry(0.09, 10), printMat, 0.6 - u * 2.55 + (k % 2) * 0.16, 0.013, -0.8 - u * 5.0, { rx: -Math.PI / 2, to: prints }).scale.set(1, 1.8, 1); }
+    for (let k = 0; k < 8; k++) { const u = k / 7; M(new THREE.CircleGeometry(0.09, 10), printMat, -0.2 + u * 1.9 + (k % 2) * 0.16, 0.013, -62.6 + u * 6.4, { rx: -Math.PI / 2, to: prints }).scale.set(1, 1.8, 1); }
     const stain = M(new THREE.PlaneGeometry(1.6, 1.3), new THREE.MeshBasicMaterial({ map: softTexture('shadow'), transparent: true, depthWrite: false, color: 0x301008 }), 0.5, H - 0.015, -24, { rx: Math.PI / 2 }); stain.visible = false;
     // a figure at the far end (an anomaly; it just stands there)
-    const figure = new THREE.Group(); figure.position.set(0.8, 0, -53.6); deco.add(figure); figure.visible = false;
+    const figure = new THREE.Group(); figure.position.set(0.8, 0, -61.6); deco.add(figure); figure.visible = false;
     { const fm = plainMaterial(0x08080a, { roughness: 0.9 }); M(new THREE.CylinderGeometry(0.2, 0.26, 1.25, 10), fm, 0, 0.9, 0, { to: figure }); M(new THREE.SphereGeometry(0.17, 10, 8), fm, 0, 1.72, 0, { to: figure }); M(new THREE.CylinderGeometry(0.2, 0.2, 0.12, 10), plainMaterial(0x5a0a14), 0, 1.86, 0, { to: figure }); }
     // an extra door where there is none (an anomaly)
-    const extraDoor = makeDoor(1, -51, 313); extraDoor.g.visible = false;
+    const extraDoor = makeDoor(1, -59, 315); extraDoor.g.visible = false; extraDoor.g.position.x -= 0.13;   // (stands proud of the panelling)
     // the clock and the round counter on the north wall; a second counter over the south door (you see it when you turn back)
     const clockC = document.createElement('canvas'); clockC.width = 256; clockC.height = 128; const cg = clockC.getContext('2d');
     const clockTex = new THREE.CanvasTexture(clockC); clockTex.colorSpace = THREE.SRGBColorSpace; w.ownTextures.push(clockTex);
@@ -200,9 +216,8 @@ export default {
     const cTex = new THREE.CanvasTexture(cC); cTex.colorSpace = THREE.SRGBColorSpace; w.ownTextures.push(cTex);
     M(new THREE.PlaneGeometry(2.1, 0.79), new THREE.MeshBasicMaterial({ map: cTex, toneMapped: false }), 0, 3.5, -LC + 0.02);
     M(new THREE.PlaneGeometry(2.1, 0.79), new THREE.MeshBasicMaterial({ map: cTex, toneMapped: false }), 0, 3.5, -0.02, { ry: Math.PI });
-    const keepGoing = M(new THREE.PlaneGeometry(1.7, 0.3), new THREE.MeshBasicMaterial({ map: textTexture('↑ KEEP GOING', { w: 512, h: 90, color: '#6cf0b2', size: 56 }), transparent: true, toneMapped: false }), 0, 2.98, -LC + 0.03);
-    M(new THREE.PlaneGeometry(1.7, 0.3), new THREE.MeshBasicMaterial({ map: textTexture('↓ TURN BACK', { w: 512, h: 90, color: '#ffb35a', size: 56 }), transparent: true, toneMapped: false }), 0, 2.98, -0.03, { ry: Math.PI });
-    void keepGoing;
+    M(new THREE.PlaneGeometry(2.6, 0.32), new THREE.MeshBasicMaterial({ map: textTexture('ALL NORMAL? KEEP GOING ↑', { w: 768, h: 96, color: '#6cf0b2', size: 50 }), transparent: true, toneMapped: false }), 0, 4.1, -LC + 0.03);
+    M(new THREE.PlaneGeometry(2.6, 0.32), new THREE.MeshBasicMaterial({ map: textTexture('ANYTHING DIFFERENT? BACK ↓', { w: 768, h: 96, color: '#ffb35a', size: 50 }), transparent: true, toneMapped: false }), 0, 4.1, -0.03, { ry: Math.PI });
 
     // ================================================================================================================================
     //  The floor, act by act (each act its own set of platforms; route[] runs south → north, the bot and the hint follow it)
@@ -217,26 +232,41 @@ export default {
       route[act].push(p);
       return p;
     };
+    // a carpet dolly riding rails across a gap (the bot and the hint call it a ferry); `ghost`: it does not render (its rim glows)
+    const ferries = [];
+    const ferryAcross = (act, zNear, zFar, phase, ghost = false) => {
+      const D = 2.4, zc = (zNear + zFar) / 2, A = (zNear - zFar - D) / 2 - 0.45;
+      const o = { x: 0, y: 0, z: zc, w: 3.4, d: D, h: 0.3 };
+      const p = ghost ? ghostPlat(w, { ...o, color: 0xb9a15a }) : w.plat({ ...o, tex: 'metal', color: 0xb9a15a, roughness: 0.35, metalness: 0.7, radius: 0.04 });
+      p.kind = 'ferry'; p.act = act; route[act].push(p);
+      w.mover(p, (t) => ({ z: A * Math.sin(t * 0.62 + phase) }));
+      for (const sx of [-1, 1]) { const r = w.box({ x: sx * 1.2, y: -0.9, z: zc, w: 0.12, h: 0.12, d: zNear - zFar + 0.6, color: 0x8a8d95, metal: 0.8, rough: 0.4, shadow: false }); extras[act].push((on) => { r.visible = on; }); }
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const leg = w.box({ x: sx * 1.2, y: -0.55, z: zc + sz * 0.9, w: 0.1, h: 0.4, d: 0.1, color: 0x2a2a30, static: false }); p.attach(leg); if (ghost) leg.visible = false; }
+      ferries.push(p);
+      return p;
+    };
+    // a stretch of floor that blinks in and out of existence (it flickers for the last 0.6 s before it goes)
+    const blinks = [];
+    const BL = { P: 4.6, ON: 3.2 };
+    const blinkOn = (b, t) => ((t + b.off) % BL.P + BL.P) % BL.P < BL.ON;
+    const blinker = (act, z0, z1, off) => { const p = floor(act, z0, z1, { kind: 'blink', mat: crackMat }); const b = { p, off, on: true }; p.blink = b; blinks.push(b); return b; };
     // ---- Act I: the plain corridor
     floor(0, 0.2, -LC - 0.2);
     // ---- Act II: Mind the Gap (renovation: the carpet is up)
     floor(1, 0.2, -8);
-    floor(1, -10.8, -15);
-    const rolls = floor(1, -16.4, -18.4, { y: 0.7, h: 0.3, kind: 'rolls' });
+    floor(1, -10.8, -14);
+    const rolls = floor(1, -15.4, -17.4, { y: 0.7, h: 0.3, kind: 'rolls' });
     { const g = new THREE.Group(); rolls.group.add(g); g.position.y = -0.15; const rm = plainMaterial(0x8a2a38, { roughness: 0.9 }); for (const [dz, dy] of [[-0.5, -0.2], [0.5, -0.2], [0, 0.2]]) for (const sx of [-1, 1]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 2.3, 16), rm); c.rotation.z = Math.PI / 2; c.position.set(sx * 1.2, dy - 0.25, dz * 1.6); g.add(c); } rolls.group.children[0].visible = false; }
-    floor(1, -20.8, -24.4);
-    const beam = floor(1, -24.4, -30.4, { x: -0.9, w: 0.7, h: 0.3, kind: 'beam', mat: plainMaterial(0x7a5434, { roughness: 0.8 }) });
-    void beam;
+    floor(1, -19.8, -22.4);
+    ferryAcross(1, -22.4, -30.4, 0);
     floor(1, -30.4, -33);
-    const ferry = floor(1, -35.8, -38.2, { w: 3.4, h: 0.3, kind: 'ferry', mat: plainMaterial(0xb9a15a, { metalness: 0.7, roughness: 0.35 }) });
-    const FERRY = { z: -37, A: 2.35, om: 0.85 };
-    w.mover(ferry, (t) => ({ z: FERRY.A * Math.sin(t * FERRY.om) }));
-    for (const sx of [-1, 1]) { const r = w.box({ x: sx * 1.2, y: -0.9, z: -37, w: 0.12, h: 0.12, d: 8.4, color: 0x8a8d95, metal: 0.8, rough: 0.4, shadow: false }); extras[1].push((on) => { r.visible = on; }); }
-    for (const sx of [-1, 1]) ferry.attach(w.box({ x: sx * 1.2, y: -0.55, z: -37, w: 0.1, h: 0.4, d: 0.1, color: 0x2a2a30, static: false }));
-    floor(1, -41, -44);
-    floor(1, -46.6, -LC - 0.2);
-    // ---- Act III: Turndown Service (laundry chutes, a towel trolley, a cart that bursts out of 311)
-    floor(2, 0.2, -12);
+    floor(1, -33, -39, { x: -0.9, w: 0.7, h: 0.3, kind: 'beam', mat: plainMaterial(0x7a5434, { roughness: 0.8 }) });
+    floor(1, -39, -41.4);
+    ferryAcross(1, -41.4, -49.4, 2.4);
+    floor(1, -49.4, -52);
+    floor(1, -54.6, -LC - 0.2);
+    // ---- Act III: Turndown Service (laundry chutes, a towel trolley, a cart that bursts out of 309)
+    floor(2, 0.2, -10);
     const chutes = [];
     const chute = (z0, z1, phase) => {
       const p = floor(2, z0, z1, { kind: 'chute' });
@@ -244,45 +274,49 @@ export default {
       const strip = [];
       for (const sz of [z0 - 0.06, z1 + 0.06]) strip.push(w.box({ x: 0, y: 0.012, z: sz, w: 2 * X - 0.1, h: 0.02, d: 0.1, glow: 0xffa21f, glowIntensity: 1.6, shadow: false }));
       const leaves = [];
-      for (const sx of [-1, 1]) { const hg = new THREE.Group(); hg.position.set(sx * X, -0.05, zc); w.add(hg); const lf = new THREE.Mesh(new THREE.BoxGeometry(X, 0.08, d - 0.1), plainMaterial(0x6a5040, { roughness: 0.7 })); lf.position.x = -sx * X / 2; hg.add(lf); hg.visible = false; leaves.push({ hg, sx }); }
+      for (const sx of [-1, 1]) { const hg = new THREE.Group(); hg.position.set(sx * (X - 0.02), -0.05, zc); w.add(hg); const lf = new THREE.Mesh(new THREE.BoxGeometry(X - 0.04, 0.08, d - 0.1), plainMaterial(0x6a5040, { roughness: 0.7 })); lf.position.x = -sx * (X - 0.04) / 2; hg.add(lf); hg.visible = false; leaves.push({ hg, sx }); }
       const c = { p, z0, z1, phase, strip, leaves, open: false };
       chutes.push(c);
       return c;
     };
-    const CH = { P: 5.2, OPEN: 2.0, WARN: 1.0 };
-    chute(-12, -17, 0.0);
-    floor(2, -17, -27);
-    chute(-27, -32, 1.7);
+    const CH = { P: 6.0, OPEN: 2.6, WARN: 1.0 };
+    chute(-10, -15, 0.0);
+    floor(2, -15, -27);
+    chute(-27, -32, 2.1);
     floor(2, -32, -40);
-    chute(-40, -45, 3.4);
-    floor(2, -45, -LC - 0.2);
+    chute(-40, -45, 4.2);
+    floor(2, -45, -50);
+    chute(-50, -55, 1.0);
+    floor(2, -55, -LC - 0.2);
     const chuteState = (c, t) => { const u = ((t + c.phase) % CH.P + CH.P) % CH.P; return u < CH.OPEN ? 'open' : u > CH.P - CH.WARN ? 'warn' : 'shut'; };
     const chuteOpenSoon = (c, t, ahead) => { for (let k = 0; k <= 8; k++) if (chuteState(c, t + (ahead * k) / 8) === 'open') return true; return false; };
     // the towel trolley: low enough to hop, wide enough that you have to
-    const trolley = w.hazard({ x: 0, y: 0.38, z: -22, w: 4.2, h: 0.72, d: 1.1, color: 0xffffff, move: (t) => ({ z: 3.6 * Math.sin(t * 0.9) }) });
+    const trolley = w.hazard({ x: 0, y: 0.38, z: -21, w: 4.2, h: 0.72, d: 1.1, color: 0xffffff, move: (t) => ({ z: 4.4 * Math.sin(t * 0.9) }) });
     trolley.core.visible = false; trolley.shell.visible = false; trolley.jumpable = true;
     towelTrolley(trolley.group);
-    // the cart from 311: the door opens (that is the tell), a laundry cart shoots across the corridor and back
+    // the cart from 309: the door opens (that is the tell), a laundry cart shoots across the corridor and back
     const CART = { P: 5.0, OPEN: 0.9, OUT: 1.0 };
     const cartPhase = (t) => ((t % CART.P) + CART.P) % CART.P;
-    const cartX = (t) => { const u = cartPhase(t); if (u < CART.OPEN) return null; const k = (u - CART.OPEN) / CART.OUT; if (k >= 2) return null; const e = k < 1 ? k : 2 - k; return -X + 0.2 + e * (2 * X - 1.4); };
+    const cartX = (t) => { const u = cartPhase(t); if (u < CART.OPEN) return null; const k = (u - CART.OPEN) / CART.OUT; if (k >= 2) return null; const e = k < 1 ? k : 2 - k; return -X + 0.2 + e * (2 * X - 1.0); };
     const cart = w.hazard({ x: -X + 0.6, y: 0.6, z: -38, w: 1.0, h: 1.2, d: 1.15, color: 0xffffff });
     cart.core.visible = false; cart.shell.visible = false;
     laundryCart(cart.group);
     cart.move = (t) => { const x = cartX(t); return { x: (x ?? -X - 1) - cart.base.x }; };
     cart.predict = (t) => actNow === 2 && cartX(t) !== null;
-    // ---- Act IV: Reality Unstable (a floor that does not render, crumbling carpet, a bridge that gives way)
+    // ---- Act IV: Reality Unstable (a floor that does not render, crumbling carpet, a floor that blinks, an invisible dolly, a bridge)
     floor(3, 0.2, -8);
     const ghost = ghostPlat(w, { x: 0, y: 0, z: -11, w: 2 * X, d: 6, h: 0.5, color: 0x9a3040 });
     ghost.kind = 'ghost'; ghost.act = 3; route[3].push(ghost);
     for (let k = 0; k < 4; k++) { const p = floor(3, -14 - k * 2.5, -16.5 - k * 2.5, { kind: 'crumble', mat: crackMat }); w.crumble(p, { delay: 0.55, gone: 2.6 }); }
-    floor(3, -24, -28);
-    const bridge = floor(3, -31, -38, { w: 2.2, kind: 'crumble', mat: crackMat });
-    w.crumble(bridge, { delay: 1.45, gone: 2.4 });
-    floor(3, -40.6, -44);
-    floor(3, -46.6, -LC - 0.2);
-    // cracks drawn on the crumbling carpet (the tell)
-    // (the crack material is darker; the ghost floor glows at the rim)
+    floor(3, -24, -27);
+    blinker(3, -27.6, -30.6, 0); blinker(3, -31.2, -34.2, 4.6 - 0.45); blinker(3, -34.8, -37.8, 4.6 - 0.9);
+    floor(3, -38.4, -40.6);
+    ferryAcross(3, -40.6, -48, 1.2, true);
+    floor(3, -48, -50.2);
+    const bridge = floor(3, -52.8, -56.1, { w: 2.2, kind: 'crumble', mat: crackMat });
+    w.crumble(bridge, { delay: 1.0, gone: 2.4 });
+    floor(3, -56.1, -LC - 0.2);
+    // (the crumbling carpet is darker and threadbare: that is the tell; the ghost floor and the ghost dolly glow at the rim)
 
     let actNow = -1;
     const showAct = (a) => {
@@ -290,8 +324,11 @@ export default {
       for (let k = 0; k < 4; k++) { for (const p of route[k]) p.setEnabled(k === a); for (const f of extras[k]) f(k === a); }
       trolley.enabled = a === 2; trolley.group.visible = a === 2;
       if (a !== 2) { cart.enabled = false; cart.group.visible = false; }
-      for (const c of chutes) { for (const s of c.strip) s.visible = a === 2; for (const l of c.leaves) l.hg.visible = false; }
+      for (const c of chutes) { c.open = false; for (const s of c.strip) s.visible = a === 2; for (const l of c.leaves) l.hg.visible = false; }
+      if (a !== 3) for (const s of sconces) setSconce(s, lampOn(s));
+      dark = 1; for (const l of lights) l.intensity = 7;
     };
+    const lampOn = (s) => !(cur && ((cur.id === 'lampOut' && s.z === -34)));
 
     // ================================================================================================================================
     //  The anomalies. seeZ: where a sharp-eyed guest notices it (the bot turns back there); hint: the honest version
@@ -307,14 +344,14 @@ export default {
     def('lampOut', 'two lamps out', 'Look at the wall lamps.', -30, () => { setSconce(sconceAt(-1, -34), false); setSconce(sconceAt(1, -34), false); }, () => { setSconce(sconceAt(-1, -34), true); setSconce(sconceAt(1, -34), true); }, 1);
     def('noExt', 'the fire extinguisher is gone', 'Look along the left wall.', -14, () => { ext1.visible = false; }, () => { ext1.visible = true; }, 1);
     def('figure', 'somebody standing at the end', 'Look at the far end. Something is standing there.', -30, () => { figure.visible = true; }, () => { figure.visible = false; }, 1);
-    def('ajar', 'room 306 was open', 'Look at the doors on the right.', -10, () => { doors[306].hinge.rotation.y = -0.9; doors[306].spill.visible = true; }, () => { doors[306].hinge.rotation.y = 0; doors[306].spill.visible = false; }, 1);
+    def('ajar', 'room 306 was open', 'Look at the doors on the right.', -18, () => { doors[306].hinge.rotation.y = -0.9; doors[306].spill.visible = true; }, () => { doors[306].hinge.rotation.y = 0; doors[306].spill.visible = false; }, 1);
     def('extraDoor', 'a thirteenth door', 'Count the doors on the right.', -44, () => { extraDoor.g.visible = true; }, () => { extraDoor.g.visible = false; }, 1);
     def('blueCarpet', 'the carpet was blue', 'Look down. At the carpet.', -2.5, () => { carpetMat.color.set(0x2a4aa0); }, () => { carpetMat.color.set(0x9a3040); }, 1);
     def('stain', 'a stain on the ceiling', 'Look up.', -20, () => { stain.visible = true; }, () => { stain.visible = false; }, 1);
-    def('number', 'room 307 was room 370', 'Read the door numbers on the left.', -18, () => { doorByNum(307).pmat.map = PT.n370; }, () => { doorByNum(307).pmat.map = doorByNum(307).pmatBase; }, 2);
+    def('number', 'room 305 was room 350', 'Read the door numbers on the left.', -20, () => { doorByNum(305).pmat.map = PT.n350; }, () => { doorByNum(305).pmat.map = doorByNum(305).pmatBase; }, 2);
     def('clock', 'the clock said 3:30', 'Read the clock at the far end.', -44, () => drawClock('3:30'), () => drawClock('3:03'), 2);
     def('clockRun', 'the clock was running backwards', 'Watch the clock at the far end for a few seconds.', -44, () => { clockRun = 1; }, () => { clockRun = 0; drawClock('3:03'); }, 2);
-    def('tinyDoor', 'room 310 had a very small door', 'Look at the doors on the right. All of them.', -26, () => { doors[310].g.scale.set(0.62, 0.62, 1); }, () => { doors[310].g.scale.set(1, 1, 1); }, 2);
+    def('tinyDoor', 'room 310 had a very small door', 'Look at the doors on the right. All of them.', -33, () => { doors[310].g.scale.set(0.62, 0.62, 1); }, () => { doors[310].g.scale.set(1, 1, 1); }, 2);
     def('noVase', 'the flowers were gone', 'Look along the right wall, near the start.', -6, () => { vase.visible = false; }, () => { vase.visible = true; }, 2);
     def('noPlant', 'the plant was gone', 'Look along the right wall.', -22, () => { planter.visible = false; }, () => { planter.visible = true; }, 2);
     def('noTray', 'the room-service tray was gone', 'Look at the floor by the first door.', -2.5, () => { tray1.visible = false; }, () => { tray1.visible = true; }, 2);
@@ -326,7 +363,7 @@ export default {
     def('prints', 'wet footprints into 301', 'Look at the carpet by the first door.', -2.5, () => { prints.visible = true; }, () => { prints.visible = false; }, 2);
     def('dnd', 'the Do Not Disturb sign moved', 'Look at the door handles of 303 and 304.', -10, () => { dnd304.visible = false; dnd303.visible = true; }, () => { dnd304.visible = true; dnd303.visible = false; }, 2);
     def('noAlarm', 'the fire alarm was gone', 'Look along the right wall, near the end.', -38, () => { alarm.visible = false; }, () => { alarm.visible = true; }, 2);
-    def('knock', 'somebody knocking in 309', 'Listen. Walk past room 309 on the left.', -29, () => { snd = 'knock'; }, () => { snd = null; doors[309].hinge.rotation.y = 0; }, 3);
+    def('knock', 'somebody knocking in 307', 'Listen. Walk past room 307 on the left.', -29, () => { snd = 'knock'; }, () => { snd = null; doors[307].hinge.rotation.y = 0; }, 3);
     def('phone', 'the phone was ringing', 'Listen. The house phone on the left wall.', -31, () => { snd = 'phone'; }, () => { snd = null; phone.rotation.z = 0; handset.position.y = 1.18; }, 3);
     def('music', 'the music stopped', 'Listen. And look at the little green light on the ceiling.', -3, () => { led.visible = false; game.audio.stopMusic(); }, () => { led.visible = true; if (game.world === w && game.state !== 'title') game.audio.playMusic('hotel_dark'); }, 3);
     // the scripted ones
@@ -340,6 +377,7 @@ export default {
     // ---- the "way out" (round 7): an EXIT door that is not one (it is new, so it is an anomaly; behind it is a closet with no floor)
     const exitDoor = (() => {
       const z = -51, g = onWall(-1, z, w.scene);
+      g.position.x += 0.13;                                     // (it stands proud of the panelling: it was not built with the wall)
       const frame = plainMaterial(GOLD, { metalness: 1, roughness: 0.3 });
       for (const sx of [-1, 1]) M(BX(0.14, 2.7, 0.14), frame, sx * 0.72, 1.35, 0.07, { to: g });
       M(BX(1.58, 0.14, 0.14), frame, 0, 2.7, 0.07, { to: g });
@@ -350,7 +388,7 @@ export default {
       const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTexture('glow'), color: 0x6cf0b2, transparent: true, opacity: 0.4, depthWrite: false, blending: THREE.AdditiveBlending })); halo.position.set(0, 3.1, 0.4); halo.scale.set(3, 1.6, 1); g.add(halo);
       void black; void sign;
       let shown = false, used = false;
-      const it = w.interactable({ x: -X + 0.3, y: 1.3, z, w: 0.6, h: 2.6, d: 1.4, range: 3.5, label: () => (game.baby ? 'Open the EXIT door (decoy)' : 'Open the EXIT door'), enabled: () => shown && !used,
+      const it = w.interactable({ x: -X + 0.4, y: 1.3, z, w: 0.6, h: 2.6, d: 1.4, range: 3.5, label: () => (game.baby ? 'Open the EXIT door (decoy)' : 'Open the EXIT door'), enabled: () => shown && !used,
         onUse: () => {
           if (used || game.state !== 'playing') return; used = true; game.audio.click();
           const t0 = performance.now();
@@ -395,6 +433,7 @@ export default {
     const setup = () => {
       // put the corridor back to normal, then apply this round's act and anomaly
       for (const a of Object.values(A)) if (a.active) { a.off(); a.active = false; }
+      cur = null;
       showAct(phase === 'encore' ? 0 : phase === 'exitLap' ? 3 : ACT_OF[round]);
       cur = phase === 'exitLap' ? null : phase === 'encore' ? A.counter98 : rollRound(round);
       if (cur) { cur.on(); cur.active = true; }
@@ -480,22 +519,22 @@ export default {
       if (actNow === 2) for (const c of chutes) {
         const s = chuteState(c, t);
         const open = s === 'open';
-        if (open !== c.open) { c.open = open; c.p.body.enabled = !open; c.p.group.visible = !open; for (const l of c.leaves) { l.hg.visible = open; l.hg.rotation.z = open ? l.sx * -1.35 : 0; } if (open && Math.abs(p.z - (c.z0 + c.z1) / 2) < 12) game.audio.crumble(); }
+        if (open !== c.open) { c.open = open; c.p.body.enabled = !open; c.p.group.visible = !open; for (const l of c.leaves) { l.hg.visible = open; l.hg.rotation.z = open ? l.sx * 1.35 : 0; } if (open && Math.abs(p.z - (c.z0 + c.z1) / 2) < 12) game.audio.crumble(); }
         for (const st of c.strip) st.visible = s !== 'warn' || Math.sin(t * 22) > 0;
       }
-      // the cart from 311
+      // the cart from 309
       if (actNow === 2) {
         const x = cartX(t);
         cart.enabled = x !== null; cart.group.visible = true;
         const cx = x ?? -X - 1.2; cart.body.setCenter(cx, cart.base.y, cart.base.z); cart.group.position.set(cx, cart.base.y, cart.base.z);
         const u = cartPhase(t), open = u < CART.OPEN + 2 * CART.OUT + 0.3 ? Math.min(1, u / 0.35) : Math.max(0, 1 - (u - CART.OPEN - 2 * CART.OUT - 0.3) / 0.4);
-        doors[311].hinge.rotation.y = -1.45 * open; doors[311].spill.visible = open > 0.05;
-      } else if (doors[311].hinge.rotation.y !== 0 && !(cur && cur.id === 'knock')) { doors[311].hinge.rotation.y = 0; doors[311].spill.visible = false; }
-      // act IV: the lights cut out for a moment every few seconds (they buzz first)
+        doors[309].hinge.rotation.y = -1.45 * open; doors[309].spill.visible = open > 0.05;
+      } else if (doors[309].hinge.rotation.y !== 0) { doors[309].hinge.rotation.y = 0; doors[309].spill.visible = false; }
+      // act IV: the lights cut out for a moment every few seconds (they buzz and flicker first: that is the tell)
       if (actNow === 3) {
         const u = t % 7.5; const k = u > 6.9 ? 0.25 : u > 6.2 ? (Math.sin(t * 40) > 0 ? 1 : 0.4) : 1;
-        if (k !== dark) { dark = k; for (const l of lights) l.intensity = 7 * k; for (const s of sconces) if (!(cur?.id === 'lampOut' && s.z === -34)) { s.shade.visible = k > 0.5; s.halo.visible = k > 0.5; } }
-      } else if (dark !== 1) { dark = 1; for (const l of lights) l.intensity = 7; }
+        if (k !== dark) { dark = k; for (const l of lights) l.intensity = 7 * k; for (const s of sconces) setSconce(s, lampOn(s) && k > 0.5); }
+      }
       // anomalies that move or make a noise (quietly)
       if (flick) { flickT -= dt; if (flickT <= 0) { flickT = 0.05 + Math.random() * 0.25; const on = Math.random() < 0.6; for (const s of sconces) if (s.z === -18) setSconce(s, on); } }
       if (clockRun) { clockT += dt; if (clockT > 1) { clockT = 0; clockN = clockN <= 0 ? 719 : clockN - 1; drawClock(`${Math.floor(clockN / 60) || 12}:${String(clockN % 60).padStart(2, '0')}`); } }
@@ -507,7 +546,7 @@ export default {
           if (snd === 'knock') { for (let k = 0; k < 3; k++) game.audio._noise({ dur: 0.07, vol: 0.12, f: 260, q: 1.2, when: k * 0.26 }); game.ui.toast('[ knock knock knock ]', ''); }
           else { for (let k = 0; k < 2; k++) game.audio._tone({ f: 1250, type: 'triangle', dur: 0.35, vol: 0.035, when: k * 0.45 }); game.ui.toast('[ a phone rings ]', ''); }
         }
-        if (snd === 'knock') doors[309].hinge.rotation.y = near && sndT > 2.4 ? Math.sin(t * 40) * 0.015 : 0;
+        if (snd === 'knock') doors[307].hinge.rotation.y = near && sndT > 2.4 ? Math.sin(t * 40) * 0.015 : 0;
         if (snd === 'phone') { phone.rotation.z = near && sndT > 1.7 ? Math.sin(t * 50) * 0.04 : 0; handset.position.y = 1.18 + (near && sndT > 1.7 ? Math.abs(Math.sin(t * 30)) * 0.02 : 0); }
       }
       if (game.state !== 'playing' || game.frozen) return;
@@ -656,7 +695,7 @@ function paintingTextures() {
       g.fillStyle = '#f8f0d0'; g.beginPath(); g.arc(80, 60, 30, 0, 7); g.fill();
       g.fillStyle = '#16202a'; g.beginPath(); g.moveTo(0, 150); g.quadraticCurveTo(70, 100, 140, 140); g.quadraticCurveTo(200, 110, 256, 130); g.lineTo(256, 180); g.lineTo(0, 180); g.fill();
     }),
-    n370: textTexture('370', { w: 256, h: 128, color: '#e8c673', bg: '#1a120e', border: '#d8a94a', size: 72 }),
+    n350: textTexture('350', { w: 256, h: 128, color: '#e8c673', bg: '#1a120e', border: '#d8a94a', size: 72 }),
   };
 }
 
@@ -668,7 +707,7 @@ function towelTrolley(group) {
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.06, 10), plainMaterial(0x1a1a1a)); wh.rotation.x = Math.PI / 2; wh.position.set(sx * 1.9, -0.28, sz * 0.4); group.add(wh); }
   const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), glowMaterial(0xffa21f, 2.4)); lamp.position.set(0, 0.36, 0); group.add(lamp);
 }
-// the laundry cart that comes out of 311 (tall: do not try to hop it)
+// the laundry cart that comes out of 309 (tall: do not try to hop it)
 function laundryCart(group) {
   const body = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.0, 1.1), plainMaterial(0x2a4a8a, { roughness: 0.6 })); body.position.y = 0.0; group.add(body);
   const sheets = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.2, 1.0), plainMaterial(0xf4f0e8, { roughness: 0.95 })); sheets.position.y = 0.55; group.add(sheets);
@@ -704,18 +743,15 @@ function fireStairs(w, game) {
   R({ x: -2.2, y: 5.4, z: 8.6, w: 3.6, d: 2.0, h: 0.6 });
   R({ x: -2.2, y: 6.6, z: 12.1, w: 3.6, d: 2.0, h: 0.6 }, true);           // (and another missing step)
   const top = R({ x: 0, y: 7.2, z: 15.6, w: 2 * SX, d: 3.0, h: 0.6 });     // landing C
-  // handrails and floor numbers (all of them say 3)
-  for (const [x, z0, z1, y0, y1] of [[-0.35, 8, 15.6, 1.4, 3.4], [0.35, 15.6, 9, 4.0, 5.8], [-0.35, 7.6, 13, 6.4, 8.2]]) {
-    const len = Math.abs(z1 - z0), zc = (z0 + z1) / 2, yc = (y0 + y1) / 2;
-    const rail = w.box({ x, y: yc, z: zc, w: 0.06, h: 0.06, d: Math.hypot(len, y1 - y0), color: 0xd8a94a, metal: 1, rough: 0.3, shadow: false, static: false });
-    rail.rotation.x = Math.atan2(y1 - y0, z1 - z0) * (z1 > z0 ? -1 : 1); rail.updateMatrix(); parts.push({ group: rail, setEnabled: (on) => { rail.visible = on; } });
-  }
-  const signs = [[0, 1.8, 5.12, '3'], [0, 4.2, Z1 - 0.02, '3'], [0, 6.6, 5.12, '3?'], [0, 9.6, Z1 - 0.02, 'EXIT']].map(([x, y, z, t]) => w.sign({ text: t, x, y, z, w: t === 'EXIT' ? 2 : 1.1, h: 0.9, rotY: z > 10 ? Math.PI : 0, color: t === 'EXIT' ? '#6cf0b2' : '#e8e0d0', double: false, tw: 256, size: 100, glow: t === 'EXIT' }));
+  // the basement far below (you will not reach it alive) and the floor numbers (all of them say 3)
+  const base = w.box({ x: 0, y: -6.6, z: (Z0 + Z1) / 2, w: 2 * SX, h: 0.3, d: Z1 - Z0, color: 0x2a2a2e, rough: 0.9, shadow: false });
+  parts.push({ setEnabled: (on) => { base.visible = on; } });
+  const signs = [[-3.0, 1.8, Z0 + 0.02, '3'], [0, 4.4, Z1 - 0.02, '3'], [0, 7.6, Z0 + 0.02, '3?'], [0, 9.8, Z1 - 0.02, 'EXIT']].map(([x, y, z, t]) => w.sign({ text: t, x, y, z, w: t === 'EXIT' ? 2 : 1.1, h: 0.9, rotY: z > 10 ? Math.PI : 0, color: t === 'EXIT' ? '#6cf0b2' : '#e8e0d0', double: false, tw: 256, size: 100, glow: t === 'EXIT' }));
   const lamp = w.light(0xfff0d8, 0, 14, 0, 9, 11);
   const goal = w.goal({ x: 0, y: 7.2, z: 15.6, color: GOLD, onReach: () => { game.say('hotel.l14.done', { priority: 2 }); game.completeLevel(); } });
   goal.group.scale.setScalar(0.8);
   const all = [...parts, ...shell];
-  const setOn = (on) => { for (const p of all) p.setEnabled ? p.setEnabled(on) : null; for (const s of signs) s.visible = on; goal.group.visible = on; goal.trig.enabled = on; lamp.intensity = on ? 9 : 0; };
+  const setOn = (on) => { for (const p of all) p.setEnabled(on); for (const s of signs) s.visible = on; goal.group.visible = on; goal.trig.enabled = on; lamp.intensity = on ? 9 : 0; };
   setOn(false);
   let isOpen = false;
   w.onRespawn(() => { if (!isOpen) setOn(false); });
