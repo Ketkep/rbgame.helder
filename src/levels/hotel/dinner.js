@@ -54,7 +54,7 @@ export default {
     w.spawn = { x: 0, y: 0, z: 11, yaw: 0 };
     w.respawn = { ...w.spawn };
     w.killY = -8;
-    const zEnd = -158;
+    const zEnd = -168;
     const hall = roomShell(w, { x0: -12, x1: 12, z0: zEnd, z1: 15, yb: -10, H, wallTex: 'damask', wallColor: 0xffffff, pilasterEvery: 12 });
     w.plat({ x: 0, y: -9.5, z: hall.cz, w: 24, d: hall.D, h: 1, tex: 'carpet', color: 0x2a0c14, roughness: 0.95 });
 
@@ -64,7 +64,7 @@ export default {
     // the partition wall with the kitchen door (a sliding panel; the last course opens it)
     const D_W = 4.4, D_H = 4.6;
     wallZ(w, { z: WALL_Z - 0.4, x0: -12.8, x1: 12.8, y0: -2, y1: H + 10, gaps: [{ c: 0, w: D_W, h: D_H }], mat: { tex: 'damask', color: 0xffffff, roughness: 0.7 } });
-    const door = slideDoor(w, game, { x: 0, z: WALL_Z - 0.4, width: D_W, height: D_H, tex: 'wood', color: 0x6a4a2a });
+    const door = slideDoor(w, game, { x: 0, z: WALL_Z - 0.4, width: D_W, height: D_H, tex: 'wood', color: 0x6a4a2a, speed: 0.55 });
     doorFrame(w, { x: 0, z: WALL_Z - 0.4, width: D_W, height: D_H });
     w.sign({ text: 'KITCHEN · DELIVERIES', x: 0, y: D_H + 1.0, z: WALL_Z + 0.06, w: 6, h: 0.9, color: '#f1d28a', double: false, tw: 1024, size: 60 });
     // the long table (you can hop on it; the cloches are in the way)
@@ -214,7 +214,7 @@ export default {
     w.box({ x: 0, y: 4.1, z: PZ - 0.9, w: 14, h: 0.14, d: 0.14, color: 0xff7a2a, glow: 0xff7a2a, glowIntensity: 0.9, shadow: false });   // the heat lamp rail
     w.sign({ text: 'THE PASS · ORDERS UP', x: 0, y: 3.5, z: PZ - 0.93, w: 6, h: 0.7, color: '#f1d28a', double: false, tw: 1024, size: 60, rotY: Math.PI });
     w.sign({ text: 'THE PASS · ORDERS UP', x: 0, y: 3.5, z: PZ + 0.93, w: 6, h: 0.7, color: '#f1d28a', double: false, tw: 1024, size: 60 });
-    const sh = { phase: 'idle', t: 0, kd: rint(0, 2), occ: [0, 1, 2], swaps: [], k: 0, got: false, lie: 0, wrongs: 0 };
+    const sh = { phase: 'idle', t: 0, kd: rint(0, 2), occ: [0, 1, 2], swaps: [], k: 0, got: false, lie: 0, wrongs: 0, round: 0 };
     const domes = SLOT_X.map((sx, i) => {
       const grp = new THREE.Group(); grp.position.set(sx, TOPY, PZ); w.add(grp);
       const lid = new THREE.Group(); grp.add(lid);
@@ -229,7 +229,7 @@ export default {
       const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.04, 0.04), gm); shaft.position.set(0.05, 0.09, 0); keyMesh.add(shaft);
       for (const dx of [0.14, 0.21]) { const t = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.09), gm); t.position.set(dx, 0.09, 0.045); keyMesh.add(t); } }
     domes[sh.kd].grp.add(keyMesh); keyMesh.position.y = 0.05;
-    const SW = () => ({ n: baby() ? 4 : 7, dur: baby() ? 0.85 : 0.55 });
+    const SW = () => ({ n: baby() ? 4 + sh.round * 2 : 7 + sh.round * 3, dur: baby() ? 0.85 : 0.55 });
     const startShuffle = () => {
       const { n } = SW(); sh.swaps = []; let prev = '';
       while (sh.swaps.length < n) { const a = rint(0, 2); let b = rint(0, 2); if (a === b) continue; const key = [a, b].sort().join(); if (key === prev) continue; prev = key; sh.swaps.push([a, b]); }
@@ -266,6 +266,12 @@ export default {
       if (sh.phase !== 'pick') return;
       const d = domes.find((q) => q.slot === s); d.target = 0.95; g.audio.click();
       if (d === domes[sh.kd]) {
+        sh.round++;
+        if (sh.round < 3) {                                                                          // double or nothing, and again: the chef wants it three times
+          g.audio.confirm(); g.ui.toast('One more round. The chef is thorough.', 'gold'); g.say('hotel.l8.p.again', { priority: 2 });
+          w.after(1.6, () => { for (const q of domes) q.target = 0; domes[sh.kd].grp.remove(keyMesh); sh.kd = rint(0, 2); domes[sh.kd].grp.add(keyMesh); keyMesh.position.y = 0.05; sh.phase = 'idle'; });
+          sh.phase = 'between'; return;
+        }
         sh.got = true; sh.phase = 'done'; g.audio.confirm(); keyMesh.visible = false;
         g.ui.toast('🔑 You have the pantry key', 'gold'); g.say('hotel.l8.p.key', { priority: 2 });
       } else { sh.phase = 'wrong'; sh.t = 0; sh.wrongs++; g.audio.buzzer(); g.say('hotel.l8.p.wrong', { priority: 2, vars: { where: WHERE[s] } }); }
@@ -275,7 +281,7 @@ export default {
     { const bell = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), brass()); bell.position.set(5.9, 1.26, PZ); w.add(bell); }
     SLOT_X.forEach((sx, s) => w.interactable({ x: sx, y: 1.7, z: PZ, w: 1.5, h: 1.0, d: 1.6, range: 3.6, pad: 0.05, label: 'Lift this dome', enabled: () => sh.phase === 'pick', onUse: (g) => pickSlot(g, s) }));
     // the pantry door: locked until you have the key
-    const doorB = slideDoor(w, game, { x: 0, z: WB, width: 3.2, height: 3.8, stripes: 0x30343c });
+    const doorB = slideDoor(w, game, { x: 0, z: WB, width: 3.2, height: 3.8, stripes: 0x30343c, speed: 0.4 });
     doorFrame(w, { x: 0, z: WB, width: 3.2, height: 3.8 });
     w.sign({ text: 'PANTRY · KEYHOLDERS ONLY', x: 0, y: 4.75, z: WB + 0.44, w: 5, h: 0.7, color: '#f1d28a', double: false, tw: 1024, size: 54 });
     w.interactable({ x: 0, y: 1.6, z: WB + 1.0, w: 3.2, h: 3, d: 1.6, range: 4, label: () => (sh.got ? 'Unlock the pantry' : 'Locked (the key is under a dome)'), enabled: () => !doorB.open, onUse: (g) => { if (sh.got) { doorB.openDoor(); g.say('hotel.l8.p.door', { priority: 2 }); } else { g.audio.buzzer(); g.ui.toast('Locked. The key is under one of the domes.', 'bad'); } } });
@@ -283,11 +289,12 @@ export default {
     // ============================================================================================================
     //  Stage 3 · the pantry: exact change for the tip jar
     // ============================================================================================================
-    let T; do { T = rint(18, 24); } while (T === 20);
+    let T; do { T = rint(27, 29); } while (T === 20);
     const coinDefs = [
-      { v: 10, x: -9.8, y: 1.85, z: -41 }, { v: 5, x: -9.8, y: 0.95, z: -47.5 }, { v: 2, x: -9.8, y: 2.75, z: -53 }, { v: 3, x: -9.8, y: 1.85, z: -58 },
-      { v: 5, x: 9.8, y: 1.85, z: -40 }, { v: 7, x: 9.8, y: 2.75, z: -52 }, { v: 1, x: 9.8, y: 0.95, z: -57 },
+      { v: 10, x: -9.8, y: 1.85, z: -41 }, { v: 5, x: 9.8, y: 1.85, z: -40 }, { v: 5, x: -9.8, y: 0.95, z: -47.5 }, { v: 7, x: 9.8, y: 2.75, z: -52 },
+      { v: 2, x: -9.8, y: 2.75, z: -53 }, { v: 1, x: 9.8, y: 0.95, z: -57 }, { v: 3, x: -9.8, y: 1.85, z: -58 },
     ];
+
 
     // shelves along the walls (the dumbwaiter hatch sits in the east gap)
     const shelf = (x, z0, z1) => {
@@ -330,7 +337,7 @@ export default {
       g.font = '26px "Archivo Black", Impact, sans-serif'; g.fillStyle = '#7a5a1c'; g.fillText('no more. no less. it counts.', cw / 2, 300);
     } });
     w.box({ x: -3.6, y: 2.2, z: WC + 0.45, w: 2.0, h: 1.5, d: 0.06, color: GOLD, metal: 1, rough: 0.35, shadow: false });
-    const doorC = slideDoor(w, game, { x: 0, z: WC, width: 3.4, height: 3.8, tex: 'wood', color: 0x5a3a22 });
+    const doorC = slideDoor(w, game, { x: 0, z: WC, width: 3.4, height: 3.8, tex: 'wood', color: 0x5a3a22, speed: 0.4 });
     doorFrame(w, { x: 0, z: WC, width: 3.4, height: 3.8 });
     w.sign({ text: 'WINE CELLAR · STAFF', x: 0, y: 4.75, z: WC + 0.44, w: 5, h: 0.7, color: '#f1d28a', double: false, tw: 1024, size: 54 });
     const putIn = (g) => {
@@ -349,7 +356,6 @@ export default {
     // the dumbwaiter: the host's idea of the quick way out (the staff hatch has no car)
     fakeExit(w, game, { x: 10.3, y: 0, z: -46, yaw: -Math.PI / 2, kind: 'door', label: 'DUMBWAITER · EXIT', color: 0x2dd47f, say: 'hotel.l8.t.dumb' });
     w.sign({ text: 'CAPACITY: 0 PASSENGERS', x: 10.5, y: 3.4, z: -46, w: 2.4, h: 0.35, rotY: -Math.PI / 2, color: '#2a3a4a', bg: '#e8f4ff', double: false, tw: 512, size: 36 });
-    w.box({ x: 0, y: 1.0, z: -44, w: 1.8, h: 2.0, d: 1.4, tex: 'wood', color: 0x8a6a42, rough: 0.6 }); w.collider({ x: 0, y: 1.0, z: -44, w: 1.8, h: 2.0, d: 1.4 });   // a crate of potatoes (it is a crate of potatoes)
 
     // ============================================================================================================
     //  Stage 4 · the wine cellar
@@ -361,8 +367,7 @@ export default {
     const F = path(w.plat({ x: 0, y: 0, z: cz(-89, -105), w: 9, d: 16, h: 1.4, tex: 'wood', color: 0xc9a56e, roughness: 0.6, radius: 0.04 }));
     void E; void A; void Mer; void F;
     w.sign({ text: 'MIND THE MERLOT', x: 0, y: 0.03, z: -81.6, w: 5.5, h: 0.8, rotX: -Math.PI / 2, color: '#ffd21f', double: false, tw: 512, size: 58 });
-    const cpCellar = w.checkpoint({ x: 0, y: 0, z: -62.6, real: true });
-    trollCheckpoint(w, game, { x: 0, y: 0, z: -89.8, mode: 'expire', ttl: 16, say: 'hotel.l8.expired' });
+    const cpCellar = trollCheckpoint(w, game, { x: 0, y: 0, z: -62.6, mode: 'expire', ttl: 22, say: 'hotel.l8.expired' });   // this one forgets itself: die after it has and you are back at the pantry door
     for (let z = -64; z > -104; z -= 5) for (const sx of [-1, 1]) {
       w.box({ x: sx * 10.8, y: 2.2, z, w: 2.4, h: 4.4, d: 3.6, color: 0x5a3a22, rough: 0.7, shadow: false });
       for (let k = 0; k < 3; k++) for (let j = 0; j < 4; j++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.7, 10), plainMaterial(0x214a2a, { roughness: 0.3, metalness: 0.2 })); b.rotation.z = Math.PI / 2; b.position.set(sx * 9.7, 0.7 + j * 1.0, z - 1.2 + k * 1.2); w.add(b); }
@@ -371,10 +376,13 @@ export default {
     for (let z = -64; z > -104; z += -9) for (const sx of [-1, 1]) { w.box({ x: sx * 4.9, y: 3.4, z, w: 0.2, h: 0.4, d: 0.2, glow: 0xffb050, glowIntensity: 1.8, shadow: false }); hotelHalo(w, sx * 4.8, 3.4, z, 2.4, 0xffa050, 0.3); }
     // rolling barrels (three lanes)
     const barrels = [];
-    const BZ0 = -105, BL = 39, V = 4.0;
-    [[-2.6, 0], [0, 13], [2.6, 26], [-2.6, 20], [0, 33], [2.6, 7], [0, 5]].forEach(([lx, off]) => {
+    const V = 2.8;
+    // two barrel runs, with the Merlot (and a breather) between them
+    const FIELDS = [{ z0: -81, L: 15, offs: [[-3.8, 0], [0, 5], [3.8, 10]] }, { z0: -97, L: 8, offs: [[-3.8, 0], [0, 2.7], [3.8, 5.3]] }];
+    FIELDS.forEach((fd) => fd.offs.forEach(([lx, off]) => {
+      const BZ0 = fd.z0, BL = fd.L;
       const bz = (t) => BZ0 + ((V * t + off) % BL);
-      const hzb = w.hazard({ x: lx, y: 0.5, z: BZ0, w: 1.5, h: 1.0, d: 1.5, color: 0xff3a46, move: (t) => ({ z: bz(t) - BZ0 }) });
+      const hzb = w.hazard({ x: lx, y: 0.4, z: BZ0, w: 1.4, h: 0.7, d: 1.4, color: 0xff3a46, move: (t) => ({ z: bz(t) - BZ0 }) });
       hzb.core.visible = false; hzb.shell.visible = false; hzb.jumpable = true;
       const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 1.3, 16), plainMaterial(0x7a4a26, { roughness: 0.55 })); barrel.rotation.z = Math.PI / 2; barrel.castShadow = true;
       const band = (yy) => { const r = new THREE.Mesh(new THREE.TorusGeometry(0.63, 0.04, 6, 20), brass()); r.rotation.y = Math.PI / 2; r.position.x = yy; barrel.add(r); };
@@ -382,7 +390,12 @@ export default {
       const spin = new THREE.Group(); spin.add(barrel); hzb.group.add(spin);
       w.onUpdate((dt, t) => { spin.rotation.x = -bz(t) / 0.62; });
       barrels.push(hzb);
-    });
+    }));
+    for (const fd of FIELDS) {   // the hatches the barrels roll out of
+      w.box({ x: 0, y: 3.1, z: fd.z0 - 0.5, w: 9.6, h: 0.7, d: 0.8, color: 0x3a2a1a, rough: 0.7 });
+      for (const sx of [-1, 1]) w.box({ x: sx * 4.7, y: 1.5, z: fd.z0 - 0.5, w: 0.5, h: 3.0, d: 0.8, color: 0x3a2a1a, rough: 0.7 });
+      w.sign({ text: 'BARREL CHUTE', x: 0, y: 3.1, z: fd.z0 - 0.08, w: 4, h: 0.5, rotY: 0, color: '#ffd21f', double: false, tw: 512, size: 60 });
+    }
     twistZone(game, w, { x: 0, y: 2, z: -75, w: 9, h: 4, d: 2.4 }, 'swap', { sec: 6, say: 'hotel.l8.swap' });      // A and D swap in the middle of the aisle (the toast says so)
     // the ring at the end of the aisle: it is the end of the level. Then it is not.
     const cellarGoal = w.goal({ x: 0, y: 0, z: -102.0, color: GOLD, onReach: () => {
@@ -399,10 +412,10 @@ export default {
     // ============================================================================================================
     const cpDessert = w.checkpoint({ x: 0, y: 0, z: -108.4, real: true });
     path(w.plat({ x: 0, y: 0, z: -109.6, w: 12, d: 7.2, h: 2, tex: 'marble', color: 0xf6e6d0, roughness: 0.3, radius: 0.05, trim: GOLD }));
-    const cream = w.hazard({ x: 0, y: -1.05, z: -131, w: 24, h: 1.0, d: 52, color: 0xffffff });
+    const cream = w.hazard({ x: 0, y: -1.05, z: -137, w: 24, h: 1.0, d: 64, color: 0xffffff });
     cream.core.visible = false; cream.shell.visible = false;
-    { const pool = new THREE.Mesh(new THREE.PlaneGeometry(23.4, 50), new THREE.MeshStandardMaterial({ color: 0xfff4e6, roughness: 0.25, emissive: 0x6a5a4a, emissiveIntensity: 0.5 }));
-      pool.rotation.x = -Math.PI / 2; pool.position.set(0, -0.58, -131); w.add(pool);
+    { const pool = new THREE.Mesh(new THREE.PlaneGeometry(23.4, 62), new THREE.MeshStandardMaterial({ color: 0xfff4e6, roughness: 0.25, emissive: 0x6a5a4a, emissiveIntensity: 0.5 }));
+      pool.rotation.x = -Math.PI / 2; pool.position.set(0, -0.58, -137); w.add(pool);
       for (let k = 0; k < 18; k++) { const d = new THREE.Mesh(new THREE.SphereGeometry(0.5 + (k % 4) * 0.25, 12, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, emissive: 0x4a4038, emissiveIntensity: 0.4 })); d.scale.y = 0.55; d.position.set(-10 + (k * 7.3) % 20, -0.5, -108 - (k * 5.1) % 44); w.add(d); } }
     const frosting = [0xf0a8c8, 0xfff0d8, 0xd8a878, 0xc8e8d8];
     const cakeStep = (x, z, top, ww, dd, i, o = {}) => {
@@ -420,15 +433,18 @@ export default {
     const D6 = cakeStep(-8.8, -130.2, 4.2, 2.8, 2.8, 3);
     const D7 = cakeStep(-4.4, -133.6, 5.0, 2.8, 2.8, 2);
     const D8 = w.crumble(cakeStep(0.2, -136.6, 5.8, 2.6, 2.6, 1, { tex: 'wood', color: 0xc8955a }), { delay: 0.6, gone: 3 });
-    const D9 = cakeStep(4.6, -139.8, 6.6, 2.6, 2.6, 0);
-    const D10 = cakeStep(0, -143.2, 7.4, 2.8, 2.8, 3); w.mover(D10, (t) => ({ x: 1.8 * Math.sin(t * 0.9) }));
+    const D9 = cakeStep(3.4, -139.8, 6.6, 2.6, 2.6, 0);
+    const D10 = cakeStep(0, -143.2, 7.4, 2.8, 2.8, 3); w.mover(D10, (t) => ({ x: 1.2 * Math.sin(t * 0.9) }));
     const D11 = cakeStep(-4.4, -146.6, 8.2, 2.6, 2.6, 2);
-    const D12 = cakeStep(0, -150.6, 9.0, 5.4, 3.4, 1);
+    const D12a = cakeStep(0, -150.2, 9.0, 2.6, 2.6, 0); w.mover(D12a, (t) => ({ x: 1.0 * Math.sin(t * 0.8) }));
+    const D12b = w.crumble(cakeStep(4.2, -153.6, 9.8, 2.6, 2.6, 2, { tex: 'wood', color: 0xc8955a }), { delay: 0.6, gone: 3 });
+    const D12c = cakeStep(0, -157.0, 10.6, 2.6, 2.6, 3);
+    const D12 = cakeStep(0, -161.2, 11.4, 5.4, 3.4, 1);
     const topCherry = new THREE.Group(); { const c = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), plainMaterial(0xd01030, { roughness: 0.25 })); c.position.y = 0.2; topCherry.add(c); }
-    topCherry.position.set(-2.2, 9.5, -152.0); w.add(topCherry);
-    w.light(0xffd8e8, 16, 28, 0, 7, -120); w.light(0xffe0f0, 14, 24, 0, 9, -136); w.light(0xffe0f0, 14, 24, 0, 11, -148);
-    for (const z of [-112, -124, -136, -148]) for (const x of [-6, 6]) { w.box({ x, y: 13.6, z, w: 0.5, h: 0.3, d: 0.5, glow: 0xffd0e8, glowIntensity: 1.5, shadow: false }); hotelHalo(w, x, 13.2, z, 4, 0xffc0e0, 0.16); }
-    const runner = evasiveGoal(w, game, { spots: [{ x: 1.8, y: 9.0, z: -150.2 }, { x: -1.8, y: 9.0, z: -151.2 }, { x: 0.4, y: 9.0, z: -149.8 }], radius: 4.2, color: 0xff5a8a, say: ['hotel.l8.hop1', 'hotel.l8.hop2'], onReach: () => { game.say('hotel.l8.done', { priority: 2 }); game.completeLevel(); } });
+    topCherry.position.set(-2.2, 11.9, -162.6); w.add(topCherry);
+    w.light(0xffd8e8, 16, 28, 0, 7, -120); w.light(0xffe0f0, 14, 24, 0, 9, -136); w.light(0xffe0f0, 14, 24, 0, 11, -148); w.light(0xffe0f0, 14, 24, 0, 12, -160);
+    for (const z of [-112, -124, -136, -148, -160]) for (const x of [-6, 6]) { w.box({ x, y: 13.6, z, w: 0.5, h: 0.3, d: 0.5, glow: 0xffd0e8, glowIntensity: 1.5, shadow: false }); hotelHalo(w, x, 13.2, z, 4, 0xffc0e0, 0.16); }
+    const runner = evasiveGoal(w, game, { spots: [{ x: 1.8, y: 11.4, z: -160.8 }, { x: -1.8, y: 11.4, z: -161.8 }, { x: 0.4, y: 11.4, z: -160.4 }], radius: 4.2, color: 0xff5a8a, say: ['hotel.l8.hop1', 'hotel.l8.hop2'], onReach: () => { game.say('hotel.l8.done', { priority: 2 }); game.completeLevel(); } });
     w.goalObj = runner;
     w.sign({ text: 'DESSERT PARLOUR · SECOND SITTING', x: 0, y: 6.2, z: WD - 0.45, w: 9, h: 1.0, rotY: Math.PI, color: '#ffc8e0', double: false, tw: 1024, size: 70 });
 
@@ -440,7 +456,7 @@ export default {
       { name: NAMES[1], at: { x: 0, y: 0, z: -19.8 }, clues: ['hotel.l8.p.hint1', 'hotel.l8.p.hint2', 'hotel.l8.p.hint3'], vars: () => ({ where: WHERE[slotOfKey()] }), solved: () => sh.got, trail: [{ x: 8.6, y: 0, z: -22 }, { x: 8.6, y: 0, z: -30 }, { x: 0, y: 0, z: -34.4 }] },
       { name: NAMES[2], at: { x: 0, y: 0, z: -38.6 }, clues: ['hotel.l8.t.hint1', 'hotel.l8.t.hint2', 'hotel.l8.t.hint3'], vars: () => ({ t: T }), solved: () => jarDone, trail: [{ x: 0, y: 0, z: -48 }, { x: 0, y: 0, z: -56 }] },
       { name: NAMES[3], at: { x: 0, y: 0, z: -62.6 }, trail: [{ x: 0, y: 0, z: -72 }, { x: 0, y: 0, z: -85 }, { x: 0, y: 0, z: -98 }, { x: 0, y: 0, z: -104 }] },
-      { name: NAMES[4], at: { x: 0, y: 0, z: -108.4 }, trail: [D1, D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12].map((p) => ({ x: p.body.x, y: p.top, z: p.body.z })), end: () => ({ x: runner.x, y: runner.y, z: runner.z }) },
+      { name: NAMES[4], at: { x: 0, y: 0, z: -108.4 }, trail: [D1, D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12a, D12b, D12c, D12].map((p) => ({ x: p.body.x, y: p.top, z: p.body.z })), end: () => ({ x: runner.x, y: runner.y, z: runner.z }) },
     ]);
     const cps = new Map([[cpPass, 1], [cpPantry, 2], [cpCellar, 3], [cpDessert, 4]]);
     w.hooks.onCheckpoint = (c) => {
@@ -475,7 +491,7 @@ export default {
     };
     // ---- the test bot -------------------------------------------------------------------------------------------------------
     const goTo = (x, z, tol = 0.7) => { const p = game.player; return Math.hypot(p.x - x, p.z - z) > tol ? { x, z } : null; };
-    const subset = (() => { const vs = coinDefs.map((c) => c.v); for (let m = 1; m < 64; m++) { let s = 0; for (let i = 0; i < 6; i++) if (m & (1 << i)) s += vs[i]; if (s === T) return coinDefs.filter((_, i) => m & (1 << i)); } return []; })();
+    const subset = (() => { const vs = coinDefs.map((c) => c.v); for (let m = 1; m < 128; m++) { let s = 0; for (let i = 0; i < 7; i++) if (m & (1 << i)) s += vs[i]; if (s === T) return coinDefs.filter((_, i) => m & (1 << i)); } return []; })();
     let coinK = 0, coinT = 0, jarT = 0;
     w.botPlan = (g) => {
       const p = g.player;
@@ -520,10 +536,11 @@ export default {
       }
       if (doorC.t < 1 && p.z > WC) return { wait: true, x: 0, z: WC + 2.6 };
       if (p.z > WC + 0.5 && Math.abs(p.x) > 1.1) return { x: 0, z: WC + 2.4 };
-      // ---- 4 · the cellar (the route platforms), then the ring that is not the end
+      // ---- 4 · the cellar: run in the gap between the barrel lanes (the route platforms do the rest), then the ring that is not the end
+      if (!doorD.open && p.y > -1 && ((p.z < -66 && p.z > -81.5) || (p.z < -88.5 && p.z > -97.5))) return { x: 1.9, z: p.z - 3 };
       if (!doorD.open && p.z < -97 && p.y > -1) return { x: cellarGoal.x, z: cellarGoal.z };
       // ---- 5 · the parlour: the route platforms, then the cherry that hops away
-      if (p.y > 8.4 && p.z < -146) return { x: runner.x, z: runner.z };
+      if (p.y > 10.8 && p.z < -157) return { x: runner.x, z: runner.z };
       return null;
     };
   },

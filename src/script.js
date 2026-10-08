@@ -346,6 +346,7 @@ Object.assign(SCRIPT, {
   'hotel.l8.p.start': ['Watch the key. I will keep my commentary to a minimum. Which is: do not blink. Blinking is for guests with no ambition.', 'Here is the key. Now it is not. Eyes on the dome. Not on me. I am not a dome.'],
   'hotel.l8.p.point': ['It is the {where} one. I have never been more certain of anything. I have been wrong about the other things.', 'Definitely the {where} dome. I saw it. With my eyes. That are fully open.', 'The {where} one, obviously. Trust me. I know. I know. I do not hear it either.'],
   'hotel.l8.p.wrong': ['The {where} one? Empty. I said {where} the first time? Interesting. That was my other voice.', 'Nothing under the {where} dome. Not even a crumb. The kitchen is spotless. It is the only thing in the building that is.'],
+  'hotel.l8.p.again': 'Correct! Now again. Double or nothing. The chef insists. The chef is the one with the knife, so I am inclined to agree.',
   'hotel.l8.p.key': 'You found the key. Without my help. Please remember it was without my help. I would like that on the record.',
   'hotel.l8.p.door': 'The pantry opens. Inside: shelves, jars, and a tip jar that has never once been satisfied.',
   'hotel.l8.p.hint1': 'Hint: ring the bell on the counter. The key sits under one dome, then they are shuffled. Follow the key, not my voice.',

@@ -590,16 +590,17 @@ suite('dinner-pass', async () => {
     sim(2); out.again = sh.phase === 'idle';
     // hint 3 at this stage names where the key is right now
     dn.ringBell(); sim(9); out.pick2 = sh.phase === 'pick';
-    dn.pickSlot(dn.slotOfKey()); out.key = sh.got;
+    dn.pickSlot(dn.slotOfKey()); sim(2.5); out.round2 = sh.round === 1 && sh.phase === 'idle' && !sh.got; for (let k = 0; k < 2; k++) { dn.ringBell(); sim(16); dn.pickSlot(dn.slotOfKey()); sim(2.5); } out.key = sh.got;
     // the pantry door: locked without the key, and it is not the shell game's fault if you try it first
     out.doorShut = !dn.doorB.open;
     dn.doorBuse(); sim(2); out.doorOpens = dn.doorB.open;
     return out;
   });
   ok(r.notYet && r.shows, 'dinner: ring the bell and the key is shown under its dome first');
-  ok(r.shuffling && r.sevenSwaps, 'dinner: the domes are then shuffled (seven swaps)');
+  ok(r.shuffling && r.sevenSwaps, 'dinner: the domes are then shuffled (seven swaps, more each round)');
   ok(r.pick && r.hostLies, 'dinner: the host confidently points at a dome with no key under it');
   ok(r.wrongNoKey && r.again, 'dinner: a wrong dome is empty; ring the bell and try again');
+  ok(r.round2, 'dinner: double or nothing: the chef wants the shell game three times');
   ok(r.pick2 && r.key, 'dinner: the dome that holds the key gives the pantry key');
   ok(r.doorShut && r.doorOpens, 'dinner: the pantry door opens');
   await page.close();
@@ -613,8 +614,8 @@ suite('dinner-pantry', async () => {
     const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
     g.player.teleport(0, 0.001, -44);
     const T = dn.T, vals = dn.coins.map((c) => c.v);
-    out.notTwenty = T !== 20 && T >= 18 && T <= 24;
-    out.solvable = (() => { for (let m = 1; m < 64; m++) { let s = 0; for (let i = 0; i < 6; i++) if (m & (1 << i)) s += vals[i]; if (s === T) return true; } return false; })();
+    out.notTwenty = T !== 20 && T >= 27 && T <= 29;
+    out.solvable = (() => { for (let m = 1; m < 128; m++) { let s = 0; for (let i = 0; i < 7; i++) if (m & (1 << i)) s += vals[i]; if (s === T) return true; } return false; })();
     // take everything: too much, the jar eats it all and the shelves restock
     for (const c of dn.coins) dn.takeCoin(c);
     dn.putIn(); out.overRestocks = dn.pocket.length === 0 && dn.coins.every((c) => !c.taken) && !dn.jarDone && said.includes('hotel.l8.t.over');
@@ -624,7 +625,7 @@ suite('dinner-pantry', async () => {
     // exactly the amount on the note: the cellar door opens
     for (const c of dn.coins) { if (c.taken) c.taken = false; }
     dn.pocket.length = 0; for (const c of dn.coins) { c.disc.visible = true; c.face.visible = true; }
-    let pick = null; for (let m = 1; m < 64 && !pick; m++) { let s = 0; const sel = []; for (let i = 0; i < 6; i++) if (m & (1 << i)) { s += vals[i]; sel.push(dn.coins[i]); } if (s === T) pick = sel; }
+    let pick = null; for (let m = 1; m < 128 && !pick; m++) { let s = 0; const sel = []; for (let i = 0; i < 7; i++) if (m & (1 << i)) { s += vals[i]; sel.push(dn.coins[i]); } if (s === T) pick = sel; }
     for (const c of pick) dn.takeCoin(c);
     dn.putIn(); sim(2.5);
     out.exactOpens = dn.jarDone && dn.doorC.open;
@@ -683,7 +684,7 @@ suite('dinner-parlour', async () => {
     g.state = 'playing'; g.respawnPlayer(false);
     const pos = () => `${dn.runner.x.toFixed(1)},${dn.runner.z.toFixed(1)}`;
     const seen = [pos()];
-    for (let k = 0; k < 4; k++) { stand(dn.runner.x + 1.2, 9.0, dn.runner.z + 1.0); sim(0.9); seen.push(pos()); }
+    for (let k = 0; k < 4; k++) { stand(dn.runner.x + 1.2, 11.4, dn.runner.z + 1.0); sim(0.9); seen.push(pos()); }
     out.hops = new Set(seen).size === 3;
     return out;
   });
