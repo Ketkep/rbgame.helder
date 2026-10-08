@@ -14,9 +14,9 @@ import { shuffle, rint, wallZ, wallX, slideDoor, doorFrame, escapeStages, canvas
 //   5 Dessert Parlour  climb the cake over a pit of cream: a cookie that crumbles, a tray that slides, a meringue bridge that gives way, a cherry that hops
 // Baby Mode: the shuffle is slower and shorter, the lag is brief, the decoy door is labelled, the expiring checkpoint keeps, the cherry hops once.
 
-const H = 13;
+const H = 15;
 const WALL_Z = -17;            // the wall between the dining room and the kitchen
-const WB = -36.4, WC = -54.4, WD = -92.4;   // the walls between the pass, the pantry, the cellar and the dessert parlour
+const WB = -36.4, WC = -60.4, WD = -105.4;   // the walls between the pass, the pantry, the cellar and the dessert parlour
 const NAMES = ['The Dining Room', 'The Pass', 'The Pantry', 'The Wine Cellar', 'Dessert Parlour'];
 const COURSES = [
   { name: 'Soup', clue: 'Hot, wet, and the favourite of spoons', col: 0xe8923a, shape: 'bowl' },
@@ -54,7 +54,7 @@ export default {
     w.spawn = { x: 0, y: 0, z: 11, yaw: 0 };
     w.respawn = { ...w.spawn };
     w.killY = -8;
-    const zEnd = -130;
+    const zEnd = -158;
     const hall = roomShell(w, { x0: -12, x1: 12, z0: zEnd, z1: 15, yb: -10, H, wallTex: 'damask', wallColor: 0xffffff, pilasterEvery: 12 });
     w.plat({ x: 0, y: -9.5, z: hall.cz, w: 24, d: hall.D, h: 1, tex: 'carpet', color: 0x2a0c14, roughness: 0.95 });
 
@@ -191,7 +191,7 @@ export default {
     wallZ(w, { z: WB, x0: -12.8, x1: 12.8, y0: -2, y1: 12, d: 0.8, gaps: [{ c: 0, w: 3.2, h: 3.8 }], mat: { tex: 'tile', color: 0xeef0ee } });
     wallZ(w, { z: WC, x0: -12.8, x1: 12.8, y0: -2, y1: 12, d: 0.8, gaps: [{ c: 0, w: 3.4, h: 3.8 }], mat: { tex: 'stone', color: 0x9a8a72 } });
     w.light(0xfff4e0, 16, 26, 0, 6.5, -27); w.light(0xffe6c0, 14, 24, 0, 6.5, -45);
-    for (const z of [-22, -30, -41, -49]) for (const x of [-5, 5]) { w.box({ x, y: 7.0, z, w: 2.4, h: 0.1, d: 0.3, glow: 0xfff2d8, glowIntensity: 1.5, shadow: false }); hotelHalo(w, x, 6.7, z, 4, 0xffe8c0, 0.14); }
+    for (const z of [-22, -30, -41, -49, -57]) for (const x of [-5, 5]) { w.box({ x, y: 7.0, z, w: 2.4, h: 0.1, d: 0.3, glow: 0xfff2d8, glowIntensity: 1.5, shadow: false }); hotelHalo(w, x, 6.7, z, 4, 0xffe8c0, 0.14); }
     // a tile band along the kitchen walls
     for (const s of [-1, 1]) w.box({ x: s * 10.78, y: 1.6, z: (WALL_Z + WC) / 2, w: 0.06, h: 0.16, d: WALL_Z - WC, color: 0x2a6a7a, shadow: false });
     const stove = (x, z) => {
@@ -283,11 +283,12 @@ export default {
     // ============================================================================================================
     //  Stage 3 · the pantry: exact change for the tip jar
     // ============================================================================================================
-    const T = rint(12, 19);
+    let T; do { T = rint(18, 24); } while (T === 20);
     const coinDefs = [
-      { v: 10, x: -9.8, y: 1.85, z: -41 }, { v: 5, x: -9.8, y: 0.95, z: -47 }, { v: 2, x: -9.8, y: 2.75, z: -50 },
-      { v: 5, x: 9.8, y: 1.85, z: -40 }, { v: 3, x: 9.8, y: 2.75, z: -42 }, { v: 1, x: 9.8, y: 0.95, z: -50.5 },
+      { v: 10, x: -9.8, y: 1.85, z: -41 }, { v: 5, x: -9.8, y: 0.95, z: -47.5 }, { v: 2, x: -9.8, y: 2.75, z: -53 }, { v: 3, x: -9.8, y: 1.85, z: -58 },
+      { v: 5, x: 9.8, y: 1.85, z: -40 }, { v: 7, x: 9.8, y: 2.75, z: -52 }, { v: 1, x: 9.8, y: 0.95, z: -57 },
     ];
+
     // shelves along the walls (the dumbwaiter hatch sits in the east gap)
     const shelf = (x, z0, z1) => {
       const len = Math.abs(z1 - z0), zc = (z0 + z1) / 2;
@@ -296,7 +297,7 @@ export default {
       w.collider({ x, y: 1.5, z: zc, w: 1.4, h: 3.0, d: len });
       for (let k = 0; k < Math.round(len / 1.0); k++) for (const y of [0.9, 1.8, 2.7]) { if ((k * 7 + Math.round(y * 3)) % 3 === 0) continue; const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.36, 10), plainMaterial([0xb04a2a, 0x4a7a3a, 0xc9a44a, 0x8a4a6a][(k + Math.round(y * 2)) % 4], { roughness: 0.4 })); jar.position.set(x + (k % 2 ? 0.2 : -0.25), y + 0.18, Math.min(z0, z1) + 0.5 + k * 1.0); w.add(jar); }
     };
-    shelf(-10.0, -38.4, -52.4); shelf(10.0, -38.4, -43.6); shelf(10.0, -48.4, -52.4);
+    shelf(-10.0, -38.4, -58.4); shelf(10.0, -38.4, -43.6); shelf(10.0, -48.4, -58.4);
     // the coins
     const pocket = [];
     let jarDone = false;
@@ -317,18 +318,18 @@ export default {
     };
     const restock = () => { pocket.length = 0; for (const c of coins) { c.taken = false; c.disc.visible = true; c.face.visible = true; } };
     // the jar, on a table by the cellar door, and the note on the wall (the host says twenty; the note says what the jar wants)
-    w.plat({ x: 0, y: 1.0, z: -52.8, w: 2.6, d: 1.4, h: 1.0, tex: 'wood', color: 0x8c6a3e, roughness: 0.55, radius: 0.04 });
-    const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.8, 18), new THREE.MeshStandardMaterial({ color: 0xcfe8f0, transparent: true, opacity: 0.35, roughness: 0.1, metalness: 0.1 })); jar.position.set(0, 1.45, -52.8); w.add(jar);
-    const jarRim = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.08, 18), brass()); jarRim.position.set(0, 1.9, -52.8); w.add(jarRim);
-    w.sign({ text: 'TIPS', x: 0, y: 1.45, z: -52.43, w: 0.5, h: 0.24, color: '#ffd21f', double: false, tw: 256, size: 90 });
-    canvasPlane(w, { x: -3.6, y: 2.2, z: -53.9, width: 1.8, height: 1.3, px: 512, draw: (g, cw, ch) => {
+    w.plat({ x: 0, y: 1.0, z: -58.6, w: 2.6, d: 1.4, h: 1.0, tex: 'wood', color: 0x8c6a3e, roughness: 0.55, radius: 0.04 });
+    const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.8, 18), new THREE.MeshStandardMaterial({ color: 0xcfe8f0, transparent: true, opacity: 0.35, roughness: 0.1, metalness: 0.1 })); jar.position.set(0, 1.45, -58.6); w.add(jar);
+    const jarRim = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.08, 18), brass()); jarRim.position.set(0, 1.9, -58.6); w.add(jarRim);
+    w.sign({ text: 'TIPS', x: 0, y: 1.45, z: -58.23, w: 0.5, h: 0.24, color: '#ffd21f', double: false, tw: 256, size: 90 });
+    canvasPlane(w, { x: -3.6, y: 2.2, z: WC + 0.5, width: 1.8, height: 1.3, px: 512, draw: (g, cw, ch) => {
       g.fillStyle = '#f6efd8'; g.fillRect(0, 0, cw, ch); g.strokeStyle = '#7a1f2a'; g.lineWidth = 8; g.strokeRect(10, 10, cw - 20, ch - 20);
       g.fillStyle = '#7a1f2a'; g.textAlign = 'center'; g.font = '46px "Archivo Black", Impact, sans-serif'; g.fillText('STAFF NOTICE', cw / 2, 70);
       g.fillStyle = '#1a1a22'; g.font = '34px "Archivo Black", Impact, sans-serif'; g.fillText('THE JAR WANTS EXACTLY', cw / 2, 130);
       g.font = '110px "Archivo Black", Impact, sans-serif'; g.fillText(`${T}¢`, cw / 2, 245);
       g.font = '26px "Archivo Black", Impact, sans-serif'; g.fillStyle = '#7a5a1c'; g.fillText('no more. no less. it counts.', cw / 2, 300);
     } });
-    w.box({ x: -3.6, y: 2.2, z: -53.95, w: 2.0, h: 1.5, d: 0.06, color: GOLD, metal: 1, rough: 0.35, shadow: false });
+    w.box({ x: -3.6, y: 2.2, z: WC + 0.45, w: 2.0, h: 1.5, d: 0.06, color: GOLD, metal: 1, rough: 0.35, shadow: false });
     const doorC = slideDoor(w, game, { x: 0, z: WC, width: 3.4, height: 3.8, tex: 'wood', color: 0x5a3a22 });
     doorFrame(w, { x: 0, z: WC, width: 3.4, height: 3.8 });
     w.sign({ text: 'WINE CELLAR · STAFF', x: 0, y: 4.75, z: WC + 0.44, w: 5, h: 0.7, color: '#f1d28a', double: false, tw: 1024, size: 54 });
@@ -343,7 +344,7 @@ export default {
       } else if (sum < T) { g.audio.buzzer(); g.ui.toast(`${sum}¢ is not enough. The jar is unimpressed.`, 'bad'); g.say('hotel.l8.t.short', { priority: 2 }); }
       else { g.audio.buzzer(); g.ui.toast(`${sum}¢ is too much. The jar keeps it. The shelves restock.`, 'bad'); g.say('hotel.l8.t.over', { priority: 2 }); restock(); }
     };
-    w.interactable({ x: 0, y: 1.6, z: -52.3, w: 1.6, h: 1.4, d: 1.4, range: 3.6, label: () => (jarDone ? 'The tip jar (content)' : pocket.length ? `Put ${pocketSum()}¢ in the jar` : 'The tip jar (empty pocket)'), enabled: () => !jarDone, onUse: putIn });
+    w.interactable({ x: 0, y: 1.6, z: -58.1, w: 1.6, h: 1.4, d: 1.4, range: 3.6, label: () => (jarDone ? 'The tip jar (content)' : pocket.length ? `Put ${pocketSum()}¢ in the jar` : 'The tip jar (empty pocket)'), enabled: () => !jarDone, onUse: putIn });
     w.onRespawn(() => { if (!jarDone) restock(); });
     // the dumbwaiter: the host's idea of the quick way out (the staff hatch has no car)
     fakeExit(w, game, { x: 10.3, y: 0, z: -46, yaw: -Math.PI / 2, kind: 'door', label: 'DUMBWAITER · EXIT', color: 0x2dd47f, say: 'hotel.l8.t.dumb' });
@@ -353,24 +354,25 @@ export default {
     // ============================================================================================================
     //  Stage 4 · the wine cellar
     // ============================================================================================================
-    const E = path(w.plat({ x: 0, y: 0, z: (WC - 0.4 + -62) / 2, w: 9, d: Math.abs(WC - 0.4 + 62), h: 1.4, tex: 'wood', color: 0xc9a56e, roughness: 0.6, radius: 0.04 }));
-    const A = path(w.plat({ x: 0, y: 0, z: -67, w: 9, d: 10, h: 1.4, tex: 'wood', color: 0xc9a56e, roughness: 0.6, radius: 0.04 }));
-    const Mer = path(w.plat({ x: 0, y: 0, z: -76, w: 9, d: 8, h: 1.4, tex: 'wood', color: 0x7a1a2a, roughness: 0.2, radius: 0.04, slippery: 0.8 }));   // spilled Merlot
-    const F = path(w.plat({ x: 0, y: 0, z: -86, w: 9, d: 12, h: 1.4, tex: 'wood', color: 0xc9a56e, roughness: 0.6, radius: 0.04 }));
+    const cz = (a, b) => (a + b) / 2, cd = (a, b) => Math.abs(a - b);
+    const E = path(w.plat({ x: 0, y: 0, z: cz(WC - 0.4, -67), w: 9, d: cd(WC - 0.4, -67), h: 1.4, tex: 'wood', color: 0xc9a56e, roughness: 0.6, radius: 0.04 }));
+    const A = path(w.plat({ x: 0, y: 0, z: cz(-67, -81), w: 9, d: 14, h: 1.4, tex: 'wood', color: 0xc9a56e, roughness: 0.6, radius: 0.04 }));
+    const Mer = path(w.plat({ x: 0, y: 0, z: cz(-81, -89), w: 9, d: 8, h: 1.4, tex: 'wood', color: 0x7a1a2a, roughness: 0.2, radius: 0.04, slippery: 0.8 }));   // spilled Merlot
+    const F = path(w.plat({ x: 0, y: 0, z: cz(-89, -105), w: 9, d: 16, h: 1.4, tex: 'wood', color: 0xc9a56e, roughness: 0.6, radius: 0.04 }));
     void E; void A; void Mer; void F;
-    w.sign({ text: 'MIND THE MERLOT', x: 0, y: 0.03, z: -73.4, w: 5.5, h: 0.8, rotX: -Math.PI / 2, color: '#ffd21f', double: false, tw: 512, size: 58 });
-    const cpCellar = w.checkpoint({ x: 0, y: 0, z: -57.2, real: true });
-    trollCheckpoint(w, game, { x: 0, y: 0, z: -80.8, mode: 'expire', ttl: 16, say: 'hotel.l8.expired' });
-    for (let z = -58; z > -92; z -= 5) for (const sx of [-1, 1]) {
+    w.sign({ text: 'MIND THE MERLOT', x: 0, y: 0.03, z: -81.6, w: 5.5, h: 0.8, rotX: -Math.PI / 2, color: '#ffd21f', double: false, tw: 512, size: 58 });
+    const cpCellar = w.checkpoint({ x: 0, y: 0, z: -62.6, real: true });
+    trollCheckpoint(w, game, { x: 0, y: 0, z: -89.8, mode: 'expire', ttl: 16, say: 'hotel.l8.expired' });
+    for (let z = -64; z > -104; z -= 5) for (const sx of [-1, 1]) {
       w.box({ x: sx * 10.8, y: 2.2, z, w: 2.4, h: 4.4, d: 3.6, color: 0x5a3a22, rough: 0.7, shadow: false });
       for (let k = 0; k < 3; k++) for (let j = 0; j < 4; j++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.7, 10), plainMaterial(0x214a2a, { roughness: 0.3, metalness: 0.2 })); b.rotation.z = Math.PI / 2; b.position.set(sx * 9.7, 0.7 + j * 1.0, z - 1.2 + k * 1.2); w.add(b); }
     }
-    for (let z = -58; z > -92; z -= 11) w.light(0xffa860, 14, 22, 0, 4.4, z - 2);
-    for (let z = -58; z > -92; z += -9) for (const sx of [-1, 1]) { w.box({ x: sx * 4.9, y: 3.4, z, w: 0.2, h: 0.4, d: 0.2, glow: 0xffb050, glowIntensity: 1.8, shadow: false }); hotelHalo(w, sx * 4.8, 3.4, z, 2.4, 0xffa050, 0.3); }
+    for (let z = -64; z > -104; z -= 11) w.light(0xffa860, 14, 22, 0, 4.4, z - 2);
+    for (let z = -64; z > -104; z += -9) for (const sx of [-1, 1]) { w.box({ x: sx * 4.9, y: 3.4, z, w: 0.2, h: 0.4, d: 0.2, glow: 0xffb050, glowIntensity: 1.8, shadow: false }); hotelHalo(w, sx * 4.8, 3.4, z, 2.4, 0xffa050, 0.3); }
     // rolling barrels (three lanes)
     const barrels = [];
-    const BZ0 = -92, BL = 35, V = 4.0;
-    [[-2.6, 0], [0, 12], [2.6, 24], [-2.6, 18], [0, 30], [2.6, 6]].forEach(([lx, off]) => {
+    const BZ0 = -105, BL = 39, V = 4.0;
+    [[-2.6, 0], [0, 13], [2.6, 26], [-2.6, 20], [0, 33], [2.6, 7], [0, 5]].forEach(([lx, off]) => {
       const bz = (t) => BZ0 + ((V * t + off) % BL);
       const hzb = w.hazard({ x: lx, y: 0.5, z: BZ0, w: 1.5, h: 1.0, d: 1.5, color: 0xff3a46, move: (t) => ({ z: bz(t) - BZ0 }) });
       hzb.core.visible = false; hzb.shell.visible = false; hzb.jumpable = true;
@@ -381,9 +383,9 @@ export default {
       w.onUpdate((dt, t) => { spin.rotation.x = -bz(t) / 0.62; });
       barrels.push(hzb);
     });
-    twistZone(game, w, { x: 0, y: 2, z: -68, w: 9, h: 4, d: 2.4 }, 'lag', { sec: 6, say: 'hotel.l8.lag' });      // input lag in the middle of the aisle (the toast says so)
+    twistZone(game, w, { x: 0, y: 2, z: -75, w: 9, h: 4, d: 2.4 }, 'swap', { sec: 6, say: 'hotel.l8.swap' });      // A and D swap in the middle of the aisle (the toast says so)
     // the ring at the end of the aisle: it is the end of the level. Then it is not.
-    const cellarGoal = w.goal({ x: 0, y: 0, z: -88.5, color: GOLD, onReach: () => {
+    const cellarGoal = w.goal({ x: 0, y: 0, z: -102.0, color: GOLD, onReach: () => {
       if (!fakeComplete(game, w, { title: 'LEVEL COMPLETE', jk: '…SECOND SITTING', say: 'hotel.l8.fakewin', sayAfter: 'hotel.l8.second', then: () => { doorD.openDoor(); } })) game.completeLevel();
     } });
     w.onUpdate(() => { if (doorD.open && cellarGoal.group.visible) { cellarGoal.group.visible = false; cellarGoal.trig.enabled = false; } });
@@ -395,13 +397,13 @@ export default {
     // ============================================================================================================
     //  Stage 5 · the dessert parlour: up the cake, over the cream
     // ============================================================================================================
-    const cpDessert = w.checkpoint({ x: 0, y: 0, z: -95.4, real: true });
-    path(w.plat({ x: 0, y: 0, z: -95.6, w: 12, d: 7.2, h: 2, tex: 'marble', color: 0xf6e6d0, roughness: 0.3, radius: 0.05, trim: GOLD }));
-    const cream = w.hazard({ x: 0, y: -1.05, z: -113, w: 24, h: 1.0, d: 40, color: 0xffffff });
+    const cpDessert = w.checkpoint({ x: 0, y: 0, z: -108.4, real: true });
+    path(w.plat({ x: 0, y: 0, z: -109.6, w: 12, d: 7.2, h: 2, tex: 'marble', color: 0xf6e6d0, roughness: 0.3, radius: 0.05, trim: GOLD }));
+    const cream = w.hazard({ x: 0, y: -1.05, z: -131, w: 24, h: 1.0, d: 52, color: 0xffffff });
     cream.core.visible = false; cream.shell.visible = false;
-    { const pool = new THREE.Mesh(new THREE.PlaneGeometry(23.4, 38), new THREE.MeshStandardMaterial({ color: 0xfff4e6, roughness: 0.25, emissive: 0x6a5a4a, emissiveIntensity: 0.5 }));
-      pool.rotation.x = -Math.PI / 2; pool.position.set(0, -0.58, -113); w.add(pool);
-      for (let k = 0; k < 18; k++) { const d = new THREE.Mesh(new THREE.SphereGeometry(0.5 + (k % 4) * 0.25, 12, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, emissive: 0x4a4038, emissiveIntensity: 0.4 })); d.scale.y = 0.55; d.position.set(-10 + (k * 7.3) % 20, -0.5, -98 - (k * 5.1) % 32); w.add(d); } }
+    { const pool = new THREE.Mesh(new THREE.PlaneGeometry(23.4, 50), new THREE.MeshStandardMaterial({ color: 0xfff4e6, roughness: 0.25, emissive: 0x6a5a4a, emissiveIntensity: 0.5 }));
+      pool.rotation.x = -Math.PI / 2; pool.position.set(0, -0.58, -131); w.add(pool);
+      for (let k = 0; k < 18; k++) { const d = new THREE.Mesh(new THREE.SphereGeometry(0.5 + (k % 4) * 0.25, 12, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, emissive: 0x4a4038, emissiveIntensity: 0.4 })); d.scale.y = 0.55; d.position.set(-10 + (k * 7.3) % 20, -0.5, -108 - (k * 5.1) % 44); w.add(d); } }
     const frosting = [0xf0a8c8, 0xfff0d8, 0xd8a878, 0xc8e8d8];
     const cakeStep = (x, z, top, ww, dd, i, o = {}) => {
       const p = path(w.plat({ x, y: top, z, w: ww, d: dd, h: 0.5, tex: 'marble', color: frosting[i % 4], roughness: 0.35, radius: 0.12, ...o }));
@@ -409,20 +411,24 @@ export default {
       for (let k = 0; k < 3; k++) w.box({ x: x - ww / 3 + k * ww / 3, y: top + 0.03, z: z + (k - 1) * 0.3, w: 0.18, h: 0.04, d: 0.05, color: [0xff4a6a, 0x4a8aff, 0xffd23f][k], shadow: false });   // sprinkles
       return p;
     };
-    const D1 = cakeStep(-3.0, -102.0, 1.0, 2.8, 2.8, 0);
-    const D2 = w.crumble(cakeStep(2.0, -105.4, 2.0, 2.6, 2.6, 2, { tex: 'wood', color: 0xc8955a }), { delay: 0.6, gone: 3 });          // a cookie
-    const D3 = cakeStep(6.0, -109.4, 2.9, 2.6, 2.6, 3); w.mover(D3, (t) => ({ z: 1.5 * Math.sin(t * 1.0) }));                      // a tray on a trolley, rolling
-    const D4 = cakeStep(1.8, -113.2, 3.7, 3.4, 3.0, 1);
-    const cpMid = w.checkpoint({ x: 1.8, y: 3.7, z: -113.2, real: true });
-    const D5 = vanishAfter(w, game, cakeStep(-5.0, -113.2, 3.7, 7.0, 2.2, 0), { axis: 'x', dir: -1, frac: 0.5, delay: 0.7, back: 3.4, say: 'hotel.l8.bridge' });   // a meringue bridge
-    const D6 = cakeStep(-8.8, -117.2, 4.6, 2.8, 2.8, 3);
-    const D7 = cakeStep(-4.4, -120.6, 5.5, 2.8, 2.8, 2);
-    const D8 = cakeStep(0, -123.6, 6.4, 5.4, 3.4, 1);
+    const D1 = cakeStep(-3.0, -115.0, 0.9, 2.8, 2.8, 0);
+    const D2 = w.crumble(cakeStep(2.0, -118.4, 1.8, 2.6, 2.6, 2, { tex: 'wood', color: 0xc8955a }), { delay: 0.6, gone: 3 });          // a cookie
+    const D3 = cakeStep(6.0, -122.4, 2.6, 2.6, 2.6, 3); w.mover(D3, (t) => ({ z: 1.5 * Math.sin(t * 1.0) }));                      // a tray on a trolley, rolling
+    const D4 = cakeStep(1.8, -126.2, 3.4, 3.4, 3.0, 1);
+    const cpMid = w.checkpoint({ x: 1.8, y: 3.4, z: -126.2, real: true });
+    const D5 = vanishAfter(w, game, cakeStep(-5.0, -126.2, 3.4, 7.0, 2.2, 0), { axis: 'x', dir: -1, frac: 0.5, delay: 0.7, back: 3.4, say: 'hotel.l8.bridge' });   // a meringue bridge
+    const D6 = cakeStep(-8.8, -130.2, 4.2, 2.8, 2.8, 3);
+    const D7 = cakeStep(-4.4, -133.6, 5.0, 2.8, 2.8, 2);
+    const D8 = w.crumble(cakeStep(0.2, -136.6, 5.8, 2.6, 2.6, 1, { tex: 'wood', color: 0xc8955a }), { delay: 0.6, gone: 3 });
+    const D9 = cakeStep(4.6, -139.8, 6.6, 2.6, 2.6, 0);
+    const D10 = cakeStep(0, -143.2, 7.4, 2.8, 2.8, 3); w.mover(D10, (t) => ({ x: 1.8 * Math.sin(t * 0.9) }));
+    const D11 = cakeStep(-4.4, -146.6, 8.2, 2.6, 2.6, 2);
+    const D12 = cakeStep(0, -150.6, 9.0, 5.4, 3.4, 1);
     const topCherry = new THREE.Group(); { const c = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), plainMaterial(0xd01030, { roughness: 0.25 })); c.position.y = 0.2; topCherry.add(c); }
-    topCherry.position.set(-2.2, 6.9, -125.0); w.add(topCherry);
-    w.light(0xffd8e8, 16, 28, 0, 7, -108); w.light(0xffe0f0, 14, 24, 0, 9, -120);
-    for (const z of [-100, -110, -120]) for (const x of [-6, 6]) { w.box({ x, y: 11.6, z, w: 0.5, h: 0.3, d: 0.5, glow: 0xffd0e8, glowIntensity: 1.5, shadow: false }); hotelHalo(w, x, 11.2, z, 4, 0xffc0e0, 0.16); }
-    const runner = evasiveGoal(w, game, { spots: [{ x: 1.8, y: 6.4, z: -123.2 }, { x: -1.8, y: 6.4, z: -124.2 }, { x: 0.4, y: 6.4, z: -122.8 }], radius: 4.2, color: 0xff5a8a, say: ['hotel.l8.hop1', 'hotel.l8.hop2'], onReach: () => { game.say('hotel.l8.done', { priority: 2 }); game.completeLevel(); } });
+    topCherry.position.set(-2.2, 9.5, -152.0); w.add(topCherry);
+    w.light(0xffd8e8, 16, 28, 0, 7, -120); w.light(0xffe0f0, 14, 24, 0, 9, -136); w.light(0xffe0f0, 14, 24, 0, 11, -148);
+    for (const z of [-112, -124, -136, -148]) for (const x of [-6, 6]) { w.box({ x, y: 13.6, z, w: 0.5, h: 0.3, d: 0.5, glow: 0xffd0e8, glowIntensity: 1.5, shadow: false }); hotelHalo(w, x, 13.2, z, 4, 0xffc0e0, 0.16); }
+    const runner = evasiveGoal(w, game, { spots: [{ x: 1.8, y: 9.0, z: -150.2 }, { x: -1.8, y: 9.0, z: -151.2 }, { x: 0.4, y: 9.0, z: -149.8 }], radius: 4.2, color: 0xff5a8a, say: ['hotel.l8.hop1', 'hotel.l8.hop2'], onReach: () => { game.say('hotel.l8.done', { priority: 2 }); game.completeLevel(); } });
     w.goalObj = runner;
     w.sign({ text: 'DESSERT PARLOUR · SECOND SITTING', x: 0, y: 6.2, z: WD - 0.45, w: 9, h: 1.0, rotY: Math.PI, color: '#ffc8e0', double: false, tw: 1024, size: 70 });
 
@@ -432,9 +438,9 @@ export default {
     const S = escapeStages(w, game, [
       { name: NAMES[0], at: { x: 0, y: 0, z: 11 }, clues: ['hotel.l8.hint1', 'hotel.l8.hint2', 'hotel.l8.hint3'], vars: () => ({ a: order[0].name, b: order[1].name, all: order.map((c) => c.name).join(', ') }), solved: () => doorOpen, trail: [{ x: 0, y: 0, z: -2 }, { x: 0, y: 0, z: -12 }] },
       { name: NAMES[1], at: { x: 0, y: 0, z: -19.8 }, clues: ['hotel.l8.p.hint1', 'hotel.l8.p.hint2', 'hotel.l8.p.hint3'], vars: () => ({ where: WHERE[slotOfKey()] }), solved: () => sh.got, trail: [{ x: 8.6, y: 0, z: -22 }, { x: 8.6, y: 0, z: -30 }, { x: 0, y: 0, z: -34.4 }] },
-      { name: NAMES[2], at: { x: 0, y: 0, z: -38.6 }, clues: ['hotel.l8.t.hint1', 'hotel.l8.t.hint2', 'hotel.l8.t.hint3'], vars: () => ({ t: T }), solved: () => jarDone, trail: [{ x: 0, y: 0, z: -46 }, { x: 0, y: 0, z: -51 }] },
-      { name: NAMES[3], at: { x: 0, y: 0, z: -57.2 }, trail: [{ x: 0, y: 0, z: -66 }, { x: 0, y: 0, z: -76 }, { x: 0, y: 0, z: -86 }, { x: 0, y: 0, z: -93 }] },
-      { name: NAMES[4], at: { x: 0, y: 0, z: -95.4 }, trail: [D1, D2, D3, D4, D5, D6, D7, D8].map((p) => ({ x: p.body.x, y: p.top, z: p.body.z })), end: () => ({ x: runner.x, y: runner.y, z: runner.z }) },
+      { name: NAMES[2], at: { x: 0, y: 0, z: -38.6 }, clues: ['hotel.l8.t.hint1', 'hotel.l8.t.hint2', 'hotel.l8.t.hint3'], vars: () => ({ t: T }), solved: () => jarDone, trail: [{ x: 0, y: 0, z: -48 }, { x: 0, y: 0, z: -56 }] },
+      { name: NAMES[3], at: { x: 0, y: 0, z: -62.6 }, trail: [{ x: 0, y: 0, z: -72 }, { x: 0, y: 0, z: -85 }, { x: 0, y: 0, z: -98 }, { x: 0, y: 0, z: -104 }] },
+      { name: NAMES[4], at: { x: 0, y: 0, z: -108.4 }, trail: [D1, D2, D3, D4, D5, D6, D7, D8, D9, D10, D11, D12].map((p) => ({ x: p.body.x, y: p.top, z: p.body.z })), end: () => ({ x: runner.x, y: runner.y, z: runner.z }) },
     ]);
     const cps = new Map([[cpPass, 1], [cpPantry, 2], [cpCellar, 3], [cpDessert, 4]]);
     w.hooks.onCheckpoint = (c) => {
@@ -452,7 +458,7 @@ export default {
       t0 += dt;
       const p = g.player;
       if (!intro && t0 > 1.2) { intro = true; g.say('hotel.l8.intro'); g.say('hotel.l8.intro2', { vars: { first: 'dessert' } }); S.banner(); }
-      if (!merlot && p.z < -71 && p.z > -80) { merlot = true; g.say('hotel.l8.merlot', { priority: 1 }); }
+      if (!merlot && p.z < -80 && p.z > -89) { merlot = true; g.say('hotel.l8.merlot', { priority: 1 }); }
     };
     w.hooks.onDeath = (info) => {
       const p = game.player;
@@ -508,16 +514,16 @@ export default {
           if (coinT === 0) { takeCoin(g, rec); coinT = 0.3; } else { coinT = Math.max(0, coinT - 1 / 60); if (coinT === 0) coinK++; }
           return { wait: true, x: p.x, z: p.z };
         }
-        const m = goTo(0, -50.0, 0.8); if (m) return m;
+        const m = goTo(0, -56.2, 0.8); if (m) return m;
         if (jarT === 0) { putIn(g); jarT = 1; }
         return { wait: true, x: p.x, z: p.z };
       }
       if (doorC.t < 1 && p.z > WC) return { wait: true, x: 0, z: WC + 2.6 };
       if (p.z > WC + 0.5 && Math.abs(p.x) > 1.1) return { x: 0, z: WC + 2.4 };
       // ---- 4 · the cellar (the route platforms), then the ring that is not the end
-      if (!doorD.open && p.z < -83 && p.y > -1) return { x: cellarGoal.x, z: cellarGoal.z };
+      if (!doorD.open && p.z < -97 && p.y > -1) return { x: cellarGoal.x, z: cellarGoal.z };
       // ---- 5 · the parlour: the route platforms, then the cherry that hops away
-      if (p.y > 5.6 && p.z < -118) return { x: runner.x, z: runner.z };
+      if (p.y > 8.4 && p.z < -146) return { x: runner.x, z: runner.z };
       return null;
     };
   },

@@ -139,49 +139,6 @@ suite('trivia', async () => {
   await page.close();
 });
 
-// ---- level 8: Dinner Is Served --------------------------------------------------------------------------------
-suite('dinner', async () => {
-  const page = await open(8);
-  const r = await page.evaluate(() => {
-    const g = window.__trust, w = g.world, dn = w.dinner, out = {};
-    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
-    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
-    out.six = dn.cloches.length === 6 && new Set(dn.order.map((c) => c.name)).size === 6;
-    // hints: three levels of clue, then (door open) the trail
-    g.debug = false; for (let i = 0; i < 3; i++) { g.hintCool = 0; g.useHint(); }
-    out.hints = said.filter((k) => /l8\.hint/.test(k)).join(',');
-    // serve the WRONG course first: a cake falls where you stand; the shadow warns you first
-    g.player.teleport(0, 0.001, 0);
-    const wrong = dn.cloches.find((c) => c.c !== dn.order[0]);
-    dn.serve(wrong);
-    out.progressReset = dn.served === 0; out.trapSprang = dn.trapBusy;
-    sim(0.5); out.warnFirst = g.state === 'playing';
-    sim(1.2); out.cakeKills = g.state === 'dead';
-    g.state = 'playing'; g.respawnPlayer(false); sim(2.5);
-    out.trapOver = !dn.trapBusy;
-    // dodge: step away while the shadow grows
-    g.player.teleport(0, 0.001, 0); dn.serve(wrong); sim(0.3); g.player.teleport(6, 0.001, 0); sim(2.5);
-    out.dodged = g.state === 'playing';
-    // serve all six in order: the door opens
-    for (const c of dn.order) dn.serve(dn.cloches.find((r) => r.c === c));
-    out.opened = dn.doorOpen && dn.served === 6;
-    sim(2);
-    out.barrels = dn.barrels.length;
-    // a barrel in the aisle hurts
-    g.player.teleport(0, 0.001, -30); const b = dn.barrels[0];
-    g.player.teleport(b.body.x, 0.001, b.body.z); g._simulate(1 / 60); out.barrelKills = g.state === 'dead';
-    return out;
-  });
-  ok(r.six, 'dinner: six different courses');
-  ok(r.hints === 'hotel.l8.hint1,hotel.l8.hint2,hotel.l8.hint3', `dinner: three hint levels (${r.hints})`);
-  ok(r.progressReset && r.trapSprang, 'dinner: a wrong course resets the meal and springs the dessert trolley');
-  ok(r.warnFirst && r.cakeKills, 'dinner: the cake gives a warning, then flattens you if you stay');
-  ok(r.trapOver && r.dodged, 'dinner: ...and you can dodge it');
-  ok(r.opened, 'dinner: all six courses in the menu\'s order open the kitchen door');
-  ok(r.barrels >= 5 && r.barrelKills, `dinner: ${r.barrels} barrels roll down the cellar and hurt`);
-  await page.close();
-});
-
 // ---- level 9: Kitchen Maze ---------------------------------------------------------------------------------------
 suite('kitchen', async () => {
   const page = await open(9);
@@ -255,52 +212,6 @@ suite('dance', async () => {
   ok(r.overlap > 0.35, `dance: consecutive tiles are lit together often enough to hop (${(r.overlap * 100).toFixed(0)}%)`);
   ok(r.frozen && r.stillOk, 'dance: FREEZE: standing still is fine');
   ok(r.movingKills, 'dance: ...moving is not');
-  await page.close();
-});
-
-// ---- level 11: Room 404 ------------------------------------------------------------------------------------------
-suite('room404', async () => {
-  const page = await open(11);
-  const r = await page.evaluate(() => {
-    const g = window.__trust, w = g.world, rm = w.room404, out = {};
-    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
-    const face = (x, z) => { const p = g.player; g.yaw = Math.atan2(-(x - p.x), -(z - p.z)); g.pitch = 0; };
-    const bed = rm.pieces.find((p) => p.name === 'bed'), chair = rm.pieces.find((p) => p.name === 'armchair');
-    out.code = rm.code; out.notFake = rm.code !== rm.fake;
-    // searching the bed/desk/dresser reveals the three digits, the armchair is a lie
-    for (const p of rm.pieces) rm.search(p);
-    out.digits = rm.found.join('') === rm.code;
-    // the wardrobe is frozen while you look at it and walks when you do not
-    rm.ward.active = true;
-    g.player.teleport(0, 0.001, 6.5);
-    face(rm.ward.x, rm.ward.z); const w0 = [rm.ward.x, rm.ward.z]; sim(1.5);
-    out.frozenWhenWatched = Math.hypot(rm.ward.x - w0[0], rm.ward.z - w0[1]) < 0.01;
-    g.yaw += Math.PI; const w1 = [rm.ward.x, rm.ward.z]; sim(1.0);
-    out.walksWhenNot = Math.hypot(rm.ward.x - w1[0], rm.ward.z - w1[1]) > 1.2;
-    // furniture: stays put while watched (or near), relocates when unseen for a while and far away
-    g.player.teleport(0, 0.001, 8.2); rm.ward.active = false;
-    const slot0 = bed.slot;
-    // look at the bed from afar
-    face(bed.cx, bed.cz); sim(3.5); out.bedStays = bed.slot === slot0;
-    // look the other way: something moves
-    const before = rm.pieces.map((p) => p.slot).join();
-    g.yaw += Math.PI; sim(4);
-    out.moves = rm.pieces.map((p) => p.slot).join() !== before;
-    // a blackout counts as not looking, even if you are facing the wardrobe
-    rm.ward.active = true; g.player.teleport(0, 0.001, 8); face(rm.ward.x, rm.ward.z); rm.setDark(true);
-    const w2 = [rm.ward.x, rm.ward.z]; sim(0.8); out.darkWalks = Math.hypot(rm.ward.x - w2[0], rm.ward.z - w2[1]) > 0.8;
-    rm.setDark(false);
-    // it kills on contact
-    g.player.teleport(rm.ward.x + 0.5, 0.001, rm.ward.z + 0.5); g.yaw += Math.PI; sim(0.2);
-    out.kills = g.state === 'dead';
-    return out;
-  });
-  ok(r.notFake, `room404: the real code (${r.code}) is not the host's 404`);
-  ok(r.digits, 'room404: the bed, desk and dresser hold the three digits');
-  ok(r.frozenWhenWatched && r.walksWhenNot, 'room404: the wardrobe is frozen while watched and walks when you look away');
-  ok(r.bedStays && r.moves, 'room404: furniture holds still while watched, and moves when you are not looking');
-  ok(r.darkWalks, 'room404: in a blackout the wardrobe moves even if you face it');
-  ok(r.kills, 'room404: the wardrobe is fatal');
   await page.close();
 });
 
@@ -619,6 +530,332 @@ suite('luggage-closet', async () => {
   ok(r.hasDoor && r.closetKills, 'luggage: NOTHING TO DECLARE is a closet with no floor');
   await page.close();
 });
+// ---- level 8: Dinner Is Served (five rooms: dining · the pass · the pantry · the cellar · the dessert parlour) -------------------
+suite('dinner', async () => {
+  const page = await open(8);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, dn = w.dinner, out = {};
+    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    out.six = dn.cloches.length === 6 && new Set(dn.order.map((c) => c.name)).size === 6;
+    out.stageCount = dn.stages.defs.length;
+    // hints: a clue ladder for the room you are in
+    g.debug = false; for (let i = 0; i < 3; i++) { g.hintCool = 0; g.useHint(); }
+    out.hints = said.filter((k) => /l8\.hint/.test(k)).join(',');
+    // serve the WRONG course first: a cake falls where you stand; the shadow warns you first
+    g.player.teleport(0, 0.001, 0);
+    const wrong = dn.cloches.find((c) => c.c !== dn.order[0]);
+    dn.serve(wrong);
+    out.progressReset = dn.served === 0; out.trapSprang = dn.trapBusy;
+    sim(0.5); out.warnFirst = g.state === 'playing';
+    sim(1.2); out.cakeKills = g.state === 'dead';
+    g.state = 'playing'; g.respawnPlayer(false); sim(2.5);
+    out.trapOver = !dn.trapBusy;
+    g.player.teleport(0, 0.001, 0); dn.serve(wrong); sim(0.3); g.player.teleport(6, 0.001, 0); sim(2.5);
+    out.dodged = g.state === 'playing';
+    // serve all six in order: the door opens
+    for (const c of dn.order) dn.serve(dn.cloches.find((r) => r.c === c));
+    out.opened = dn.doorOpen && dn.served === 6;
+    sim(2.5);
+    return out;
+  });
+  ok(r.six, 'dinner: six different courses');
+  ok(r.stageCount === 5, `dinner: five stages (${r.stageCount})`);
+  ok(r.hints === 'hotel.l8.hint1,hotel.l8.hint2,hotel.l8.hint3', `dinner: three hint levels for the dining room (${r.hints})`);
+  ok(r.progressReset && r.trapSprang, 'dinner: a wrong course resets the meal and springs the dessert trolley');
+  ok(r.warnFirst && r.cakeKills, 'dinner: the cake gives a warning, then flattens you if you stay');
+  ok(r.trapOver && r.dodged, 'dinner: ...and you can dodge it');
+  ok(r.opened, 'dinner: all six courses in the menu\'s order open the kitchen door');
+  await page.close();
+});
+
+suite('dinner-pass', async () => {
+  const page = await open(8);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, dn = w.dinner, sh = dn.sh, out = {};
+    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    g.player.teleport(5.4, 0.001, -23.9);
+    // not rung yet: the domes do not answer
+    dn.pickSlot(0); out.notYet = sh.phase === 'idle';
+    dn.ringBell(); out.shows = sh.phase === 'show';
+    sim(2.6); out.shuffling = sh.phase === 'shuffle';
+    out.sevenSwaps = sh.swaps.length === 7;
+    sim(6); out.pick = sh.phase === 'pick';
+    // the host's pointing is wrong (it is never where the key is)
+    out.hostLies = sh.lie !== dn.slotOfKey() && said.some((k) => k === 'hotel.l8.p.point');
+    // a wrong dome is empty: the bell has to be rung again
+    const wrongSlot = [0, 1, 2].find((s) => s !== dn.slotOfKey());
+    dn.pickSlot(wrongSlot); out.wrongNoKey = !sh.got && sh.phase === 'wrong';
+    sim(2); out.again = sh.phase === 'idle';
+    // hint 3 at this stage names where the key is right now
+    dn.ringBell(); sim(9); out.pick2 = sh.phase === 'pick';
+    dn.pickSlot(dn.slotOfKey()); out.key = sh.got;
+    // the pantry door: locked without the key, and it is not the shell game's fault if you try it first
+    out.doorShut = !dn.doorB.open;
+    dn.doorBuse(); sim(2); out.doorOpens = dn.doorB.open;
+    return out;
+  });
+  ok(r.notYet && r.shows, 'dinner: ring the bell and the key is shown under its dome first');
+  ok(r.shuffling && r.sevenSwaps, 'dinner: the domes are then shuffled (seven swaps)');
+  ok(r.pick && r.hostLies, 'dinner: the host confidently points at a dome with no key under it');
+  ok(r.wrongNoKey && r.again, 'dinner: a wrong dome is empty; ring the bell and try again');
+  ok(r.pick2 && r.key, 'dinner: the dome that holds the key gives the pantry key');
+  ok(r.doorShut && r.doorOpens, 'dinner: the pantry door opens');
+  await page.close();
+});
+
+suite('dinner-pantry', async () => {
+  const page = await open(8);
+  const r = await page.evaluate(async () => {
+    const g = window.__trust, w = g.world, dn = w.dinner, out = {};
+    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    g.player.teleport(0, 0.001, -44);
+    const T = dn.T, vals = dn.coins.map((c) => c.v);
+    out.notTwenty = T !== 20 && T >= 18 && T <= 24;
+    out.solvable = (() => { for (let m = 1; m < 64; m++) { let s = 0; for (let i = 0; i < 6; i++) if (m & (1 << i)) s += vals[i]; if (s === T) return true; } return false; })();
+    // take everything: too much, the jar eats it all and the shelves restock
+    for (const c of dn.coins) dn.takeCoin(c);
+    dn.putIn(); out.overRestocks = dn.pocket.length === 0 && dn.coins.every((c) => !c.taken) && !dn.jarDone && said.includes('hotel.l8.t.over');
+    // too little: the pocket stays
+    dn.takeCoin(dn.coins.find((c) => c.v === 1)); dn.putIn();
+    out.shortKeeps = dn.pocket.length === 1 && !dn.jarDone && said.includes('hotel.l8.t.short');
+    // exactly the amount on the note: the cellar door opens
+    for (const c of dn.coins) { if (c.taken) c.taken = false; }
+    dn.pocket.length = 0; for (const c of dn.coins) { c.disc.visible = true; c.face.visible = true; }
+    let pick = null; for (let m = 1; m < 64 && !pick; m++) { let s = 0; const sel = []; for (let i = 0; i < 6; i++) if (m & (1 << i)) { s += vals[i]; sel.push(dn.coins[i]); } if (s === T) pick = sel; }
+    for (const c of pick) dn.takeCoin(c);
+    dn.putIn(); sim(2.5);
+    out.exactOpens = dn.jarDone && dn.doorC.open;
+    return out;
+  });
+  ok(r.notTwenty && r.solvable, 'dinner: the jar wants a solvable amount that is not the host\'s twenty');
+  ok(r.overRestocks, 'dinner: too much: the jar keeps it and the shelves restock');
+  ok(r.shortKeeps, 'dinner: too little: the jar is unimpressed and you keep the coins');
+  ok(r.exactOpens, 'dinner: exact change opens the cellar door');
+  await page.close();
+});
+
+suite('dinner-cellar', async () => {
+  const page = await open(8);
+  const r = await page.evaluate(async () => {
+    const g = window.__trust, w = g.world, dn = w.dinner, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    // barrels
+    out.barrels = dn.barrels.length;
+    g.player.teleport(0, 0.001, -70); const b = dn.barrels[0];
+    g.player.teleport(b.body.x, 0.001, b.body.z); g._simulate(1 / 60); out.barrelKills = g.state === 'dead';
+    g.state = 'playing'; g.respawnPlayer(false);
+    // input lag in the middle of the aisle, announced and temporary
+    g.player.teleport(0, 0.001, -75); sim(0.3); out.lag = g.mods.swapStrafe === true;
+    g.player.teleport(0, 0.001, -63); sim(8.5); out.lagEnds = !g.mods.swapStrafe;
+    // the ring at the end is the end of the level... for a moment
+    g.player.teleport(dn.cellarGoal.x, 0.001, dn.cellarGoal.z); sim(0.3);
+    out.fake = g.frozen === true && !!document.querySelector('.fakewin');
+    for (let k = 0; k < 40 && !dn.doorD.open; k++) { await new Promise((res) => setTimeout(res, 250)); }
+    sim(0.2);
+    out.second = !g.frozen && g.state === 'playing' && dn.doorD.open;
+    return out;
+  });
+  ok(r.barrels >= 5 && r.barrelKills, `dinner: ${r.barrels} barrels roll down the cellar and hurt`);
+  ok(r.lag && r.lagEnds, 'dinner: a stretch of the cellar swaps A and D, then gives them back');
+  ok(r.fake, 'dinner: the ring at the end of the cellar shows LEVEL COMPLETE');
+  ok(r.second, 'dinner: ...which was a lie: the second sitting (the dessert parlour door) opens');
+  await page.close();
+});
+
+suite('dinner-parlour', async () => {
+  const page = await open(8);
+  const r = await page.evaluate(async () => {
+    const g = window.__trust, w = g.world, dn = w.dinner, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const stand = (x, y, z) => { g.player.teleport(x, y + 0.001, z); sim(0.1); };
+    // the cream is a pit
+    stand(0, 0, -108.4); out.cp = Math.abs(w.respawn.z + 108.4) < 0.8;
+    stand(6, -0.2, -118); sim(0.4); out.creamKills = g.state === 'dead';
+    g.state = 'playing'; g.respawnPlayer(false);
+    // the meringue bridge gives way once you are past the middle
+    const b = dn.D5.body; stand(b.x + b.hx - 0.7, dn.D5.top, b.z); sim(0.3);
+    for (let k = 0; k < 6; k++) { g.player.teleport(b.x + b.hx - 0.7 - k * (b.hx * 1.8 / 6), dn.D5.top + 0.001, b.z); sim(0.12); }
+    sim(1.5); out.bridgeGone = !b.enabled;
+    // the cherry hops away twice
+    g.state = 'playing'; g.respawnPlayer(false);
+    const pos = () => `${dn.runner.x.toFixed(1)},${dn.runner.z.toFixed(1)}`;
+    const seen = [pos()];
+    for (let k = 0; k < 4; k++) { stand(dn.runner.x + 1.2, 9.0, dn.runner.z + 1.0); sim(0.9); seen.push(pos()); }
+    out.hops = new Set(seen).size === 3;
+    return out;
+  });
+  ok(r.cp, 'dinner: the parlour has its own checkpoint');
+  ok(r.creamKills, 'dinner: the cream floor is lethal');
+  ok(r.bridgeGone, 'dinner: the meringue bridge gives way once you are past the middle');
+  ok(r.hops, 'dinner: the cherry hops away twice, then stays');
+  await page.close();
+});
+
+suite('dinner-dumbwaiter', async () => {
+  const page = await open(8);
+  const r = await page.evaluate(async () => {
+    const g = window.__trust, w = g.world, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const door = w.interactables.find((i) => /EXIT door|staff closet/.test(typeof i.label === 'function' ? i.label() : i.label));
+    out.hasDoor = !!door;
+    g.player.teleport(8.2, 0.001, -46); sim(0.2); door.onUse(g);
+    for (let k = 0; k < 20 && g.state !== 'dead'; k++) { await new Promise((res) => setTimeout(res, 300)); sim(0.1); }
+    out.kills = g.state === 'dead';
+    return out;
+  });
+  ok(r.hasDoor && r.kills, 'dinner: the dumbwaiter is a fake exit (a closet with no floor)');
+  await page.close();
+});
+// ---- level 11: Room 404 (four rooms: the bedroom · the bathroom · the hallway · the stairwell) -----------------------------------
+suite('room404', async () => {
+  const page = await open(11);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, rm = w.room404, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const face = (x, z) => { const p = g.player; g.yaw = Math.atan2(-(x - p.x), -(z - p.z)); g.pitch = 0; };
+    const bed = rm.pieces.find((p) => p.name === 'bed'), chair = rm.pieces.find((p) => p.name === 'armchair');
+    out.code = rm.code; out.notFake = rm.code !== rm.fake && rm.codeB !== '404' && rm.codeC !== '404';
+    out.stages = rm.stages.defs.length;
+    // hints: a clue ladder for the bedroom only
+    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
+    g.debug = false; for (let i = 0; i < 3; i++) { g.hintCool = 0; g.useHint(); }
+    out.hints = said.filter((k) => /l11\.hint/.test(k)).join(',');
+    // searching the bed/desk/dresser reveals the three digits, the armchair is a lie
+    for (const p of rm.pieces) rm.search(p);
+    out.digits = rm.found.join('') === rm.code;
+    // the wardrobe is frozen while you look at it and walks when you do not
+    rm.ward.active = true;
+    g.player.teleport(0, 0.001, 6.5);
+    face(rm.ward.x, rm.ward.z); const w0 = [rm.ward.x, rm.ward.z]; sim(1.5);
+    out.frozenWhenWatched = Math.hypot(rm.ward.x - w0[0], rm.ward.z - w0[1]) < 0.01;
+    g.yaw += Math.PI; const w1 = [rm.ward.x, rm.ward.z]; sim(1.0);
+    out.walksWhenNot = Math.hypot(rm.ward.x - w1[0], rm.ward.z - w1[1]) > 1.2;
+    // furniture: stays put while watched (or near), relocates when unseen for a while and far away
+    g.player.teleport(0, 0.001, 8.2); rm.ward.active = false;
+    const slot0 = bed.slot;
+    face(bed.cx, bed.cz); sim(3.5); out.bedStays = bed.slot === slot0;
+    const before = rm.pieces.map((p) => p.slot).join();
+    g.yaw += Math.PI; sim(4);
+    out.moves = rm.pieces.map((p) => p.slot).join() !== before;
+    // a blackout counts as not looking, even if you are facing the wardrobe
+    rm.ward.active = true; g.player.teleport(0, 0.001, 8); face(rm.ward.x, rm.ward.z); rm.setDark(true);
+    const w2 = [rm.ward.x, rm.ward.z]; sim(0.8); out.darkWalks = Math.hypot(rm.ward.x - w2[0], rm.ward.z - w2[1]) > 0.8;
+    rm.setDark(false);
+    g.player.teleport(rm.ward.x + 0.5, 0.001, rm.ward.z + 0.5); g.yaw += Math.PI; sim(0.2);
+    out.kills = g.state === 'dead';
+    return out;
+  });
+  ok(r.notFake, `room404: no real code is the host's 404 (${r.code})`);
+  ok(r.stages === 4, `room404: four stages (${r.stages})`);
+  ok(r.hints === 'hotel.l11.hint1,hotel.l11.hint2,hotel.l11.hint3', `room404: a clue ladder for the bedroom (${r.hints})`);
+  ok(r.digits, 'room404: the bed, desk and dresser hold the three digits');
+  ok(r.frozenWhenWatched && r.walksWhenNot, 'room404: the wardrobe is frozen while watched and walks when you look away');
+  ok(r.bedStays && r.moves, 'room404: furniture holds still while watched, and moves when you are not looking');
+  ok(r.darkWalks, 'room404: in a blackout the wardrobe moves even if you face it');
+  ok(r.kills, 'room404: the wardrobe is fatal');
+  await page.close();
+});
+
+suite('room404-bath', async () => {
+  const page = await open(11);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, rm = w.room404, out = {};
+    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const type = (c) => { for (const d of c) g.modal.key({ code: 'Digit' + d }); g.modal.key({ code: 'Enter' }); };
+    // the bedroom door: the armchair's 404 is wrong, the real code opens it
+    rm.useKeypad(); type('404'); out.fakeDenied = !rm.doorOpen && said.includes('hotel.l11.fake'); g.modal.close();
+    rm.useKeypad(); type(rm.code); sim(1.6); out.opens = rm.doorA.open;
+    // the bathroom: lit, the wall is blank; dark, the digits glow (backwards on the wall, right way round in the mirror)
+    g.player.teleport(0, 0.001, -16); sim(0.2);
+    out.zone = rm.zoneOf(g.player.z) === 'bath';
+    out.litBlank = rm.bath.lit && rm.bath.digits.every((m) => !m.visible);
+    sim(4.6); out.darkShows = !rm.bath.lit && rm.bath.digits.every((m) => m.visible);
+    out.mirrored = g.mods.invertX === true;
+    sim(5.5); out.litAgain = rm.bath.lit && rm.bath.digits.every((m) => !m.visible);
+    // the code is the digits in the mirror; the backwards number gets a hint of its own
+    g.player.teleport(0, 0.001, -26); sim(0.1);
+    rm.useKeypadB(); type(rm.codeB.split('').reverse().join('')); out.revHint = !rm.doorB.open && (rm.codeB.split('').reverse().join('') === rm.codeB || said.includes('hotel.l11.b.rev')); g.modal.close();
+    rm.useKeypadB(); type(rm.codeB); sim(1.6); out.bOpens = rm.doorB.open;
+    out.mouseRestored = (sim(8), !g.mods.invertX);
+    return out;
+  });
+  ok(r.fakeDenied && r.opens, 'room404: the host\'s 404 is refused, the found code opens the bedroom door');
+  ok(r.zone && r.litBlank, 'room404: with the bathroom light on, the wall is blank');
+  ok(r.darkShows, 'room404: when the light goes out, glowing digits show on the wall');
+  ok(r.mirrored && r.litAgain, 'room404: the dark brings a mirrored mouse, which wears off, and the light comes back');
+  ok(r.revHint && r.bOpens && r.mouseRestored, 'room404: the digits read backwards get a hint; the mirror\'s order opens the door');
+  await page.close();
+});
+
+suite('room404-hall', async () => {
+  const page = await open(11);
+  const r = await page.evaluate(async () => {
+    const g = window.__trust, w = g.world, rm = w.room404, out = {};
+    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const type = (c) => { for (const d of c) g.modal.key({ code: 'Digit' + d }); g.modal.key({ code: 'Enter' }); };
+    // three plaques are lit, and they spell the code from the bathroom end
+    const lit = rm.plates.filter((p) => p.lit).sort((a, b) => b.z - a.z);
+    out.threeLit = lit.length === 3;
+    g.player.teleport(0, 0.001, -29.8); sim(0.3);
+    out.expiring = !!w._troll;
+    // the wardrobe is in the hall: unwatched and past the first doors it walks, fast; watched it stops
+    g.player.teleport(0, 0.001, -45); sim(0.2); rm.ward.active = true;
+    g.yaw = 0;       // facing away (north)
+    const a = [rm.ward.x, rm.ward.z]; sim(1); out.hallWalks = Math.hypot(rm.ward.x - a[0], rm.ward.z - a[1]) > 3;
+    g.yaw = Math.PI; sim(0.1); const b = [rm.ward.x, rm.ward.z]; sim(1); out.hallFrozen = Math.hypot(rm.ward.x - b[0], rm.ward.z - b[1]) < 0.01;
+    g.yaw = 0; g.player.teleport(rm.ward.x - 0.3, 0.001, rm.ward.z - 0.8); sim(0.3); out.hallKills = g.state === 'dead';
+    g.state = 'playing'; g.respawnPlayer(false); rm.ward.active = false;
+    // the host's 404 opens a door onto Room 404, again
+    g.player.teleport(0, 0.001, -68.4); sim(0.2);
+    rm.useKeypadC(); type('404'); for (let k = 0; k < 20 && !rm.doorLoop.open; k++) { await new Promise((res) => setTimeout(res, 150)); sim(0.1); } sim(1.5);
+    out.loopOpens = rm.doorLoop.open && !rm.doorStairs.open;
+    g.modal?.close?.(); g.modal = null;
+    g.player.teleport(-2.4, 0.001, -70.4); sim(0.2);
+    out.loops = g.player.z > -35 && said.includes('hotel.l11.loop');
+    // the real code opens the stairs
+    g.player.teleport(0, 0.001, -68.4); sim(0.2);
+    rm.useKeypadC(); type(lit.map((p) => rm.codeC[rm.plates.filter((q) => q.lit).sort((x, y) => y.z - x.z).indexOf(p)]).join('')); for (let k = 0; k < 20 && !rm.doorStairs.open; k++) { await new Promise((res) => setTimeout(res, 150)); sim(0.1); }
+    out.realOpens = rm.doorStairs.open || (type(rm.codeC), false);
+    return out;
+  });
+  ok(r.threeLit, 'room404: three door plaques in the hallway are lit');
+  ok(r.hallWalks && r.hallFrozen && r.hallKills, 'room404: the hallway wardrobe walks when unwatched, stops when watched, and is fatal');
+  ok(r.loopOpens && r.loops, 'room404: the host\'s 404 opens a door onto Room 404, again (back to the start of the hallway)');
+  ok(r.realOpens, 'room404: the lit digits, in order, open the stairs door');
+  await page.close();
+});
+
+suite('room404-stairs', async () => {
+  const page = await open(11);
+  const r = await page.evaluate(async () => {
+    const g = window.__trust, w = g.world, rm = w.room404, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const stand = (x, y, z) => { g.player.teleport(x, y + 0.001, z); sim(0.1); };
+    stand(0, 0, -72.4); sim(0.3); out.cp = Math.abs(w.respawn.z + 72.4) < 0.8;
+    out.fallKills = (stand(2, -13, -80), sim(0.5), g.state === 'dead');
+    g.state = 'playing'; g.respawnPlayer(false);
+    // the exit runs away twice, then a fake LEVEL COMPLETE, then a bonus climb
+    const pos = () => `${rm.runner.x.toFixed(1)},${rm.runner.z.toFixed(1)}`;
+    const seen = [pos()];
+    for (let k = 0; k < 2; k++) { stand(rm.runner.x + 1.2, 8, rm.runner.z + 1.0); sim(0.9); seen.push(pos()); }
+    out.hops = new Set(seen).size === 3;
+    stand(rm.runner.x + 0.3, 8, rm.runner.z + 0.3); sim(0.3);
+    out.fake = g.frozen === true && !!document.querySelector('.fakewin') && !rm.bonusOn;
+    for (let k = 0; k < 40 && !rm.bonusOn; k++) { await new Promise((res) => setTimeout(res, 250)); }
+    sim(0.3); out.bonus = rm.bonusOn && !g.frozen && rm.bonus.every((p) => p.body.enabled) && rm.finalGoal.group.visible;
+    return out;
+  });
+  ok(r.cp && r.fallKills, 'room404: the stairwell has a checkpoint, and falling off the steps is fatal');
+  ok(r.hops, 'room404: the exit at the top hops away twice');
+  ok(r.fake && r.bonus, 'room404: reaching it shows LEVEL COMPLETE, which is a lie, and a bonus climb appears');
+  await page.close();
+});
+
 // <<< escape rooms
 
 const names = Object.keys(suites).filter((n) => n.includes(filter));
