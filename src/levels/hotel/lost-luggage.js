@@ -724,3 +724,16 @@ function carousel(w, C) {
     w.collider({ x: C.x, y: 1.0, z: C.z + s * (C.L / 2 + 3.4), w: 2 * R * 0.36, h: 2.0, d: 1.0 });
   }
 }
+
+// a plastic flap curtain over a belt: dark strips that hang from a frame (decoration: you walk through it)
+function flapCurtain(w, x, z, width) {
+  const mat = plainMaterial(0x23262e, { roughness: 0.7 });
+  const n = Math.round(width / 0.42);
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.7, 0.03), mat);
+    m.position.set(x - width / 2 + (i + 0.5) * (width / n), 1.95, z);
+    w.add(m);
+  }
+  const frame = plainMaterial(0x5a6070, { metalness: 0.7, roughness: 0.4 });
+  const top = new THREE.Mesh(new THREE.BoxGeometry(width + 0.5, 0.2, 0.2), frame); top.position.set(x, 2.9, z); w.add(top);
+}
