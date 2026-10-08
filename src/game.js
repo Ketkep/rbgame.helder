@@ -101,7 +101,7 @@ export class Game {
     this.airMaxY = 0; this.wasGrounded = true;
     this.deadT = 0;
     this.history = [];
-    this.mods = { swapStrafe: false, invertY: false, lieCounter: false, noMove: false };
+    this.mods = { swapStrafe: false, invertY: false, invertX: false, swapFwd: false, jumpLag: 0, lieCounter: false, noMove: false };
     this.titleT = 0;
     this._pausedPrev = false;
 
@@ -227,7 +227,7 @@ export class Game {
       if (this.state !== 'playing' || this.frozen) return;
       if (!this.locked && !this.debug) return;
       const s = 0.0022 * this.sens;
-      this.yaw -= e.movementX * s;
+      this.yaw -= e.movementX * s * (this.mods.invertX ? -1 : 1);
       this.pitch -= e.movementY * s * (this.mods.invertY ? -1 : 1);
       this.pitch = Math.max(-1.5, Math.min(1.5, this.pitch));
       if (e.movementX || e.movementY) this.idleT = 0;
@@ -526,7 +526,7 @@ export class Game {
     this.hintCool = 0; this.levelHints = 0;
     this.deathSpots = [];
     this.lastFakeCp = null; this.fakeRevealed = false; this.fakeReveals = 0;
-    this.mods = { swapStrafe: false, invertY: false, lieCounter: false, noMove: false };
+    this.mods = { swapStrafe: false, invertY: false, invertX: false, swapFwd: false, jumpLag: 0, lieCounter: false, noMove: false };
     this.frozen = false;
     this.history.length = 0;
     this.respawnPlayer(true);
@@ -653,7 +653,7 @@ export class Game {
     this.airMaxY = r.y; this.wasGrounded = true;
     this.landDip = 0;
     this.frozen = false;
-    this.mods.swapStrafe = false; this.mods.invertY = false; this.mods.noMove = false;
+    this.mods.swapStrafe = false; this.mods.invertY = false; this.mods.invertX = false; this.mods.swapFwd = false; this.mods.jumpLag = 0; this.mods.noMove = false; this._jumpQ = 0;
     if (!initial) this.world.onPlayerRespawn();
   }
 
@@ -864,6 +864,7 @@ export class Game {
     fwd += this.touchMove.y; str += this.touchMove.x;
     fwd = Math.max(-1, Math.min(1, fwd)); str = Math.max(-1, Math.min(1, str));
     if (this.mods.swapStrafe) str = -str;
+    if (this.mods.swapFwd) fwd = -fwd;
     if (this.mods.noMove || this.modal) { fwd = 0; str = 0; }
     const sy = Math.sin(this.yaw), cy = Math.cos(this.yaw);
     let wx = -sy * fwd + cy * str, wz = -cy * fwd - sy * str;
@@ -881,6 +882,8 @@ export class Game {
 
     const jumpHeld = this.keys.has('Space');
     let edge = this.jumpEdge; this.jumpEdge = false;
+    if (this.mods.jumpLag && edge) { this._jumpQ = this.mods.jumpLag; edge = false; }          // "input lag": the jump arrives late
+    else if (this._jumpQ > 0) { this._jumpQ -= dt; if (this._jumpQ <= 0) edge = true; }
     const opts = {
       jumpMul: this.baby ? 1.07 : 1,
       coyoteExtra: this.baby ? 0.12 : 0,
@@ -957,8 +960,9 @@ export class Game {
       });
     }
     const out = [{ x: p.x, y: p.y + 0.15, z: p.z }];
-    for (let k = 1; k <= 4 && idx + k < path.length; k++) { const q = path[idx + k]; out.push({ x: q.body.x, y: q.top + 0.15, z: q.body.z }); }
-    if (idx + 4 >= path.length - 1 && w.goalObj) out.push({ x: w.goalObj.x, y: w.goalObj.y + 0.15, z: w.goalObj.z });
+    let stopped = false;
+    for (let k = 1; k <= 4 && idx + k < path.length; k++) { const q = path[idx + k]; out.push({ x: q.body.x, y: q.top + 0.15, z: q.body.z }); if (q.o.stageEnd) { stopped = true; break; } }   // (a `stageEnd` platform: the hint never spoils past the next checkpoint)
+    if (!stopped && idx + 4 >= path.length - 1 && w.goalObj) out.push({ x: w.goalObj.x, y: w.goalObj.y + 0.15, z: w.goalObj.z });
     return out.length >= 2 ? out : null;
   }
 

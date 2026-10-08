@@ -77,7 +77,7 @@ export class TouchControls {
     const g = this.g;
     if (g.state !== 'playing' || g.frozen) return;
     const s = LOOK * g.sens;
-    g.yaw -= dx * s;
+    g.yaw -= dx * s * (g.mods.invertX ? -1 : 1);
     g.pitch -= dy * s * (g.mods.invertY ? -1 : 1);
     g.pitch = Math.max(-1.5, Math.min(1.5, g.pitch));
     g.idleT = 0;
