@@ -643,7 +643,7 @@ export default {
     };
 
     w.hallway = {
-      A, doors, paintings, sconces, chutes, route, ferry, trolley, cart, ghost, bridge, deco, exitDoor, stairs,
+      A, doors, paintings, sconces, chutes, route, trolley, cart, ghost, bridge, deco, exitDoor, stairs, ferries,
       get round() { return round; }, set round(v) { round = v; }, get phase() { return phase; }, get cur() { return cur; }, get act() { return actNow; },
       get roundT() { return roundT; }, set roundT(v) { roundT = v; }, get expired() { return expired; },
       decide, newRound, setRound(r, id = undefined) { round = r; phase = 'rounds'; setup(); if (id !== undefined) { if (cur) { cur.off(); cur.active = false; } cur = id ? A[id] : null; if (cur) { cur.on(); cur.active = true; } } game.respawnPlayer(false); showAct(ACT_OF[round]); },
