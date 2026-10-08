@@ -303,7 +303,7 @@ export default {
         if (avoid.some((a) => a >= k1 - 2 && a <= k2 + 2)) continue;
         // a side passage (off the path) from cells k1-1 … k1+1
         let pocket = null;
-        for (let j = k1 - 1; j <= k1 + 1 && !pocket; j++) { const c = M.path[j]; if (!c) continue; const n = M.maze.nbrs(c[0], c[1]).find((q) => !M.onPath(q)); if (n) pocket = { from: c, cell: n, j }; }
+        for (let j = k1 - 2; j <= k1 + 3 && !pocket; j++) { const c = M.path[j]; if (!c) continue; const n = M.maze.nbrs(c[0], c[1]).find((q) => !M.onPath(q)); if (n) pocket = { from: c, cell: n, j }; }
         (pocket ? ok : any).push({ k1, k2, pocket });
       }
       return ok.length ? ok[rnd(ok.length)] : any.length ? any[rnd(any.length)] : null;
@@ -320,11 +320,12 @@ export default {
     };
     const lenA = baby() ? 5 : 6;
     const avoidA = [0, 1, 2, 3, midA, MA.path.length - 1, MA.path.length - 2];
-    const sA1 = pick(MA, 5, midA - 2, lenA, avoidA) || pick(MA, 4, midA, 4, avoidA);
-    const sA2 = pick(MA, midA + 4, MA.path.length - 4, lenA, avoidA) || pick(MA, midA + 3, MA.path.length - 2, 4, avoidA);
     const avoidB = [0, 1, 2, 3, midB, MB.path.length - 1, MB.path.length - 2];
-    const sB1 = pick(MB, 5, midB - 2, lenA, avoidB) || pick(MB, 4, midB, 4, avoidB);
-    const sB2 = pick(MB, midB + 4, MB.path.length - 5, lenA + 1, avoidB) || pick(MB, midB + 3, MB.path.length - 2, 4, avoidB);
+    const pickAny = (M, lo, hi, avoid, lens) => { for (const l of lens) { const r = pick(M, lo, hi, l, avoid); if (r && r.pocket) return r; } for (const l of lens) { const r = pick(M, lo, hi, l, avoid); if (r) return r; } return null; };
+    const sA1 = pickAny(MA, 5, midA - 2, avoidA, [lenA, 5, 4]) || pickAny(MA, 4, midA, avoidA, [4]);
+    const sA2 = pickAny(MA, midA + 4, MA.path.length - 4, avoidA, [lenA, 5, 4]) || pickAny(MA, midA + 3, MA.path.length - 2, avoidA, [4]);
+    const sB1 = pickAny(MB, 5, midB - 2, avoidB, [lenA, 5, 4]) || pickAny(MB, 4, midB, avoidB, [4]);
+    const sB2 = pickAny(MB, midB + 4, MB.path.length - 5, avoidB, [lenA + 1, lenA, 5, 4]) || pickAny(MB, midB + 3, MB.path.length - 2, avoidB, [4]);
     const spd = 2.4 * (baby() ? 0.85 : 1);
     const rA1 = addMaid(MA, wallsA, sA1, { speed: spd, wait: 1.8, phase: Math.random() * 30, name: 'Rosa' });
     const rA2 = addMaid(MA, wallsA, sA2, { speed: spd + 0.2, wait: 1.6, phase: Math.random() * 30, name: 'Dolores' });
