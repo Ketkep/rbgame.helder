@@ -10,6 +10,7 @@ import level4 from './levels/level4.js';
 import level5 from './levels/level5.js';
 import hotelLobby from './levels/hotel/lobby.js';
 import { TIERS, buildHotelLevels } from './levels/hotel/roster.js';
+import { buildCoopLevels } from './levels/coop/roster.js';
 
 export const CAMPAIGNS = [
   {
@@ -35,11 +36,15 @@ export const CAMPAIGNS = [
     after: 'Campaign 3 is coming soon. The manager says it will be "fair".',
   },
   {
-    id: 'season3',
+    id: 'coop',
     number: 3,
-    title: '???',
-    tagline: 'Classified. Mostly because it doesn\'t exist yet.',
-    status: 'soon',
+    title: 'Couples Retreat',
+    tagline: 'Two players, online. Ten "trust exercises" at a lakeside wellness resort. The counsellor sides with nobody.',
+    eta: '10 sessions · ~10 min each',
+    status: 'playable',
+    coop: true,
+    levels: buildCoopLevels(),
+    after: 'The retreat is over. Whether you are still friends is between you.',
   },
 ];
 

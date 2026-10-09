@@ -497,3 +497,28 @@ body.touch #stamp { font-size: clamp(40px, 12vh, 80px); }
 body.touch .host-wrap, body.touch .chips, body.touch .ribbon, body.touch .cookie, body.touch .pill, body.touch .bd-cap { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .home .logo, .host, .ribbon-track, .art-pilot i, .art-hotel i { animation: none !important; } }
 @media (max-height: 520px) { body.touch .card-art, body.touch .skip-chip { display: none; } }
+
+/* ---- Campaign 3 room screen ---- */
+.coop-field { display: block; margin: 12px 0 4px; font: 700 12px var(--body); letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; }
+.coop-field input, .coop-join input { display: block; width: 100%; margin-top: 6px; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.06); color: var(--ink); font: 700 16px var(--body); text-align: center; }
+.coop-join { display: flex; gap: 8px; } .coop-join input { margin: 0; letter-spacing: 0.3em; text-transform: uppercase; }
+.coop-msg { min-height: 1.3em; margin: 10px 0; color: #ff8a8a; font-size: 13px; }
+.coop-codebox { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 8px 0 14px; padding: 12px 16px; border-radius: 14px; background: rgba(255,200,61,0.1); border: 1px dashed var(--gold); }
+.coop-codebox span { font: 700 11px var(--body); letter-spacing: 0.2em; color: var(--muted); }
+.coop-codebox b { font: 400 34px var(--display); letter-spacing: 0.18em; color: var(--gold); }
+.coop-slots { display: flex; gap: 10px; margin-bottom: 8px; }
+.coop-slot { flex: 1; padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); font: 700 14px var(--body); }
+.coop-slot.p1 { border-color: #ff9a3d; } .coop-slot.p2 { border-color: #39d7c9; }
+.coop-slot small { display: block; color: var(--muted); font-weight: 400; font-size: 11px; margin-top: 2px; }
+#coop-levels { max-height: 38vh; overflow: auto; margin: 10px 0 14px; }
+#partner-chip { position: fixed; top: 12px; right: 14px; z-index: 6; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: rgba(10,12,20,0.6); color: #fff; font: 700 12px var(--body); pointer-events: none; }
+#partner-chip i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+#partner-chip small { color: var(--muted); font-weight: 400; }
+#partner-chip.bad small { color: #ff8a8a; }
+
+.art-coop { background: linear-gradient(160deg, #1f6b6f 0%, #2a9d8f 45%, #ffb26b 100%); }
+.art-coop i:nth-child(1), .art-coop i:nth-child(2) { bottom: 14%; width: 26px; height: 54px; border-radius: 14px; }
+.art-coop i:nth-child(1) { left: 26%; background: #ff9a3d; animation: bob 3.1s ease-in-out infinite; }
+.art-coop i:nth-child(2) { right: 26%; background: #39d7c9; animation: bob 3.1s ease-in-out infinite 0.5s; }
+.art-coop i:nth-child(3) { left: 36%; right: 36%; bottom: 40%; height: 3px; background: rgba(255,255,255,0.8); }
+.art-coop i:nth-child(4) { left: 47%; top: 14%; width: 22px; height: 22px; border-radius: 50%; background: #ffe9a8; box-shadow: 0 0 20px #ffe9a8; }

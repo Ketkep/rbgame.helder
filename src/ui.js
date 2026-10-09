@@ -12,7 +12,7 @@ export class UI {
       this.el[id] = $(id);
     }
     this.screens = {
-      home: $('scr-home'), levels: $('scr-levels'), settings: $('scr-settings'), pause: $('scr-pause'), click: $('scr-click'), complete: $('scr-complete'), end: $('scr-end'),
+      home: $('scr-home'), levels: $('scr-levels'), coop: $('scr-coop'), settings: $('scr-settings'), pause: $('scr-pause'), click: $('scr-click'), complete: $('scr-complete'), end: $('scr-end'),
     };
     this._subHideT = null;
     this._creditsY = 0; this._creditsSpeed = 0; this._creditsOn = false;

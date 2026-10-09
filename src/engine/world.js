@@ -367,7 +367,7 @@ export class World {
   _crumbleStep(s, dt) {
     const p = s.plat, pl = this.game.player;
     if (s.state === 'idle') {
-      if (pl.grounded && pl.ground === p.body) { s.state = 'shake'; s.t = 0; this.game.audio.crumble(); }
+      if ((pl.grounded && pl.ground === p.body) || this.coop?.partnerOn?.(p.body)) { s.state = 'shake'; s.t = 0; this.game.audio.crumble(); }
     } else if (s.state === 'shake') {
       s.t += dt;
       p.group.position.set(p.base.x + (Math.random() - 0.5) * 0.07, p.base.y + (Math.random() - 0.5) * 0.03, p.base.z + (Math.random() - 0.5) * 0.07);
@@ -396,7 +396,7 @@ export class World {
     this.updaters.push((dt) => {
       const pl = this.game.player;
       if (s.state === 'idle') {
-        if (pl.grounded && pl.ground === plat.body) { s.state = 'wait'; s.t = 0; this.game.audio.crumble(); }
+        if ((pl.grounded && pl.ground === plat.body) || this.coop?.partnerOn?.(plat.body)) { s.state = 'wait'; s.t = 0; this.game.audio.crumble(); }
       } else if (s.state === 'wait') {
         s.t += dt;
         plat.group.position.x = plat.base.x + (Math.random() - 0.5) * 0.03;
@@ -546,7 +546,15 @@ export class World {
     base.position.y = 0.09; base.receiveShadow = true; g.add(base);
     this.scene.add(g);
     const obj = { group: g, x, y, z, ring, ring2, disc, trig: null };
-    obj.trig = this.trigger({
+    if (this.game.coop && !onReach) {
+      // online co-op: the level is done when BOTH players are inside the ring at the same time
+      const c = this.coop;
+      obj.trig = this.trigger({
+        x, y: y + 1.9, z, w: 2.6, h: 3.4, d: 2.6, once: false,
+        onEnter: () => c.presence('goal', true), onExit: () => c.presence('goal', false),
+      });
+      c.onPresence('goal', (both) => { if (both && !this.completed) c.finish(); });
+    } else obj.trig = this.trigger({
       x, y: y + 1.9, z, w: 2.6, h: 3.4, d: 2.6, once: true,
       onEnter: () => { if (this.completed) return; (onReach || (() => this.game.completeLevel()))(); },
     });
@@ -721,7 +729,8 @@ export class World {
 
   /** Called when the player respawns: reset resettable level state. */
   onPlayerRespawn() {
-    for (const f of this.respawnHooks) f();
+    // online co-op: a respawn only resets the level when both players went back (or the level asks for it)
+    if (!this.coop || this.game.coop.rule === 'both' || this.coopRules?.resetOnRespawn) for (const f of this.respawnHooks) f();
     for (const t of this.triggers) {
       if (t.inside) { t.inside = false; if (t.onExit) t.onExit(); } // leaving by teleport still counts as leaving
       if (t.resetOnRespawn) t.fired = false;

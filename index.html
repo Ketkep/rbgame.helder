@@ -26,6 +26,7 @@
 
     <!-- in-game HUD -->
     <div id="hud" class="hidden">
+      <div id="partner-chip" class="hidden"><i></i><span></span><small></small></div>
       <div id="hud-left">
         <div id="lvl-chip"></div>
         <div id="deaths"><span class="skull">☠</span><b id="deaths-n">0</b></div>
@@ -161,6 +162,31 @@
         <p class="quip">Pick a level to start a fresh run from there.</p>
         <div id="levels-grid" class="levels-grid"></div>
         <div class="btns"><button id="btn-levels-back" class="btn ghost">Back</button></div>
+      </div>
+    </section>
+
+    <section id="scr-coop" class="screen">
+      <div class="panel wide">
+        <p class="eyebrow">CAMPAIGN 3 · TWO PLAYERS · ONLINE</p>
+        <h2 id="coop-title">Couples Retreat</h2>
+        <div id="coop-menu">
+          <p class="quip">Two browsers, one room code. Get your partner on Discord, then host or join.</p>
+          <label class="coop-field">Your name <input id="coop-name" maxlength="14" placeholder="Player" autocomplete="off" /></label>
+          <div class="btns col">
+            <button id="coop-host" class="btn primary">Host a room</button>
+            <div class="coop-join"><input id="coop-code" maxlength="8" placeholder="ROOM CODE" autocomplete="off" spellcheck="false" /><button id="coop-join" class="btn">Join</button></div>
+          </div>
+          <p id="coop-msg" class="coop-msg"></p>
+          <div class="btns"><button id="coop-back" class="btn ghost">Back</button></div>
+        </div>
+        <div id="coop-room" class="hidden">
+          <p class="quip" id="coop-status">Waiting for your partner…</p>
+          <div id="coop-codebox" class="coop-codebox"><span>ROOM CODE</span><b id="coop-codeout">-----</b><button id="coop-copy" class="btn small">Copy invite</button></div>
+          <div class="coop-slots"><div id="coop-slot1" class="coop-slot p1"></div><div id="coop-slot2" class="coop-slot p2"></div></div>
+          <p class="hint" id="coop-ping"></p>
+          <div id="coop-levels" class="levels-grid"></div>
+          <div class="btns"><button id="coop-leave" class="btn ghost">Leave room</button></div>
+        </div>
       </div>
     </section>
 

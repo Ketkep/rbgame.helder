@@ -29,3 +29,5 @@ if (q.has('debug') && q.get('campaign') && !q.has('level') && getCampaign(q.get(
   game.audio.init();
   game.newGame(Math.max(0, +q.get('level') - 1), q.get('campaign') || undefined).then(() => game.ui.toast('Debug mode: click the screen to capture the mouse', 'good'));
 }
+
+game.coopUI.auto();

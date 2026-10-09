@@ -14,6 +14,7 @@ import { TouchControls, detectTouch } from './touch.js';
 import { Backdrop } from './backdrop.js';
 import { HomeFX } from './home.js';
 import { CAMPAIGNS, getCampaign, isLevelUnlocked } from './campaigns.js';
+import { CoopUI } from './net/coop-ui.js';
 
 const FIXED = 1 / 120;
 const SAVE_KEY = 'trustme.save.v2';
@@ -81,6 +82,7 @@ export class Game {
     this._loadTok = 0;
     this.debug = new URLSearchParams(location.search).has('debug');
     this.manual = false; // tests: when true the caller drives _simulate() itself
+    this.coop = null;    // Campaign 3: the live link to the other player (src/net/coop.js)
 
     // run stats
     this.reset = () => {
@@ -121,6 +123,7 @@ export class Game {
       if (this.save.settings.gfxChosen !== true) this.setQuality(true, false);      // phones start on Low graphics; the pause menu can undo it
     }
     this._refreshHome();
+    this.coopUI = new CoopUI(this);                                                 // Campaign 3's room screen
     this.home = new HomeFX(this);                                                  // the host, the counters, the gags
     if (this.debug) window.__trust = this;
 
@@ -258,7 +261,7 @@ export class Game {
     el['btn-mercy'].addEventListener('click', () => this.begForMercy());
     el['btn-quit'].addEventListener('click', () => { this.audio.click(); this.toHome(); });
     el['btn-next'].addEventListener('click', () => this._next());
-    el['btn-lobby'].addEventListener('click', () => { this.audio.click(); this.backToLobby(); });
+    el['btn-lobby'].addEventListener('click', () => { this.audio.click(); if (this.coop) this.coopUI.backToRoom(true); else this.backToLobby(); });
     el['btn-lobby-pause'].addEventListener('click', () => { this.audio.click(); this.backToLobby(); });
     el['btn-again'].addEventListener('click', () => { this.audio.click(); this.newGame(0, this.campaign.id); });
     el['btn-home'].addEventListener('click', () => { this.audio.click(); this.toHome(); });
@@ -353,6 +356,15 @@ export class Game {
     if (hub && this.touch && !this.debug) {                       // the hotel is not on touch yet
       card.classList.remove('playable'); card.classList.add('soon');
       card.appendChild(mk('div', 'soon-badge', '🖥 Desktop only for now'));
+      return card;
+    }
+    if (c.coop) {                                                                // online two-player: the card opens the room screen
+      if (this.touch && !this.debug) { card.classList.remove('playable'); card.classList.add('soon'); card.appendChild(mk('div', 'soon-badge', '🖥 Desktop only for now')); return card; }
+      const cleared = c.levels.filter((_, i) => cs.levelBest[i]).length, ready = c.levels.filter((l) => !l.placeholder).length;
+      card.appendChild(mk('p', 'card-stats', cleared ? `${cleared}/${c.levels.length} sessions cleared` : `2 players · online · ${ready}/${c.levels.length} sessions ready`));
+      const go = mk('button', 'btn primary', 'Play with a friend');
+      go.addEventListener('click', () => { this.audio.init(); this.audio.click(); this.coopUI.open(); });
+      const b = mk('div', 'card-btns'); b.appendChild(go); card.appendChild(b);
       return card;
     }
     const pips = mk('div', 'pips' + (hub ? ' grouped' : ''));
@@ -473,6 +485,28 @@ export class Game {
     return this.enterHub(this.campaign.id, tier);
   }
 
+  // ---- Campaign 3 (online co-op): the host chooses, both load, then both start on "go" ----------------------
+  async coopLoad(i, seed) {
+    this.campaign = getCampaign('coop');
+    this.reset();
+    this.state = 'coopwait';
+    this.ui.hideScreens();
+    this.ui.toast('Loading… waiting for your partner', 'gold');
+    return this._loadLevelObj(this.campaign.levels[i], i, { coopSeed: seed });
+  }
+  coopBegin(rtt = 0) {
+    this._begin();
+    if (this.world) this.world.t = rtt / 2;
+    this.coop?.partner && (this.coop.partner.snap = true);
+  }
+  onCoopClosed() {
+    if (!this.coop) return;
+    if (this.state === 'title') return;
+    document.exitPointerLock?.();
+    this.state = 'paused';
+    this.coopUI.partnerLeft();
+  }
+
   _begin() {
     this.ui.hideScreens();
     this.ui.hud(true);
@@ -514,6 +548,7 @@ export class Game {
     const w = (this.world = new World(this));
     w.hooks = {};
     if (old) { try { old.dispose(); } catch { /* best effort */ } this.renderer.renderLists.dispose(); }
+    if (this.coop) this.coop.attachWorld(w, opts.coopSeed || 0);
     level.build(w, this);
     this.renderPass.scene = w.scene;
     if (this.lowGfx) this._applyShadowQuality(w);
@@ -556,8 +591,8 @@ export class Game {
     this.closeModal();
     this.state = 'paused';
     this.ui.showScreen('pause');
-    this.ui.el['btn-restart'].classList.toggle('hidden', this.levelIndex < 0);
-    this.ui.el['btn-lobby-pause'].classList.toggle('hidden', !(this.campaign.hub && this.levelIndex >= 0));
+    this.ui.el['btn-restart'].classList.toggle('hidden', this.levelIndex < 0 || !!this.coop);
+    this.ui.el['btn-lobby-pause'].classList.toggle('hidden', !(this.campaign.hub && this.levelIndex >= 0) || !!this.coop);
     this.ui.el['pause-quip'].textContent = '';
     if (this.level.pauseTroll) this.level.pauseTroll(this);
     else {
@@ -583,6 +618,7 @@ export class Game {
 
   toHome() {
     document.exitPointerLock?.();
+    this.coopUI.leave(false);
     this.state = 'title';
     this.ui.hud(false);
     this.narrator.clear();
@@ -644,7 +680,9 @@ export class Game {
   //  Player / respawn / death
   // =========================================================================================
   respawnPlayer(initial = false) {
-    const r = this.world.respawn;
+    let r = this.world.respawn;
+    const rv = !initial && this.coop?.consumeReviveTarget();
+    if (rv) r = { ...r, x: rv.x, y: rv.y, z: rv.z };
     this.player.teleport(r.x, r.y + 0.001, r.z);
     this.yaw = r.yaw || 0; this.pitch = initial ? -0.05 : 0;
     this.jumpEdge = false;
@@ -654,7 +692,7 @@ export class Game {
     this.landDip = 0;
     this.frozen = false;
     this.mods.swapStrafe = false; this.mods.invertY = false; this.mods.invertX = false; this.mods.swapFwd = false; this.mods.jumpLag = 0; this.mods.noMove = false; this._jumpQ = 0;
-    if (!initial) this.world.onPlayerRespawn();
+    if (!initial && !rv) this.world.onPlayerRespawn();
   }
 
   manualReset() {
@@ -670,8 +708,8 @@ export class Game {
   }
 
   /** reason: 'fall' | 'hazard' | 'void' | custom string */
-  kill(reason = 'fall') {
-    if (this.state !== 'playing') return;
+  kill(reason = 'fall', fromPartner = false) {
+    if (this.state !== 'playing' && !(this.coop && this.state === 'paused')) return;
     this.closeModal();
     this.state = 'dead';
     this.deadT = 0;
@@ -686,6 +724,7 @@ export class Game {
     const p = this.player;
     this.deathSpots.push({ x: p.x, y: p.y, z: p.z });
     this._deathDirector(reason);
+    this.coop?.onLocalDeath(reason, fromPartner);
     this.persist();
   }
 
@@ -730,6 +769,7 @@ export class Game {
       this.lastFakeCp = cp; this.fakeRevealed = false;
     }
     w.hooks.onCheckpoint?.(cp);
+    this.coop?.onCheckpoint(cp);
   }
 
   completeLevel() {
@@ -776,6 +816,12 @@ export class Game {
       e['btn-next'].classList.toggle('hidden', !hasNext);
       if (hasNext) e['btn-next'].textContent = `Level ${nextIdx + 1}: ${nextLv.name}`;
       e['btn-lobby'].classList.toggle('hidden', !hubCamp);
+      if (this.coop) {                                                  // only the host moves the pair along
+        const host = this.coop.isHost;
+        e['btn-next'].classList.toggle('hidden', !hasNext || !host);
+        e['btn-lobby'].classList.toggle('hidden', !host); e['btn-lobby'].textContent = 'Back to the room';
+        if (!host) e['cmp-quip'].textContent = `Waiting for ${this.coop.names.p1} to pick what's next…`;
+      } else e['btn-lobby'].textContent = 'Back to the lobby';
       e['cmp-eyebrow'].textContent = hubCamp ? `LEVEL ${this.levelIndex + 1} COMPLETE` : 'LEVEL COMPLETE';
       this.ui.showScreen('complete');
     }, last ? 2600 : 2200);
@@ -785,6 +831,7 @@ export class Game {
     if (this.state !== 'complete' || !this.ui.screens.complete.classList.contains('show')) return;
     this.audio.click();
     this.ui.hideScreens();
+    if (this.coop) { if (this.coop.isHost) this.coop.startLevel(this.levelIndex + 1); return; }
     const next = this.levels[this.levelIndex + 1];
     if (this.campaign.hub && (!next || next.placeholder)) return this.backToLobby();
     await this.loadLevel(this.levelIndex + 1);
@@ -1050,14 +1097,19 @@ export class Game {
 
     if (this.state === 'playing') {
       if (!this.frozen && !this.manual) this._simulate(dt);
+    } else if (this.state === 'paused' && this.coop) {            // online play can't be paused: the world carries on behind the menu
+      if (!this.frozen) this._simulate(dt);
     } else if (this.state === 'dead') {
       this.deadT += dt;
-      if (this.deadT > 0.55 && !this._fadingOut) { this._fadingOut = true; this.ui.fade(true, 280); }
-      if (this.deadT > 0.95) {
+      const hold = this.coop?.holdDead(this.deadT);                   // revive rule: stay down until the partner pulls you up
+      if (this.coop && this.world) { this.world.step(dt); }
+      if (this.deadT > 0.55 && !this._fadingOut && !hold) { this._fadingOut = true; this.ui.fade(true, 280); }
+      if (this.deadT > 0.95 && !hold) {
         this._fadingOut = false;
         this._doRespawn(true);
         this.ui.fade(false, 300);
         this.state = 'playing';
+        if (this.coop) this.ui.hideScreens();
       }
     } else if (this.state === 'complete' || this.state === 'ended') {
       w.step(dt); // let confetti & movers keep animating
@@ -1066,6 +1118,7 @@ export class Game {
     if (this.state !== 'paused') this.narrator.update(dt);
     if (!this.manual && this.ui._creditsOn && this.state === 'playing') { if (this.ui.creditsUpdate(dt)) w.hooks.onCreditsEnd?.(); }
     if (!this.manual && this.state !== 'title') w.hooks.frame?.(dt, this);
+    if (this.coop && this.state !== 'title') this.coop.update(dt);
 
     // ---- camera ----
     const p = this.player;
@@ -1089,6 +1142,10 @@ export class Game {
       const sk = this.shake;
       cam.position.set(p.x + (Math.random() - 0.5) * sk * 0.1, p.y + ey + (Math.random() - 0.5) * sk * 0.1, p.z);
       cam.rotation.set(pitch, this.yaw, roll, 'YXZ');
+      const pr = this.coop?.partner;
+      if (this.state === 'dead' && pr?.has && !pr.dead && this.coop.holdDead(this.deadT)) {            // waiting to be revived: watch your partner instead
+        cam.position.set(pr.sx, pr.sy + 2.4, pr.sz + 3.2); cam.rotation.set(-0.35, 0, 0, 'YXZ');
+      }
       const speed = Math.hypot(p.vx, p.vz);
       cam.fov = 72 + this.fovKick + Math.min(2.5, speed * 0.12) + (this.mods.fovWarp || 0);
       cam.updateProjectionMatrix();
