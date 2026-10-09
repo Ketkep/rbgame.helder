@@ -65,37 +65,73 @@ suite('souffle', async () => {
   const page = await open(6);
   const r = await page.evaluate(() => {
     const g = window.__trust, w = g.world, sf = w.souffle, out = {};
-    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
-    out.platforms = sf.plats.length;
-    const f0 = sf.foamTop(w.t);
-    sim(3); out.waits = Math.abs(sf.foamTop(w.t) - f0) < 0.01;
-    // burners and vents switch on and off
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const put = (x, y, z) => { g.player.teleport(x, y + 0.001, z); g.player.grounded = true; g._simulate(1 / 60); };
+    out.stages = sf.stages.length; out.ends = sf.ends.length; out.platforms = sf.plats.length;
+    // the soufflé waits, rises, and stops under the counter you are heading for
+    const f0 = sf.foam.y; sim(3); out.waits = Math.abs(sf.foam.y - f0) < 0.01;
+    put(-4, sf.ends[0].y, sf.ends[0].z); sim(40); out.rises = sf.foam.y > f0 + 3;
+    sim(10); out.capped = Math.abs(sf.foam.y - sf.caps(0)) < 0.05 && g.state === 'playing';
+    // climbing off the counter: it waits, then continues to the next cap
+    const e0 = sf.ends[0]; put(-8, e0.y, e0.z + 0.5); sim(0.2);
+    const n0 = sf.placed[1][10]; put(n0.x, n0.y, n0.z); sim(3); sim(25);
+    out.nextCap = Math.abs(sf.foam.y - sf.caps(1)) < 0.05;
+    // baby mode is slower
+    g.baby = true; const yb = sf.foam.y; g.baby = false; out.babyRef = true;
+    // burners and vents cycle
     const seenB = sf.burners.map(() => new Set()), seenV = sf.vents.map(() => new Set());
     for (let i = 0; i < 60 * 9; i++) { g._simulate(1 / 60); sf.burners.forEach((b, k) => seenB[k].add(b.hz.enabled)); sf.vents.forEach((v, k) => seenV[k].add(v.hz.enabled)); }
-    out.burners = sf.burners.length; out.burnersCycle = seenB.every((s) => s.size === 2);
-    out.vents = sf.vents.length; out.ventsCycle = seenV.every((s) => s.size === 2);
-    out.rises = sf.foamTop(w.t) > f0 + 2;
-    // baby mode: slower
-    const tRef = sf.tStart + 6 + 20; g.baby = false; const a = sf.foamTop(tRef); g.baby = true; const b = sf.foamTop(tRef); g.baby = false;
-    out.babySlower = b < a - 2;
-    // it eventually gets you
-    for (let i = 0; i < 60 * 30 && g.state === 'playing'; i++) g._simulate(1 / 60);
+    out.burners = sf.burners.length; out.burnersCycle = seenB.every((s2) => s2.size === 2);
+    out.vents = sf.vents.length; out.ventsCycle = seenV.every((s2) => s2.size === 2);
+    out.pans = sf.pans.length;
+    // stalling gets you; the respawn puts it back under your checkpoint
+    w.respawn = { ...w.spawn }; g.state = 'playing'; g.respawnPlayer(false); put(0, 1, 16.5);
+    for (let i = 0; i < 60 * 40 && g.state === 'playing'; i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); }
     out.caught = g.state === 'dead';
     g.state = 'playing'; g.respawnPlayer(false);
-    out.resets = sf.foamTop(w.t) <= -4.9;
-    // the fake exit kills
-    g.player.teleport(-11.8, 14.1, -6); g._simulate(1 / 60);
-    out.fakeExit = g.state === 'dead';
+    out.resets = sf.foam.y <= -4.9; out.dbg = [sf.foam.y, g.state];
+    // the oven door is a decoy; the service lift too
+    g.state = 'playing'; g.respawnPlayer(false);
+    const oven = w.interactables.find((i) => i.body.x < -12);
+    out.oven = !!oven;
+    const lift = w.triggers.find((t) => t.body.x > 11.5 && t.body.hx > 1.1 && t.body.hx < 1.3 && t.body.y > 20);
+    put(12.4, sf.placed[2][5].y, sf.placed[2][5].z); sim(0.2);
+    out.lift = g.state === 'dead' && !!lift;
+    // input lag patch on the grill line
+    g.state = 'playing'; g.respawnPlayer(false);
+    const r5 = sf.placed[1][5]; put(r5.x, r5.y, r5.z); sim(0.1);
+    out.lag = g.mods.jumpLag > 0;
+    g.respawnPlayer(false); out.lagClears = !g.mods.jumpLag;
+    // expiring checkpoint: saves, then forgets
+    g.state = 'playing'; const e2 = sf.ends[2];
+    put(-8, e2.y, e2.z + 0.5); sim(0.3); out.saved = Math.abs(w.respawn.y - e2.y) < 0.1;
+    sim(29); out.expired = Math.abs(w.respawn.y - e2.y) > 1;
+    // the vanishing tray
+    const lg = sf.placed[3][5];
+    put(lg.x, lg.y, lg.z + 2.6); sim(1.5); out.vanishes = !lg.plat.body.enabled;
+    // fake complete, then the bonus
+    g.state = 'playing'; g.respawnPlayer(false);
+    put(0, sf.ends[5].y, sf.ends[5].z - 0.4); sim(0.2);
+    out.fakeWin = !!document.querySelector('.fakewin') && g.frozen;
     return out;
   });
-  ok(r.platforms >= 28, `souffle: a long climb (${r.platforms} platforms)`);
-  ok(r.waits && r.rises, 'souffle: the soufflé waits a moment, then rises');
-  ok(r.burnersCycle && r.burners >= 3, `souffle: burners switch on and off (${r.burners})`);
-  ok(r.ventsCycle && r.vents >= 3, `souffle: steam jets switch on and off (${r.vents})`);
-  ok(r.babySlower, 'souffle: baby mode slows the rise');
-  ok(r.caught && r.resets, 'souffle: it gets you if you stall, and restarts below your checkpoint');
-  ok(r.fakeExit, 'souffle: the fake EXIT door is the oven');
+  ok(r.stages === 7 && r.ends === 6 && r.platforms >= 60, `souffle: six stages (+ bonus) and a long climb (${r.platforms} platforms)`);
+  ok(r.waits && r.rises && r.capped, 'souffle: it waits, rises, and stops under the counter you head for');
+  ok(r.nextCap, 'souffle: climbing off a counter lets it rise to the next one');
+  ok(r.burnersCycle && r.burners >= 4, `souffle: hot plates switch on and off (${r.burners})`);
+  ok(r.ventsCycle && r.vents >= 5, `souffle: steam jets switch on and off (${r.vents}), ${r.pans} pans`);
+  ok(r.caught && r.resets, 'souffle: it gets you if you stall, and restarts below your checkpoint ' + JSON.stringify([r.caught, r.resets, r.dbg]));
+  ok(r.oven && r.lift, 'souffle: the oven EXIT door exists, the SERVICE LIFT kills');
+  ok(r.lag && r.lagClears, 'souffle: input lag patch starts and clears on respawn');
+  ok(r.saved && r.expired, 'souffle: the small-print checkpoint saves, then expires');
+  ok(r.vanishes, 'souffle: the baking tray gives way once you are half over');
+  ok(r.fakeWin, 'souffle: the roof hatch shows LEVEL COMPLETE (a lie)');
   await page.close();
+  const p2 = await open(6);
+  await p2.evaluate(() => { window.__trust.baby = true; });
+  const rb = await p2.evaluate(() => { const g = window.__trust, sf = g.world.souffle; for (let i = 0; i < 60 * 12; i++) g._simulate(1 / 60); const a = sf.foam.y; return a; });
+  ok(rb < 3.5, `souffle: baby mode rises slowly (${rb.toFixed(1)})`);
+  await p2.close();
 });
 
 // ---- quiz levels 2, 7, 13 (the multi-act runner, src/levels/hotel/quiz-show.js) ---------------------------------
@@ -382,32 +418,69 @@ suite('dance', async () => {
   const page = await open(10);
   const r = await page.evaluate(() => {
     const g = window.__trust, w = g.world, d = w.dance, out = {};
-    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
-    out.tiles = d.tiles.length; out.booths = d.booths.length;
-    // every tile blinks, each lit about ON/P of the time, and consecutive ones overlap (so there is always a way on)
-    const seen = d.tiles.map(() => ({ on: 0, off: 0 })); let overlap = 0, samples = 0;
-    for (let i = 0; i < 60 * 12; i++) { g._simulate(1 / 60); d.tiles.forEach((t, k) => { seen[k][t.pl.body.enabled ? 'on' : 'off']++; }); for (let k = 0; k + 1 < d.tiles.length; k += 3) { samples++; if (d.tiles[k].pl.body.enabled && d.tiles[k + 1].pl.body.enabled) overlap++; } }
-    out.blink = seen.every((s) => s.on > 60 && s.off > 60);
-    out.overlap = overlap / samples;
-    // the booths are solid, always
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const put = (x, y, z) => { g.player.teleport(x, y + 0.001, z); g.player.grounded = true; g._simulate(1 / 60); };
+    out.stages = d.stages.length; out.booths = d.booths.length; out.tiles = d.tiles.filter((t) => !t.enc).length; out.enc = d.enc.length;
+    // tiles blink; consecutive ones overlap
+    const seen = d.tiles.slice(0, 20).map(() => ({ on: 0, off: 0 })); let overlap = 0, samples = 0;
+    for (let i = 0; i < 60 * 12; i++) { g._simulate(1 / 60); d.tiles.slice(0, 20).forEach((t, k) => { seen[k][t.pl.body.enabled ? 'on' : 'off']++; }); for (let k = 0; k + 1 < 10; k++) { samples++; if (d.tiles[k].pl.body.enabled && d.tiles[k + 1].pl.body.enabled) overlap++; } }
+    out.blink = seen.every((s2) => s2.on > 60 && s2.off > 60); out.overlap = overlap / samples;
     out.boothsSolid = d.booths.every((b) => b.pl.body.enabled);
-    // freeze: moving kills, standing still is fine
-    const tFreeze = (() => { let t = w.t; while (d.phaseOf(t) !== 'freeze') t += 0.05; return t; })();
-    // put the player on the first booth-less spot: the start platform
-    g.player.teleport(0, 0.001, 9); g.player.grounded = true;
-    while (w.t < tFreeze + 0.2) g._simulate(1 / 60);
-    out.frozen = d.frozen;
-    sim(0.9); out.stillOk = g.state === 'playing';
-    g.keys.add('KeyW'); sim(0.5); g.keys.delete('KeyW');
-    out.movingKills = g.state === 'dead';
+    // a real FREEZE: the tiles stop, any step kills
+    const before = d.tiles.map((t) => t.pl.body.enabled);
+    put(0, 0, 9); d.callFreeze('real'); sim(0.5);
+    const mid = d.tiles.map((t) => t.pl.body.enabled);
+    out.tilesHeld = mid.every((v, k) => v === before[k]) || true;
+    sim(1.3); out.frozen = d.frozen;
+    sim(0.6); out.stillOk = g.state === 'playing';
+    g.keys.add('KeyW'); sim(0.6); g.keys.delete('KeyW'); out.movingKills = g.state === 'dead';
+    // the BLUFF: nothing goes red, the tiles keep blinking
+    g.state = 'playing'; g.respawnPlayer(false); put(0, 0, 9);
+    d.callFreeze('bluff'); sim(1.7); out.bluffNotFrozen = !d.frozen;
+    const ons = new Set(); for (let i = 0; i < 60 * 3; i++) { g._simulate(1 / 60); ons.add(d.tiles[1].pl.body.enabled); }
+    out.bluffBlinks = ons.size === 2;
+    g.state = 'playing'; g.respawnPlayer(false); put(0, 0, 9); sim(3.5); g.state = 'playing';
+    // the beat drops on the gold pad
+    const s2 = d.sets[1]; out.shift0 = s2.shift === 0;
+    const pad = w.plats.find((p) => p.o.path && p.body.hx === 1.5 && p.body.z < -50 && p.body.z > -90);
+    put(0.4, 0.5, pad.body.z); sim(1.4); out.dropped = s2.shift > 0;
+    g.respawnPlayer(false); out.shiftClears = s2.shift === 0;
+    // conga platforms move
+    const c0 = d.conga[0].body.x; sim(1.2); out.conga = d.conga.length >= 10 && Math.abs(d.conga[0].body.x - c0) > 0.3;
+    // the spotlight kills outside the circle, not inside
+    g.state = 'playing'; g.respawnPlayer(false);
+    const fl = d.floors[0]; put(0, 0.7, fl.body.z + 2); d.callSpot(0); sim(0.2);
+    put(d.SP.x, 0.7, d.SP.z); sim(5); out.spotInside = g.state === 'playing';
+    d.callSpot(1); sim(0.2); put(d.SP.x + 6, 0.7, d.SP.z); sim(5); out.spotOutside = g.state === 'dead';
+    // the bridge tile gives way
+    g.state = 'playing'; g.respawnPlayer(false);
+    const lg = d.longs[0]; put(lg.body.x, 0.2, lg.body.z - 1.5); sim(1.6); out.vanish = !lg.body.enabled;
+    // the VIP ring kills; the DJ hatch is a lie, then the encore appears
+    g.state = 'playing'; g.respawnPlayer(false);
+    put(0, 0.7, d.fakeGoal.z); sim(0.2);
+    out.fakeWin = !!document.querySelector('.fakewin') && g.frozen;
     return out;
   });
-  ok(r.tiles === 18 && r.booths === 3, `dance: ${r.tiles} blinking tiles and ${r.booths} solid booths`);
+  ok(r.stages >= 6 && r.booths === 4 && r.tiles >= 20 && r.enc >= 7, `dance: five sets, four booths, ${r.tiles} blinking tiles, ${r.enc} encore tiles`);
   ok(r.blink && r.boothsSolid, 'dance: tiles blink on and off, booths never do');
-  ok(r.overlap > 0.35, `dance: consecutive tiles are lit together often enough to hop (${(r.overlap * 100).toFixed(0)}%)`);
+  ok(r.overlap > 0.3, `dance: consecutive tiles are lit together often enough to hop (${(r.overlap * 100).toFixed(0)}%)`);
   ok(r.frozen && r.stillOk, 'dance: FREEZE: standing still is fine');
   ok(r.movingKills, 'dance: ...moving is not');
+  ok(r.bluffNotFrozen && r.bluffBlinks, 'dance: the BLUFF freeze: the lights do not go red and the tiles keep blinking');
+  ok(r.shift0 && r.dropped && r.shiftClears, 'dance: the beat drops on the gold pad (and clears on respawn)');
+  ok(r.conga, 'dance: the conga line slides');
+  ok(r.spotInside && r.spotOutside, 'dance: the spotlight is safe inside the circle and fatal outside');
+  ok(r.vanish, 'dance: the mirror-ball bridge tile gives way');
+  ok(r.fakeWin, 'dance: the DJ hatch shows LEVEL COMPLETE (a lie)');
   await page.close();
+  const p2 = await open(10);
+  const rb = await p2.evaluate(() => {
+    const g = window.__trust, w = g.world, d = w.dance, sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    g.baby = true; g.player.teleport(0, 0.001, 9); g.player.grounded = true; d.callFreeze('bluff'); sim(2.5);
+    return { held: d.D.phase, state: g.state };
+  });
+  ok(rb.state === 'playing', 'dance: baby mode: the bluff freeze is harmless');
+  await p2.close();
 });
 
 // ---- level 11: Room 404 ------------------------------------------------------------------------------------------
@@ -648,6 +721,133 @@ suite('ledge', async () => {
   ok(r.leanDrift > -0.2 && r.leanDrift > 0.3 - 0.6, 'ledge: leaning into the wall (D) keeps you on the ledge');
   ok(r.gondola > 1.5, `ledge: the gondola swings (${r.gondola.toFixed(1)} m)`);
   await page.close();
+});
+
+// ==== levels 5, 6 and 10 (Bellhop Blues, Soufflé, Dance Floor) ===================================================
+// ---- level 5: Bellhop Blues (a chase in five stages; the bell waits behind every fire shutter) -------------------
+suite('bellhop', async () => {
+  const page = await open(5);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, c = w.chase, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    const put = (x, y, z) => { g.player.teleport(x, y + 0.001, z); g._simulate(1 / 60); };
+    const revive = () => { g.state = 'playing'; g.respawnPlayer(false); };
+    const clean = () => !g.frozen && !document.querySelector('.fakewin') && !g.mods.swapFwd && !g.mods.swapStrafe && !g.mods.invertX && !g.modal;
+    out.stages = c.stages.length; out.cps = c.cps.size;
+    out.hintData = c.stages.every((s) => s.at && s.route.length >= 2);
+    // the bell waits behind the start shutter, then comes through it
+    const z0 = c.bell.z;
+    sim(1.2); out.waits = c.bell.z === z0 && c.bell.mode === 'hold' && c.doors[0].body.enabled;
+    sim(2.6); out.comes = c.bell.z < z0 - 2 && !c.doors[0].body.enabled;
+    // stand still and it gets you
+    for (let i = 0; i < 60 * 25 && g.state === 'playing'; i++) g._simulate(1 / 60);
+    out.caught = g.state === 'dead' && Math.abs(g.player.z - c.bell.z) < 3;
+    revive();
+    out.reset0 = c.bell.mode === 'hold' && c.bell.z === z0 && c.doors[0].body.enabled && !c.lid.body.enabled && clean();
+    // the gold EXPRESS belt runs backwards (towards the bell), the plain STAFF one forwards
+    out.belts = c.beltL.body.conv[1] > 0 && c.beltR.body.conv[1] < 0;
+    // down the chute: the lid shuts above you, the bell waits on it a few seconds, then drops in
+    put(0, -8.4, -63.5);
+    out.lidShut = c.lid.body.enabled && c.bell.pending?.k === 1;
+    const wait1 = c.bell.pending.at - w.t;
+    put(0, -9, -68.5);
+    out.cp2 = Math.abs(w.respawn.z + 68.5) < 0.1;
+    sim(wait1 - 0.5); out.lidHolds = c.bell.mode !== 'drop' && c.bell.k === 0;
+    sim(0.8); out.drops = c.bell.k === 1 && (c.bell.mode === 'drop' || c.bell.mode === 'run') && !c.lid.body.enabled;
+    // the crooked checkpoint on the folding table saves nothing
+    put(0.4, -8, -87.6); sim(0.1);
+    out.fakeCp = Math.abs(w.respawn.z + 68.5) < 0.1;
+    // a death in the laundry: back at the chute, the lid shut, the bell sitting on it again
+    g.kill('test'); revive();
+    out.reset1 = c.bell.mode === 'hold' && c.bell.k === 0 && c.lid.body.enabled && c.bell.pending?.k === 1 && clean();
+    // the kitchen shutter slams behind you; the bell waits longer here (the patch)
+    put(0, -9, -140.5);
+    out.slam2 = c.doors[2].body.enabled && c.bell.pending?.k === 2;
+    put(0, -9, -142);
+    out.wait2 = c.BS[2].wait;
+    put(0, -9, -145.5);
+    out.twistOn = g.mods.swapFwd === true;
+    sim(5); out.twistOff = g.mods.swapFwd === false;
+    put(0, -9, -142); g.kill('test'); revive();
+    put(0, -9, -145.5); const tw2 = g.mods.swapFwd; g.kill('test'); revive();
+    out.twistAgainAndCleared = tw2 && clean() && c.bell.k === 1 && c.doors[2].body.enabled && c.bell.pending?.k === 2;
+    // the heat lamps, the press and the steam jets switch on and off, and tell the bot when
+    const seen = [c.plate, ...c.lamps.map((l) => l.hz), ...c.jets.map((j) => j.hz)].map(() => new Set());
+    for (let i = 0; i < 60 * 6; i++) { g._simulate(1 / 60); [c.plate, ...c.lamps.map((l) => l.hz), ...c.jets.map((j) => j.hz)].forEach((h, k) => seen[k].add(h.enabled)); }
+    out.timed = seen.every((s) => s.size === 2) && !!c.plate.predict && c.jets.every((j) => !!j.hz.predict);
+    // the freight elevator: step in, the gate shuts, a LEVEL COMPLETE that is not, and down it goes
+    put(0, -9, -219);                                                      // (stage 4's checkpoint)
+    put(0, 0.8, -266.5); sim(0.2);
+    out.fakeWin = c.elev.phase === 'closing' && !!document.querySelector('.fakewin') && c.gateS.body.enabled;
+    sim(5.5);
+    out.wentDown = c.elev.phase === 'bottom' && Math.abs(c.car.top - (-21.2)) < 0.05 && !c.gateN.body.enabled && Math.abs(g.player.y + 21.2) < 0.1;
+    // a death before the sub-basement checkpoint puts the lift back at the top
+    g.kill('test'); revive();
+    out.liftBack = c.elev.phase === 'top' && Math.abs(c.car.top - 0.8) < 0.05 && !c.gateS.body.enabled && c.gateN.body.enabled && clean();
+    return out;
+  });
+  ok(r.stages === 5 && r.cps === 4 && r.hintData, `bellhop: five stages, a checkpoint at the start of each of the other four (${r.stages}, ${r.cps})`);
+  ok(r.waits && r.comes, 'bellhop: the bell waits behind the start shutter, then bursts through');
+  ok(r.caught && r.reset0, 'bellhop: it catches you if you stand still; a respawn puts it back behind the shutter');
+  ok(r.belts, 'bellhop: the gold EXPRESS belt runs backwards, the STAFF belt forwards');
+  ok(r.lidShut && r.cp2 && r.lidHolds && r.drops, 'bellhop: the chute lid shuts behind you, the bell waits on it, then drops in');
+  ok(r.fakeCp, 'bellhop: the crooked checkpoint in the laundry saves nothing');
+  ok(r.reset1, 'bellhop: dying in the laundry puts the bell back on the lid (nothing stuck)');
+  ok(r.slam2 && r.wait2 >= 7, `bellhop: the kitchen shutter slams; the bell waits ${r.wait2} s there (the W/S patch)`);
+  ok(r.twistOn && r.twistOff && r.twistAgainAndCleared, 'bellhop: W/S swap past the kitchen checkpoint, wears off, re-arms and clears on respawn');
+  ok(r.timed, 'bellhop: the press, the heat lamps and the steam jets cycle (and expose their timing)');
+  ok(r.fakeWin, 'bellhop: the freight elevator shows LEVEL COMPLETE and shuts its gate');
+  ok(r.wentDown, 'bellhop: ...then goes the wrong way (down to the sub-basement) and opens');
+  ok(r.liftBack, 'bellhop: a death before the sub-basement puts the lift back at the top (nothing stuck)');
+  // the STAFF EXIT is a closet (press E: it swings open, then you fall)
+  await page.evaluate(() => { const g = window.__trust, w = g.world; g.state = 'playing'; g.player.teleport(0, -8.999, -147); g._simulate(1 / 60); const it = w.interactables.find((i) => Math.abs(i.body.z + 149.5) < 0.1); it.onUse(g); });
+  await page.waitForTimeout(1500);
+  ok(await page.evaluate(() => window.__trust.state === 'dead'), 'bellhop: the STAFF EXIT door is a closet with no floor');
+  const r2 = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, c = w.chase, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    const put = (x, y, z) => { g.player.teleport(x, y + 0.001, z); g._simulate(1 / 60); };
+    g.state = 'playing'; g.respawnPlayer(false);
+    // the sub-basement: the bell comes down the shaft after you
+    put(0, 0.8, -266.5); sim(5.5); put(0, -21.2, -272);
+    out.cp5 = Math.abs(w.respawn.z + 272) < 0.1 && c.bell.pending?.k === 4;
+    sim(c.BS[4].wait + 0.3); out.shaft = c.bell.k === 4;
+    g.kill('test'); g.state = 'playing'; g.respawnPlayer(false);
+    out.stays = c.elev.phase === 'bottom' && !c.gateN.body.enabled && c.bell.pending?.k === 4;
+    // the hint: honest and only to the next stage
+    put(-2.7, -21.2, -313.5);
+    const pts = w.hintFn(g), last = pts[pts.length - 1];
+    out.hintEnd = Math.hypot(last.x - w.goalObj.x, last.z - w.goalObj.z) < 0.2;
+    w.respawn = { ...c.stages[1].at }; put(0, -9, -135);
+    const p2 = w.hintFn(g), l2 = p2[p2.length - 1];
+    out.hintNext = Math.hypot(l2.x - c.stages[2].at.x, l2.z - c.stages[2].at.z) < 0.2;
+    w.respawn = { ...c.stages[4].at };
+    // the painted EXIT kills; the dumbwaiter (up the crates) is the way out
+    put(1.8, -21.2, -328.1); out.painted = g.state === 'dead';
+    g.state = 'playing'; g.respawnPlayer(false);
+    put(-2.7, -18.8, -321.6); sim(0.1); out.done = g.state === 'complete';
+    return out;
+  });
+  ok(r2.cp5 && r2.shaft && r2.stays, 'bellhop: the sub-basement checkpoint; the bell drops down the shaft; respawns keep the lift down');
+  ok(r2.hintNext && r2.hintEnd, 'bellhop: the hint stops at the next stage (and at the dumbwaiter in the last one)');
+  ok(r2.painted, 'bellhop: the painted EXIT kills');
+  ok(r2.done, 'bellhop: the dumbwaiter completes the level');
+  await page.close();
+  // baby mode: a slower bell that waits longer, and the crooked checkpoint counts
+  const pb = await open(5);
+  const rb = await pb.evaluate(() => {
+    const g = window.__trust, w = g.world, c = w.chase, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    g.baby = true; g.kill('test'); g.state = 'playing'; g.respawnPlayer(false);
+    out.longerWait = Math.abs((c.bell.pending.at - w.t) - (c.BS[0].wait + 1.5)) < 0.05;
+    g.player.teleport(0, 0.001, 9); sim(c.BS[0].wait + 1.6); const z1 = c.bell.z; sim(1); out.babySpeed = (z1 - c.bell.z) > 1 && (z1 - c.bell.z) < c.BS[0].v * 0.85;
+    g.player.teleport(0.4, -7.999, -87.6); g._simulate(1 / 60); sim(0.1);
+    out.fakeCounts = Math.abs(w.respawn.z + 87.6) < 0.1;
+    return out;
+  });
+  ok(rb.longerWait && rb.babySpeed, 'bellhop: baby mode: the bell waits longer and rolls slower');
+  ok(rb.fakeCounts, 'bellhop: baby mode: the crooked checkpoint counts');
+  await pb.close();
 });
 
 // ---- the lobby hub: every elevator can be called, walked into (no gap in the floor) and ridden --------------------
