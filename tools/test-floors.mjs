@@ -727,6 +727,32 @@ suite('dnd-seeds', async () => {
   await page.close();
 });
 
+// ---- level 7: random draws. Every attempt picks new questions; each round must always be answerable ------------------
+suite('trivia-seeds', async () => {
+  const N = +process.env.SEEDS || 6;
+  for (let n = 0; n < N; n++) {
+    const page = await open(7); await page.evaluate(QUIZ_HELP);
+    const r = await page.evaluate(() => {
+      const { g, w, S, sim, island, onPad, right, standOn, at } = window.__T, out = { bad: [] }; S.onStage = null;   // (no survey or crash while teleporting about)
+      for (let k = 0; k < 9; k++) {
+        const st = S.rounds[k]; S.cleared = k;
+        const rr = st.right();
+        if (!rr.length || rr.some((p) => !p.plat.body.enabled)) { out.bad.push(`R${k + 1}: no right pad`); continue; }
+        island(st); sim(0.3);
+        if (st.spec.double) { const [a, b] = rr.map((p) => p.plat.body); at((a.x + b.x) / 2, a.top, a.z, a); sim(1.6); }
+        else { onPad(right(st)); sim(1.4); if (st.spec.switch && S.cleared === k) { onPad(right(st)); sim(1.4); } }
+        if (S.cleared !== k + 1) out.bad.push(`R${k + 1} (${st.q.q.replace(/\n/g, ' ')}) did not clear`);
+      }
+      const q6 = S.rounds[5], q2 = S.rounds[1];
+      if (q6.right()[0].text !== q2.lieLetter) out.bad.push('callback mismatch');
+      if (q2.right().some((p) => p.letter === q2.lieLetter)) out.bad.push('lie letter is right');
+      return out;
+    });
+    ok(r.bad.length === 0, `trivia-seeds #${n + 1}: all nine rounds clear with a fresh draw (${r.bad.join('; ') || 'ok'})`);
+    await page.close();
+  }
+});
+
 // ---- level 13: Minibar ------------------------------------------------------------------------------------------
 suite('minibar', async () => {
   const miss = await scriptKeysFor(13, ['src/levels/hotel/minibar.js'], [...RUNNER_KEYS, 'hint.mind', 'hint.switch', 'hint.double', 'hint.flip', 'hint.pass', 'hint.poll', 'hint.none.above', 'mind.check', 'mind.flip', 'switch']);

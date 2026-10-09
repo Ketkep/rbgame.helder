@@ -133,7 +133,7 @@ export default {
     twistZone(game, w, { x: 0, y: 1.2, z: z - 35.7, w: 8, h: 2.6, d: 9 }, 'mouseX', { sec: 4, say: 'hotel.l7.mirror' });
     const cablePad = deck({ x: 0, y: 0, z: z - 46.5, w: 7, d: 10, h: 0.6 });
     show.pillars(0, -0.6, z - 46.5, 7, 10);
-    const cable = w.hazard({ x: 0, y: 0.48, z: z - 46.5, w: 6.2, h: 0.7, d: 0.9, color: 0xff5a4a, move: (t) => ({ z: 3.0 * Math.sin(t * 0.9) }) });
+    const cable = w.hazard({ x: 0, y: 0.2, z: z - 46.5, w: 6.2, h: 0.4, d: 0.5, color: 0xff5a4a, move: (t) => ({ z: 2.8 * Math.sin(t * 0.6) }) });
     cable.core.visible = false; cable.shell.visible = false; cable.jumpable = true;
     cableDrum(cable.group);
     show.route(cablePad);
@@ -166,7 +166,7 @@ export default {
     } });
 
     // ===== 6 · The Tie-Breaker (only there once the trophy has lied to you) ===========================================================
-    const bridge = [[-2.5, 0.9, -15.5], [2.5, 1.8, -19.7], [-1.0, 2.7, -23.9], [2.0, 2.7, -28.0], [-1.0, 2.7, -32.4]].map(([x, y, dz]) => {
+    const bridge = [[-2.5, 0.9, -15.5], [2.5, 1.8, -19.7], [-2.0, 2.7, -23.9], [0.8, 2.7, -28.0], [3.2, 2.7, -32.4]].map(([x, y, dz]) => {
       const p = chandPlat(w, game, x, y, z + dz, 2.6); bonusPlats.push(p); return p;
     });
     w.mover(bridge[1], (t) => ({ x: 1.6 * Math.sin(t * 1.0 + 1) }));
@@ -174,7 +174,7 @@ export default {
     vanishAfter(w, game, bridge[3], { axis: 'x', dir: 1, frac: 0.45, delay: 0.5, back: 3.2, say: 'hotel.l7.vanish' });
     show.z = z - 36.6;
     const regStage = show.stage(NAMES[5], { say: 'hotel.l7.tiebreak' });
-    bridge.forEach((p, i) => show.route(p, i === 4 ? { wait: () => bridge[4].body.z < z0b - 32.4 + 0.5, ride: () => bridge[4].body.z > z0b - 32.4 - 0.8 } : i === 1 ? { ride: () => bridge[1].body.x < 0.6 } : {}));
+    bridge.forEach((p, i) => show.route(p, i === 4 ? { wait: () => bridge[4].body.z < z0b - 32.4 + 0.5, ride: () => bridge[4].body.z > z0b - 32.4 - 0.8 } : i === 1 ? { wait: () => bridge[1].body.x > 2.0, ride: () => bridge[1].body.x > 1.3 } : {}));
     const rLast = show.round({ q: ask(['hotel', 'host', 'sense']), y: 2.7, poll: true, say: 'hotel.l7.r.poll', header: H(10, ' · TIE-BREAKER'), carpet: 0xd8c7ff, palms: false, onEnter: undefined });
     z = show.z;
     const fin = deck({ x: 0, y: 2.7, z: z - 4, w: 12, d: 8, h: 0.8 });
@@ -272,7 +272,7 @@ function chandPlat(w, game, x, y, z, wd = 2.4) {
 /** A rolling cable drum, lying across the stage. */
 function cableDrum(group) {
   const wood = plainMaterial(0x6a4a2a, { roughness: 0.7 }), cable = plainMaterial(0x15151a, { roughness: 0.5 });
-  const core = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 5.6, 14), cable); core.rotation.z = Math.PI / 2; group.add(core);
-  for (const sx of [-1, 1]) { const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.12, 16), wood); disc.rotation.z = Math.PI / 2; disc.position.x = sx * 3.0; group.add(disc); }
-  const stripe = new THREE.Mesh(new THREE.BoxGeometry(6.0, 0.05, 0.05), glowMaterial(0xff5a4a, 1.4)); stripe.position.y = 0.2; group.add(stripe);
+  const core = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 5.6, 14), cable); core.rotation.z = Math.PI / 2; group.add(core);
+  for (const sx of [-1, 1]) { const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.12, 16), wood); disc.rotation.z = Math.PI / 2; disc.position.x = sx * 3.0; group.add(disc); }
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(6.0, 0.05, 0.05), glowMaterial(0xff5a4a, 1.4)); stripe.position.y = 0.12; group.add(stripe);
 }
