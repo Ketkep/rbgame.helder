@@ -20,6 +20,7 @@ import chandelier from './chandelier.js';
 import vault from './vault.js';
 import popquiz from './popquiz.js';
 import skybridge from './skybridge.js';
+import checkout from './checkout.js';
 
 export const TIERS = [
   { floor: '1',  name: 'Mezzanine',            difficulty: 'Easy',                    short: 'EASY',       color: 0x3ddc97, blurb: 'Complimentary lies.' },
@@ -43,6 +44,6 @@ export const KIND_ICON = { parkour: '🏃', quiz: '❓', escape: '🔑', maze: '
 const planned = (name, kind, i) => ({ id: `hotel-${i + 1}`, name, kind, tier: Math.floor(i / 5), index: i, placeholder: true });
 
 export function buildHotelLevels() {
-  const BUILT = [wetFloor, checkIn, lostLuggage, revolvingDoor, bellhopBlues, souffle, triviaNight, dinner, kitchenMaze, danceFloor, room404, doNotDisturb, minibar, hallwayLoop, windowLedge, chandelier, vault, popquiz, skybridge];
+  const BUILT = [wetFloor, checkIn, lostLuggage, revolvingDoor, bellhopBlues, souffle, triviaNight, dinner, kitchenMaze, danceFloor, room404, doNotDisturb, minibar, hallwayLoop, windowLedge, chandelier, vault, popquiz, skybridge, checkout];
   return ROSTER.map(([name, kind], i) => (BUILT[i] ? Object.assign(BUILT[i], { kind, tier: Math.floor(i / 5), index: i }) : planned(name, kind, i)));
 }
