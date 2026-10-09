@@ -15,12 +15,12 @@ import { trollCheckpoint, fakeExit, evasiveGoal, fakeComplete, twistZone, vanish
 
 const RED = 0xff3a46;
 const flatFloor = (w, zN, zS = 18, o = {}) => w.plat({ x: 0, y: 0, z: (zN + zS) / 2, w: 30, d: zS - zN, h: 1.2, tex: o.tex ?? 'marble', color: o.color ?? 0xffffff, roughness: 0.25, path: true });
-function setup(w, game, { zN, H = 12, wallTex = 'damask', wallColor = 0xffffff, floorTex, floorColor }) {
+function setup(w, game, { zN, H = 12, wallTex = 'damask', wallColor = 0xffffff, floorTex, floorColor, floor = true }) {
   hotelEnv(w);
   w.killY = -20;
   roomShell(w, { x0: -15, x1: 15, z0: zN - 3, z1: 18, yb: -30, H, wallTex, wallColor, pilasterEvery: 14, lamps: false });
   w.spawn = { x: 0, y: 0, z: 13, yaw: 0 }; w.respawn = { ...w.spawn };
-  return flatFloor(w, zN, 18, { tex: floorTex, color: floorColor });
+  return floor ? flatFloor(w, zN, 18, { tex: floorTex, color: floorColor }) : null;
 }
 const blocker = (w, x, z, ww, dd, h = 4, color = 0x6b3a2a) => { const b = w.collider({ x, y: h / 2, z, w: ww, h, d: dd }); const m = new THREE.Mesh(new THREE.BoxGeometry(ww, h, dd), plainMaterial(color, { roughness: 0.5 })); m.position.set(x, h / 2, z); w.add(m); return { body: b, mesh: m, open() { b.enabled = false; m.visible = false; }, shut() { b.enabled = true; m.visible = true; } }; };
 const host = (game, k, o = {}) => game.say(k, { priority: 1, ...o });
@@ -40,7 +40,8 @@ export const floor13 = {
   completeQuip: 'You reached a floor that does not exist. The hotel is considering suing itself.',
   build(w, game) {
     const NAMES = ['The Panel', 'The Ride', 'Floor 13'];
-    setup(w, game, { zN: -110 });
+    setup(w, game, { zN: -110, floor: false });
+    w.plat({ x: 0, y: 0, z: -13, w: 30, d: 62, h: 1.2, tex: 'marble', color: 0xffffff, roughness: 0.25, path: true });   // the lobby and the lift
     const cp = regCp(w, game, NAMES, 'hotel.l21');
     // the lift lobby: a panel of buttons with a gap where 13 should be
     const PX = 11.4, PZ = -8;
@@ -74,11 +75,11 @@ export const floor13 = {
     const real = w.goal({ x: 8, y: 0, z: -89, color: GOLD, onReach: () => { game.say('hotel.l21.done', { priority: 2 }); game.completeLevel(); } });
     real.group.visible = false; real.trig.enabled = false; w.goalObj = runner;
     // extend the floor under floor 13 (tiles hang over the void)
-    w.plat({ x: 0, y: 0, z: -97, w: 30, d: 22, h: 1.2, tex: 'marble', color: 0xffffff, roughness: 0.25, path: true });
+    w.plat({ x: 0, y: 0, z: -97, w: 30, d: 32, h: 1.2, tex: 'marble', color: 0xffffff, roughness: 0.25, path: true });   // floor 13's far side
     hooks(w, game, 'hotel.l21', NAMES);
     w.hintAction = (g) => { if (!opened && g.player.z > -22) { g.say('hotel.l21.hint', { priority: 1 }); g.ui.toast('Hint: stand at the panel and HOLD 1 and 3 together', 'gold'); return true; } return 'trail'; };
     stageHint(w, [{ at: { x: 0, y: 0, z: 13 }, route: [{ x: 11, y: 0, z: -8 }, { x: 0, y: 0, z: -21 }] }, { at: { x: 0, y: 0, z: -19 }, route: [{ x: 0, y: 0, z: -40 }] }, { at: { x: 0, y: 0, z: -42 }, route: tiles.map((p) => ({ x: p.body.x, y: 0, z: p.body.z })).concat([{ x: 0, y: 0, z: -76 }]) }], { end: { x: 0, y: 0, z: -88 } });
-    w.botPlan = (g) => { const p = g.player; if (!opened && p.z > -22) { if (Math.hypot(p.x - PX, p.z - PZ) < 3.0) { open(); return null; } return { x: PX - 2, z: PZ }; } return null; };
+    w.botPlan = (g) => { const p = g.player; if (g.modal) g.closeModal(); if (!opened && p.z > -22) { if (Math.hypot(p.x - PX, p.z - PZ) < 3.0) { open(); return null; } return { x: PX - 2, z: PZ }; } return null; };
     void land; void onPlat; void twistZone; void adBreak; void survey; void trollCheckpoint; void glowMaterial; void canvasPlane;
   },
 };
@@ -133,7 +134,7 @@ export const terms = {
     hooks(w, game, 'hotel.l22', NAMES);
     w.hintAction = (g) => { if (!found && g.player.z < 20) { g.say('hotel.l22.hint', { priority: 1 }); g.ui.toast('Hint: clause 47 is on the west wall, and it can be read', 'gold'); return true; } return 'trail'; };
     stageHint(w, [{ at: { x: 0, y: 0, z: 13 }, route: [{ x: 0, y: 0, z: -28 }] }, { at: { x: 0, y: 0, z: -30 }, route: [{ x: 0, y: 0, z: -60 }] }, { at: { x: 0, y: 0, z: -62 }, route: [{ x: -11, y: 0, z: DZ }] }], { end: { x: -14, y: 0, z: DZ } });
-    w.botPlan = (g) => { const p = g.player; if (p.z < -58 && !found) { if (Math.hypot(p.x + 12.6, p.z - DZ) < 3) { find(); return null; } return { x: -11, z: DZ }; } if (found) return { x: -14, z: DZ }; return { x: p.x < -0.5 && p.z > -100 ? 0 : 0, z: p.z - 10 }; };
+    w.botPlan = (g) => { const p = g.player; if (g.modal) g.closeModal(); if (p.z < -58 && !found) { if (Math.hypot(p.x + 12.6, p.z - DZ) < 3) { find(); return null; } return { x: -11, z: DZ }; } if (found) return { x: -14, z: DZ }; return { x: p.x < -0.5 && p.z > -100 ? 0 : 0, z: p.z - 10 }; };
     w.terms = { get found() { return found; } };
   },
 };
@@ -182,7 +183,7 @@ export const complaint = {
     hooks(w, game, 'hotel.l23', NAMES);
     w.hintAction = (g) => { if (!done && g.player.z < -52) { g.say('hotel.l23.hint', { priority: 1 }); g.ui.toast('Hint: the stamps go B, then C, then A', 'gold'); return true; } return 'trail'; };
     stageHint(w, [{ at: { x: 0, y: 0, z: 13 }, route: [{ x: 5, y: 0, z: -24 }, { x: 0, y: 0, z: -48 }] }, { at: { x: 0, y: 0, z: -50 }, route: [{ x: 0, y: 0, z: -58 }] }, { at: { x: 0, y: 0, z: -66 }, route: [{ x: 0, y: 0, z: -82 }] }], { end: { x: 0, y: 0, z: -92 } });
-    w.botPlan = (g) => { const p = g.player; if (p.z < -52 && !done) { const L = order[step]; const dx = deskAt[L]; if (Math.hypot(p.x - dx, p.z + 60.8) < 2.4) { step++; if (step >= 3) { done = true; gate.open(); } return null; } return { x: dx, z: -59.6 }; } if (p.z > -24 && p.z < 0) return { x: 5, z: -30 }; return null; };
+    w.botPlan = (g) => { const p = g.player; if (g.modal) g.closeModal(); if (p.z < -52 && !done) { const L = order[step]; const dx = deskAt[L]; if (Math.hypot(p.x - dx, p.z + 60.8) < 2.4) { step++; if (step >= 3) { done = true; gate.open(); } return null; } return { x: dx, z: -59.6 }; } if (p.z > -24 && p.z < 0) return { x: 5, z: -30 }; return null; };
     w.complaint = { order, get done() { return done; } };
   },
 };

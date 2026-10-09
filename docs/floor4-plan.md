@@ -20,3 +20,7 @@ Branch `floor4-start` — **not merged, not live.** Levels 16–20 are all playa
 ## Rules still apply (docs/hotel-redo.md)
 Stage banners, a checkpoint per stage, honest next-stage-only hint, Baby Mode softening, every death has a tell, no jump scares or loud sounds, fakes of 5 s or less.
 Lessons learned: room columns are solid; adjacent platforms must be level or >= 1 m apart; route platforms need `o.path = true` in order; never overwrite `w.sky`.
+
+## Floor 13 (levels 21–25) — first pass
+21 Floor 13 (lift keys 1+3, vanishing tiles over void), 22 Terms & Conditions (clause 47 hides the goal), 23 Complaint Desk (stamp B,C,A), 24 Fire Drill (loops + window to fire escape), 25 Management (chasing manager, DO NOT DISTURB signs).
+All bot-completable (21 verified by probe; bot stalls there). Honest weak spots: 16, 19, 20, 22–24 are short/easy for their billing; 17 bot dies a lot on lasers; no dedicated test suites for 16–25; human death counts unmeasured. Not merged/live.

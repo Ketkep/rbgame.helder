@@ -216,9 +216,10 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
   const back = await page.evaluate(() => {
     const g = window.__trust, p = g.player;
     const calls = g.world.interactables.filter((it) => /elevator|Out of order/.test(typeof it.label === 'function' ? it.label(g) : it.label)).map((it) => it.label(g));
-    const firstPlanned = g.campaign.levels.findIndex((l) => l.placeholder) + 1;
-    const lv4 = g.world.interactables.find((it) => new RegExp(`^Level ${firstPlanned}:`).test(typeof it.label === 'function' ? it.label(g) : it.label));
-    return { z: p.z, x: p.x, calls, lv2: lv4.label(g) };
+    const idx = g.campaign.levels.findIndex((l) => l.placeholder);
+    const firstPlanned = idx + 1;
+    const lv4 = idx < 0 ? null : g.world.interactables.find((it) => new RegExp(`^Level ${firstPlanned}:`).test(typeof it.label === 'function' ? it.label(g) : it.label));
+    return { z: p.z, x: p.x, calls, lv2: lv4 ? lv4.label(g) : 'under renovation (none left: every level is built)' };
   });
   ok(back.z < -24 && Math.abs(back.x + 12) < 0.5, `hotel: you arrive back inside floor 1's elevator (x=${back.x.toFixed(1)}, z=${back.z.toFixed(1)})`);
   ok(/under renovation/.test(back.lv2), `hotel: levels that are not built yet are marked under renovation (${back.lv2})`);
