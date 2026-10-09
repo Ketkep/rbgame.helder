@@ -52,12 +52,12 @@ b = await info(B);
 ok(b.y > 1.6 && b.y < 2.1, `you can stand on the partner's head (y=${b.y.toFixed(2)})`);
 
 // both-plate: gate opens only when both stand on it, and goal needs both
-const gateOpen = (p) => p.evaluate(() => { const bd = window.__trust.world.bodies.filter((x) => x.hx === 7 && x.hy === 2.5); return bd.length ? bd[0].enabled : null; });
-await A.evaluate(() => window.__trust.player.teleport(-3, 0.01, -12));
+const gateOpen = (p) => p.evaluate(() => { const bd = window.__trust.world.bodies.filter((x) => x.hx === 11 && x.hy === 2.5); return bd.length ? bd[0].enabled : null; });
+await A.evaluate(() => window.__trust.player.teleport(-6, 0.01, -12));
 await sleep(1000);
 ok((await gateOpen(A)) === true, 'gate stays shut with one player on the plate');
-await B.evaluate(() => window.__trust.player.teleport(-2.2, 0.01, -12));
-for (const p of [A, B]) await p.waitForFunction(() => { const bd = window.__trust.world.bodies.filter((x) => x.hx === 7 && x.hy === 2.5); return bd.length && !bd[0].enabled; }, null, { timeout: T });
+await B.evaluate(() => window.__trust.player.teleport(6, 0.01, -12));
+for (const p of [A, B]) await p.waitForFunction(() => { const bd = window.__trust.world.bodies.filter((x) => x.hx === 11 && x.hy === 2.5); return bd.length && !bd[0].enabled; }, null, { timeout: T });
 ok(true, 'gate opens on both machines when both stand on the plate');
 
 // death rule 'self'
@@ -94,10 +94,10 @@ ok(Math.hypot(pa.x - 0.8, pa.z + 3) < 3, `...and is pulled up next to them (${pa
 await Promise.all([A, B].map((p) => p.evaluate(() => { window.__trust.world.coopRules.deathRule = 'self'; })));
 
 // goal needs both
-await A.evaluate(() => window.__trust.player.teleport(0, 0.01, -40));
+await A.evaluate(() => { const o = window.__trust.world.goalObj; window.__trust.player.teleport(o.x, o.y + 0.01, o.z); });
 await sleep(1500);
 ok((await B.evaluate(() => window.__trust.state)) === 'playing', 'one player on the goal is not enough');
-await B.evaluate(() => window.__trust.player.teleport(1.2, 0.01, -40));
+await B.evaluate(() => { const o = window.__trust.world.goalObj; window.__trust.player.teleport(o.x + 1.2, o.y + 0.01, o.z); });
 for (const p of [A, B]) await p.waitForFunction(() => window.__trust.state === 'complete', null, { timeout: T });
 ok(true, 'both on the goal: level completes for both');
 await sleep(2800);
