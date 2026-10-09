@@ -1166,6 +1166,8 @@ suite('bellhop', async () => {
   ok(rb.longerWait && rb.babySpeed, 'bellhop: baby mode: the bell waits longer and rolls slower');
   ok(rb.fakeCounts, 'bellhop: baby mode: the crooked checkpoint counts');
   await pb.close();
+});
+
 // =====================================================================================================================
 //  Levels 4, 9 and 12 (the multi-maze levels): sealed second mazes, logic, many seeds
 // =====================================================================================================================
