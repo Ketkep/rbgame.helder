@@ -775,9 +775,9 @@ suite('room404-bath', async () => {
     g.player.teleport(0, 0.001, -16); sim(0.2);
     out.zone = rm.zoneOf(g.player.z) === 'bath';
     out.litBlank = rm.bath.lit && rm.bath.digits.every((m) => !m.visible);
-    sim(4.6); out.darkShows = !rm.bath.lit && rm.bath.digits.every((m) => m.visible);
+    sim(4.6); out.darkShows = !rm.bath.lit && rm.bath.digits.filter((m) => m.visible).length === 1;
     out.mirrored = g.mods.invertX === true;
-    sim(5.5); out.litAgain = rm.bath.lit && rm.bath.digits.every((m) => !m.visible);
+    sim(2.6); out.litAgain = rm.bath.lit && rm.bath.digits.every((m) => !m.visible);
     // the code is the digits in the mirror; the backwards number gets a hint of its own
     g.player.teleport(0, 0.001, -26); sim(0.1);
     rm.useKeypadB(); type(rm.codeB.split('').reverse().join('')); out.revHint = !rm.doorB.open && (rm.codeB.split('').reverse().join('') === rm.codeB || said.includes('hotel.l11.b.rev')); g.modal.close();
@@ -787,7 +787,7 @@ suite('room404-bath', async () => {
   });
   ok(r.fakeDenied && r.opens, 'room404: the host\'s 404 is refused, the found code opens the bedroom door');
   ok(r.zone && r.litBlank, 'room404: with the bathroom light on, the wall is blank');
-  ok(r.darkShows, 'room404: when the light goes out, glowing digits show on the wall');
+  ok(r.darkShows, 'room404: when the light goes out, one glowing digit shows on the wall (the next dark shows the next)');
   ok(r.mirrored && r.litAgain, 'room404: the dark brings a mirrored mouse, which wears off, and the light comes back');
   ok(r.revHint && r.bOpens && r.mouseRestored, 'room404: the digits read backwards get a hint; the mirror\'s order opens the door');
   await page.close();
@@ -838,15 +838,15 @@ suite('room404-stairs', async () => {
     const g = window.__trust, w = g.world, rm = w.room404, out = {};
     const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
     const stand = (x, y, z) => { g.player.teleport(x, y + 0.001, z); sim(0.1); };
-    stand(0, 0, -72.4); sim(0.3); out.cp = Math.abs(w.respawn.z + 72.4) < 0.8;
+    stand(0, 0, -72.4); sim(0.3); g.frozen = false; out.cp = Math.abs(w.respawn.z + 72.4) < 0.8;
     out.fallKills = (stand(2, -13, -80), sim(0.5), g.state === 'dead');
     g.state = 'playing'; g.respawnPlayer(false);
     // the exit runs away twice, then a fake LEVEL COMPLETE, then a bonus climb
     const pos = () => `${rm.runner.x.toFixed(1)},${rm.runner.z.toFixed(1)}`;
     const seen = [pos()];
-    for (let k = 0; k < 2; k++) { stand(rm.runner.x + (rm.runner.x > 0 ? -1.2 : 1.2), 8, rm.runner.z + 0.5); sim(0.9); seen.push(pos()); }
+    for (let k = 0; k < 2; k++) { stand(rm.runner.x + (rm.runner.x > 0 ? -1.2 : 1.2), rm.LTOP, rm.runner.z + 0.5); sim(0.9); seen.push(pos()); }
     out.hops = new Set(seen).size === 3; out.seen = seen.join(' | ') + ' ' + g.state;
-    stand(rm.runner.x + (rm.runner.x > 0 ? -0.3 : 0.3), 8, rm.runner.z + 0.3); sim(0.3);
+    stand(rm.runner.x + (rm.runner.x > 0 ? -0.3 : 0.3), rm.LTOP, rm.runner.z + 0.3); sim(0.3);
     out.fake = g.frozen === true && !!document.querySelector('.fakewin') && !rm.bonusOn;
     for (let k = 0; k < 40 && !rm.bonusOn; k++) { await new Promise((res) => setTimeout(res, 250)); }
     sim(0.3); out.bonus = rm.bonusOn && !g.frozen && rm.bonus.every((p) => p.body.enabled) && rm.finalGoal.group.visible;

@@ -425,6 +425,7 @@ Object.assign(SCRIPT, {
   'hotel.l11.h.hint2': 'Hint: read the lit digits in the order you pass them, from the bathroom end. That is the code for the EXIT STAIRS door. 404 is not the stairs.',
   'hotel.l11.h.hint3': 'Hint: the stairs code is {code}. The wardrobe walks when you are not looking at it. Look at it and it stops. Press on and it gains.',
   'hotel.l11.expired': 'The hallway checkpoint has expired. They do. It was in the small print. You never read the small print. Nobody does. That is why it is there.',
+  'hotel.l11.load': 'Loading the stairwell. It is very tall. Whoever built it did not stop at the floor they were asked to.',
   'hotel.l11.stairs': 'The stairwell. Up. The lights go out now and then. The edges of the steps glow green. That is a feature. I did not install it.',
   'hotel.l11.fall': ['You fell. Stairs are not famous for forgiving. They are famous for going up.', 'Down is the other direction. Please stop practising it.'],
   'hotel.l11.hop1': 'The exit is right there. And now it is not. It moves. It is a very shy exit.',

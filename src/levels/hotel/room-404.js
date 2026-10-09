@@ -3,7 +3,7 @@ import { plainMaterial, glowMaterial } from '../../engine/materials.js';
 import { hotelHalo, GOLD } from './kit.js';
 import { openKeypad } from '../../engine/keypad.js';
 import { inView } from '../../engine/view.js';
-import { trollCheckpoint, fakeComplete, evasiveGoal, twist } from './trolls.js';
+import { trollCheckpoint, fakeComplete, evasiveGoal, twist, loadingScreen } from './trolls.js';
 import { shuffle, rint, roomBox, wallZ, wallX, slideDoor, doorFrame, keypadBox, escapeStages, canvasPlane, darkLayer, mirror } from './escape-kit.js';
 
 // Hotel level 11 — "Room 404" (Hard · Guest Rooms). An escape room in four stages, one checkpoint each:
@@ -80,7 +80,7 @@ export default {
     roomBox(w, { x0: -HX, x1: HX, z0: WD + 0.4, z1: WB - 0.4, H: 4.4, ceil: { tex: 'coffer', color: 0xb8a898 }, walls: { w: true, e: true }, wallMat: PANEL });
     w.box({ x: 0, y: 0.012, z: (WB + WD) / 2, w: 2.4, h: 0.02, d: WB - WD - 0.2, color: 0x2a1018, rough: 0.9, shadow: false });
     const STAIRS_X = 2.4, LOOP_X = -2.4;
-    wallZ(w, { z: WD, x0: -HX - 0.8, x1: HX + 0.8, y0: -2, y1: 14, gaps: [{ c: LOOP_X, w: 2.2, h: 3.0 }, { c: STAIRS_X, w: 2.2, h: 3.0 }], mat: PANEL });
+    wallZ(w, { z: WD, x0: -HX - 0.8, x1: HX + 0.8, y0: -2, y1: 30, gaps: [{ c: LOOP_X, w: 2.2, h: 3.0 }, { c: STAIRS_X, w: 2.2, h: 3.0 }], mat: PANEL });
     const doorLoop = slideDoor(w, game, { x: LOOP_X, z: WD, width: 2.2, height: 3.0, tex: 'wood', color: 0x5a3a24 });
     const doorStairs = slideDoor(w, game, { x: STAIRS_X, z: WD, width: 2.2, height: 3.0, tex: 'metal', color: 0x6a8a74 });
     doorFrame(w, { x: LOOP_X, z: WD, width: 2.2, height: 3.0 }); doorFrame(w, { x: STAIRS_X, z: WD, width: 2.2, height: 3.0 });
@@ -90,8 +90,7 @@ export default {
     // the stairwell
     const SX = 6;
     w.plat({ x: 0, y: 0, z: -73.3, w: 2 * SX, d: 6.6, h: 2, tex: 'stone', color: 0x8a8478, roughness: 0.8 });
-    roomBox(w, { x0: -SX, x1: SX, z0: -102, z1: WD - 0.4, y: 0, H: 13, ceil: { tex: 'metal', color: 0x3a3e48 }, walls: { w: true, e: true, n: true }, wallMat: { tex: 'stone', color: 0x8a8478 }, yb: -14 });
-    w.light(0xffc890, 14, 24, 0, 5, -78); w.light(0xffb070, 14, 24, 0, 9, -92); w.light(0x9affc8, 8, 14, 0, 11, -100);
+    roomBox(w, { x0: -SX, x1: SX, z0: -158, z1: WD - 0.4, y: 0, H: 30, ceil: { tex: 'metal', color: 0x3a3e48 }, walls: { w: true, e: true, n: true }, wallMat: { tex: 'stone', color: 0x8a8478 }, yb: -14 });
 
     // =====================================================================================================
     //  Stage 1 · the bedroom
@@ -153,8 +152,17 @@ export default {
       });
       p.it.body.setCenter(p.cx, p.top + 0.35, p.cz);
     });
-    function searchPiece(g, p) {
+    let searching = null;
+    const SEARCH_T = () => (baby() ? 1.4 : 2.8);
+    function searchPiece(g, p, instant = false) {          // searching takes a few seconds, and the piece has to stay in view (it is shy)
       if (doorA.open) return;
+      if (!instant) {
+        if (searching || p.searched) return;
+        searching = { p, t: 0 }; g.audio.click(); g.ui.toast(`Searching the ${p.name}… keep looking at it`, 'gold'); return;
+      }
+      finishSearch(g, p);
+    }
+    function finishSearch(g, p) {
       g.audio.click();
       if (p === chair) { p.searched = true; g.ui.toast('A note: “The code is 404.” — H.', 'gold'); g.say('hotel.l11.note', { priority: 2 }); return; }
       const di = p.dig, was = found[di] !== null;
@@ -191,7 +199,8 @@ export default {
     let botGlance = false;                            // (test bot only: it is a player who keeps an eye on the thing)
     const observed = (x, y, z, margin) => !sched.dark && inView(game, x, y, z, margin);
     let movedSaid = false, stepSaid = false, bathLit = true, bathT = 0, bathTwisted = false, hallSaid = false;
-    const BATH = () => ({ on: baby() ? 5.5 : 4.2, off: baby() ? 6.5 : 5.0 });
+    const BATH = () => ({ on: baby() ? 4.0 : 3.0, off: baby() ? 4.4 : 3.4 });
+    let darkN = 0; const bathSeen = new Set();
     const ZONE = {
       bed: { first: 22, gap: () => 20 + Math.random() * 8, len: () => (baby() ? 1.6 : 2.6) },
       hall: { first: 9, gap: () => 12 + Math.random() * 5, len: () => (baby() ? 1.2 : 1.9) },
@@ -205,7 +214,7 @@ export default {
         sched.zone = zone; sched.dark = false; sched.warn = false; dk.set(0, 150);
         sched.next = tLevel + (ZONE[zone]?.first ?? 9999);
         if (zone === 'hall') { WARD_RESET('hall'); }
-        if (zone === 'bath') { bathLit = true; bathT = 0; }
+        if (zone === 'bath') { bathLit = true; bathT = 0; darkN = 0; bathSeen.clear(); setDigits(false); }
         if (zone === 'bed') WARD_RESET('bed');
       }
       // ---- lights out (bedroom, hallway, stairwell) -------------------------------------------------------------------
@@ -220,9 +229,14 @@ export default {
         bathT += dt;
         const B = BATH();
         if (bathLit && bathT > B.on) {
-          bathLit = false; bathT = 0; dk.set(0.7, 140); setDigits(true);
+          bathLit = false; bathT = 0; dk.set(0.7, 140); showDigit(darkN++);
           if (!bathTwisted) { bathTwisted = true; twist(game, w, 'mouseX', { sec: 8, say: 'hotel.l11.mirror' }); }
         } else if (!bathLit && bathT > B.off) { bathLit = true; bathT = 0; dk.set(0, 200); setDigits(false); }
+      }
+      if (searching) {
+        const sp = searching.p;
+        if (zone !== 'bed' || Math.hypot(sp.cx - p.x, sp.cz - p.z) > 4.2 || !(botGlance || observed(sp.cx, sp.top + 0.3, sp.cz, 0.5))) { searching = null; game.ui.toast('Stopped searching (it has to stay in view)', 'bad'); }
+        else { searching.t += dt; if (searching.t >= SEARCH_T()) { const q = searching.p; searching = null; finishSearch(game, q); } }
       }
       // ---- the furniture moves when unseen (bedroom only) ---------------------------------------------------------------
       if (zone === 'bed') for (const pc of pieces) {
@@ -280,6 +294,7 @@ export default {
       m.visible = false; return m;
     });
     function setDigits(on) { for (const m of digitsPlanes) m.visible = on; }
+    function showDigit(n) { const k = n % 3; bathSeen.add(k); digitsPlanes.forEach((m, i) => { m.visible = baby() ? true : i === k; }); if (baby()) for (let i = 0; i < 3; i++) bathSeen.add(i); }
     w.sign({ text: 'LIGHTS ARE ON A TIMER · READ WHAT THE MIRROR READS', x: 0.0, y: 3.3, z: WB + 0.46, w: 7, h: 0.5, color: '#9fb2c8', double: false, tw: 1024, size: 36 });
     const padB = keypadBox(w, game, { x: 2.4, z: WB + 0.47, face: 's', label: () => (doorB.open ? 'Unlocked' : 'Use keypad'), use: (g) => { if (!doorB.open) useKeypadB(g); } });
     let attemptsB = 0;
@@ -351,6 +366,8 @@ export default {
     const cpBath = w.checkpoint({ x: 0, y: 0, z: -15.6, real: true });
     trollCheckpoint(w, game, { x: 0, y: 0, z: -29.8, mode: 'expire', ttl: 30, say: 'hotel.l11.expired' });
     const cpStairs = w.checkpoint({ x: 0, y: 0, z: -72.4, real: true });
+    let loadedOnce = false;
+    w.trigger({ x: 0, y: 1.2, z: -73.4, w: 10, h: 3, d: 1.2, once: false, onEnter: () => { if (loadedOnce || game.state !== 'playing') return; loadedOnce = true; loadingScreen(game, w, { sec: 2.4, say: 'hotel.l11.load' }); } });
 
     // =====================================================================================================
     //  Stage 4 · the stairwell (up in the dark; the exit is a lie; the goal runs)
@@ -363,31 +380,37 @@ export default {
       return p;
     };
     const stairs = [];
-    [[-2.6, -76.6, 0.8], [2.2, -79.4, 1.6], [-2.6, -82.2, 2.4], [2.2, -85.0, 3.2, 'crumble'], [-2.6, -87.8, 4.0], [2.2, -90.6, 4.8], [0, -93.2, 5.6, 'mover'], [-2.8, -95.9, 6.4, 'crumble'], [2.4, -98.0, 7.2]].forEach(([x, z, top, kind]) => {
-      let p = step(x, z, top);
-      if (kind === 'crumble') p = w.crumble(p, { delay: 0.7, gone: 3 });
-      if (kind === 'mover') w.mover(p, (t) => ({ x: 1.8 * Math.sin(t * 0.9) }));
+    const NSTEP = 26, RISE = 0.6, ZS = -76.6, ZD = 2.75;
+    for (let i = 0; i < NSTEP; i++) {
+      let p = step(i % 2 ? 2.4 : -2.4, ZS - i * ZD, RISE * (i + 1));
+      if (i % 6 === 3) p = w.crumble(p, { delay: 0.7, gone: 3 });
+      if (i % 6 === 0 && i > 0) w.mover(p, (t) => ({ x: 1.4 * Math.sin(t * 0.9 + i) }));
       stairs.push(p);
-    });
-    const landing = step(0, -100.4, 8.0, 10.2, 2.8);
+    }
+    const LZ = ZS - NSTEP * ZD - 0.4, LTOP = RISE * (NSTEP + 1);
+    const landing = step(0, LZ, LTOP, 10.2, 2.8);
     stairs.push(landing);
-    w.sign({ text: 'EXIT', x: 0, y: 11.2, z: -101.7, w: 3, h: 1.0, color: '#6cf0b2', double: false, tw: 512, size: 130, glow: true });
-    w.light(0x9affc8, 10, 16, 0, 9.5, -99);
-    // the bonus climb: a fake LEVEL COMPLETE first
-    const bonus = [[-4.4, -97.2, 8.7, 2.2], [-4.4, -93.4, 9.4, 2.2], [-4.4, -89.6, 10.1, 2.2], [-1.0, -86.6, 10.7, 3.2]].map(([x, z, top, s]) => {
-      const p = w.plat({ x, y: top, z, w: s, d: s, h: 0.3, tex: 'stone', color: 0xc8c0a8, roughness: 0.7, radius: 0.05 }); p.o.path = true; p.setEnabled(false); p.group.visible = false; return p;
+    w.sign({ text: 'EXIT', x: 0, y: LTOP + 3.2, z: LZ - 1.3, w: 3, h: 1.0, color: '#6cf0b2', double: false, tw: 512, size: 130, glow: true });
+    for (let k = 0; k < 6; k++) w.light(0xffc890, 12, 20, 0, 3 + k * 3.4, ZS - k * 13);
+    w.light(0x9affc8, 10, 16, 0, LTOP + 1.5, LZ + 1);
+    // the bonus climb: a fake LEVEL COMPLETE first (back along the west wall, higher)
+    const bonus = [];
+    for (let i = 0; i < 8; i++) bonus.push([-4.6, LZ + 3 + i * 3.0, LTOP + 0.7 + i * 0.6, i === 7 ? 3.2 : 2.2]);
+    const bonusPlats = bonus.map(([x, z, top, sz]) => {
+      const p = w.plat({ x, y: top, z, w: sz, d: sz, h: 0.3, tex: 'stone', color: 0xc8c0a8, roughness: 0.7, radius: 0.05 }); p.o.path = true; p.setEnabled(false); p.group.visible = false; return p;
     });
-    const finalGoal = w.goal({ x: -1.0, y: 10.7, z: -86.6, color: GOLD, onReach: () => { game.say('hotel.l11.done', { priority: 2 }); game.completeLevel(); } });
+    const BEND = bonus[bonus.length - 1];
+    const finalGoal = w.goal({ x: BEND[0], y: BEND[2], z: BEND[1], color: GOLD, onReach: () => { game.say('hotel.l11.done', { priority: 2 }); game.completeLevel(); } });
     finalGoal.group.visible = false; finalGoal.trig.enabled = false;
     let bonusOn = false;
     const enableBonus = () => {
       bonusOn = true;
-      for (const p of bonus) { p.setEnabled(true); p.group.visible = true; w.burst(new THREE.Vector3(p.body.x, p.top + 0.3, p.body.z), GOLD, 12, 3); }
+      for (const p of bonusPlats) { p.setEnabled(true); p.group.visible = true; w.burst(new THREE.Vector3(p.body.x, p.top + 0.3, p.body.z), GOLD, 12, 3); }
       finalGoal.group.visible = true; finalGoal.trig.enabled = true; w.goalObj = finalGoal;
       game.say('hotel.l11.bonus', { priority: 2 });
     };
     const runner = evasiveGoal(w, game, {
-      spots: [{ x: -4.0, y: 8.0, z: -100.4 }, { x: 4.0, y: 8.0, z: -100.6 }, { x: 0, y: 8.0, z: -100.2 }], radius: 3.4, color: 0x6cf0b2, say: ['hotel.l11.hop1', 'hotel.l11.hop2'],
+      spots: [{ x: -4.0, y: LTOP, z: LZ }, { x: 4.0, y: LTOP, z: LZ - 0.2 }, { x: 0, y: LTOP, z: LZ + 0.2 }], radius: 3.4, color: 0x6cf0b2, say: ['hotel.l11.hop1', 'hotel.l11.hop2'],
       onReach: () => { if (!fakeComplete(game, w, { title: 'LEVEL COMPLETE', say: 'hotel.l11.fakewin', then: enableBonus })) game.completeLevel(); },
     });
     w.goalObj = runner;
@@ -399,7 +422,7 @@ export default {
       { name: NAMES[0], at: { x: 0, y: 0, z: 6.5 }, clues: ['hotel.l11.hint1', 'hotel.l11.hint2', 'hotel.l11.hint3'], vars: () => ({ code: codeA }), solved: () => doorA.open, trail: [{ x: 0, y: 0, z: -4 }, { x: 0, y: 0, z: -12 }] },
       { name: NAMES[1], at: { x: 0, y: 0, z: -15.6 }, clues: ['hotel.l11.b.hint1', 'hotel.l11.b.hint2', 'hotel.l11.b.hint3'], vars: () => ({ code: codeB }), solved: () => doorB.open, trail: [{ x: 0, y: 0, z: -22 }, { x: 0, y: 0, z: -26 }] },
       { name: NAMES[2], at: { x: 0, y: 0, z: -29.8 }, clues: ['hotel.l11.h.hint1', 'hotel.l11.h.hint2', 'hotel.l11.h.hint3'], vars: () => ({ code: codeC }), solved: () => doorStairs.open, trail: [{ x: 0, y: 0, z: -45 }, { x: 0, y: 0, z: -60 }, { x: STAIRS_X, y: 0, z: -68.4 }] },
-      { name: NAMES[3], at: { x: 0, y: 0, z: -72.4 }, trail: () => (bonusOn ? bonus.map((b) => ({ x: b.body.x, y: b.top, z: b.body.z })) : stairs.map((p) => ({ x: p.body.x, y: p.top, z: p.body.z }))), end: () => ({ x: (bonusOn ? finalGoal : runner).x, y: (bonusOn ? finalGoal : runner).y, z: (bonusOn ? finalGoal : runner).z }) },
+      { name: NAMES[3], at: { x: 0, y: 0, z: -72.4 }, trail: () => (bonusOn ? bonusPlats.map((b) => ({ x: b.body.x, y: b.top, z: b.body.z })) : stairs.map((p) => ({ x: p.body.x, y: p.top, z: p.body.z }))), end: () => ({ x: (bonusOn ? finalGoal : runner).x, y: (bonusOn ? finalGoal : runner).y, z: (bonusOn ? finalGoal : runner).z }) },
     ]);
     const cps = new Map([[cpBath, 1], [cpStairs, 3]]);
     w.hooks.onCheckpoint = (c) => {
@@ -426,9 +449,9 @@ export default {
     w.onDispose(() => { dk.el.remove(); });
     w.room404 = {
       pieces, ward, code: codeA, fake, found, codeB, codeC, get doorOpen() { return doorA.open; }, get dark() { return sched.dark; }, get tLevel() { return tLevel; },
-      search: (p) => searchPiece(game, p), useKeypad: () => useKeypadA(game), setDark: (v) => { sched.dark = v; if (v) sched.until = tLevel + 5; }, slots: SLOTS,
-      doorA, doorB, doorLoop, doorStairs, useKeypadB: () => useKeypadB(game), useKeypadC: () => useKeypadC(game), stages: S, bath: { get lit() { return bathLit; }, digits: digitsPlanes, set t(v) { bathT = v; } },
-      plates, runner, finalGoal, bonus, stairs, get bonusOn() { return bonusOn; }, zoneOf, HALL_HOME, WARD_RESET, get twisted() { return bathTwisted; },
+      search: (p) => searchPiece(game, p, true), get searching() { return searching; }, startSearch: (p) => searchPiece(game, p), useKeypad: () => useKeypadA(game), setDark: (v) => { sched.dark = v; if (v) sched.until = tLevel + 5; }, slots: SLOTS,
+      doorA, doorB, doorLoop, doorStairs, useKeypadB: () => useKeypadB(game), useKeypadC: () => useKeypadC(game), stages: S, bath: { get lit() { return bathLit; }, seen: bathSeen, get n() { return darkN; }, digits: digitsPlanes, set t(v) { bathT = v; } },
+      plates, runner, finalGoal, bonus: bonusPlats, stairs, LTOP, LZ, get bonusOn() { return bonusOn; }, zoneOf, HALL_HOME, WARD_RESET, get twisted() { return bathTwisted; },
     };
 
     // =====================================================================================================
@@ -447,12 +470,13 @@ export default {
       botGlance = (zone === 'bed' || zone === 'hall') && ward.active && Math.hypot(ward.x - p.x, ward.z - p.z) < 9;
       if (g.frozen) return { wait: true, x: p.x, z: p.z - 1 };
       if (zone === 'bed') {
+        if (searching) return { wait: true, x: searching.p.cx, z: searching.p.cz };
         if (!doorA.open) {
           const todo = [bed, desk, dresser].find((q) => !q.searched);
           if (todo) {
             const tx = todo.cx + (todo.cx < 0 ? 2.2 : -2.2), tz = todo.cz;
             if (Math.hypot(p.x - tx, p.z - tz) > 1.2) return { x: tx, z: tz };
-            searchPiece(g, todo); return { wait: true, x: p.x, z: p.z };
+            searchPiece(g, todo); return { wait: true, x: todo.cx, z: todo.cz };
           }
           return keypad(g, padA, useKeypadA, codeA);
         }
@@ -461,9 +485,8 @@ export default {
       }
       if (zone === 'bath') {
         if (!doorB.open) {
-          if (!bathTwisted || bathLit || mirrorSeen < 1) {                       // wait for the dark, and read the mirror
+          if (bathSeen.size < 3 || (!bathLit && bathT < 1.0)) {                  // wait for the dark, and read all three digits in the mirror
             const m = goTo(0.4, -19.2, 0.7); if (m) return m;
-            if (!bathLit) mirrorSeen += 1 / 60;
             return { wait: true, x: p.x, z: p.z };
           }
           return keypad(g, padB, useKeypadB, codeB);
@@ -479,7 +502,8 @@ export default {
         if (doorStairs.t < 1) return { wait: true, x: STAIRS_X, z: WD + 2 };
         return Math.abs(p.x - STAIRS_X) > 0.9 ? { x: STAIRS_X, z: WD + 1.8 } : { x: STAIRS_X, z: WD - 3 };
       }
-      if (p.y > 7.5 && !bonusOn) return { x: runner.x, z: runner.z };
+      if (window.__bot && p.grounded && p.y < 0.3) window.__bot.i = 0;      // (test bot: start the steps again after a respawn)
+      if (p.y > LTOP - 0.4 && p.z < LZ + 2 && !bonusOn) return { x: runner.x, z: runner.z };
       return null;
     };
   },
