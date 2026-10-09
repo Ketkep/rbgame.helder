@@ -16,6 +16,7 @@ import doNotDisturb from './do-not-disturb.js';
 import minibar from './minibar.js';
 import hallwayLoop from './hallway-loop.js';
 import windowLedge from './window-ledge.js';
+import chandelier from './chandelier.js';
 
 export const TIERS = [
   { floor: '1',  name: 'Mezzanine',            difficulty: 'Easy',                    short: 'EASY',       color: 0x3ddc97, blurb: 'Complimentary lies.' },
@@ -39,6 +40,6 @@ export const KIND_ICON = { parkour: '🏃', quiz: '❓', escape: '🔑', maze: '
 const planned = (name, kind, i) => ({ id: `hotel-${i + 1}`, name, kind, tier: Math.floor(i / 5), index: i, placeholder: true });
 
 export function buildHotelLevels() {
-  const BUILT = [wetFloor, checkIn, lostLuggage, revolvingDoor, bellhopBlues, souffle, triviaNight, dinner, kitchenMaze, danceFloor, room404, doNotDisturb, minibar, hallwayLoop, windowLedge];
+  const BUILT = [wetFloor, checkIn, lostLuggage, revolvingDoor, bellhopBlues, souffle, triviaNight, dinner, kitchenMaze, danceFloor, room404, doNotDisturb, minibar, hallwayLoop, windowLedge, chandelier];
   return ROSTER.map(([name, kind], i) => (BUILT[i] ? Object.assign(BUILT[i], { kind, tier: Math.floor(i / 5), index: i }) : planned(name, kind, i)));
 }
