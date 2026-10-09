@@ -3,6 +3,24 @@
 // {n}, {m}, {t} are filled in by the game when relevant.
 
 export const SCRIPT = {
+  // ---------------------------------------------------------------- Campaign 3: Couples Retreat ---------------
+  'coop.l1.intro.p1': ['Welcome to Serenity Falls. I\'m your counsellor. I side with neither of you. Orange, that\'s you. Try to stay alive for your partner.'],
+  'coop.l1.intro.p2': ['Welcome to Serenity Falls. I\'m your counsellor. I side with neither of you. Teal, that\'s you. Your partner is, statistically, fine.'],
+  'coop.l1.plates': ['Two plates. Two colours. Both of you, at the same time. It\'s called "communication". Some couples never learn it.'],
+  'coop.l1.door': ['And the door opens. Healthy! Now go through it before it changes its mind.'],
+  'coop.l1.islands': ['Someone holds the bridge up. Someone crosses. Then you swap. Relationships are about taking turns.', 'The bridge only stays up while one of you stands on a plate. Emotional support, but with pressure plates.'],
+  'coop.l1.islandsdone': ['Good. You\'ve learned to hold things up for each other. Now, a wall.'],
+  'coop.l1.wall': ['This wall is 2.9 metres. Your jump is 1.4. Do the maths. Or do each other. Not like that.', 'Climb the crate. Stand on your partner\'s head. It\'s a trust exercise. Also a head.'],
+  'coop.l1.up': ['One of you is up. The other needs the lift, and the lift needs a plate. Stay on it. They\'re counting on you.'],
+  'coop.l1.rope': ['Now, a rope. We call this "staying close". It\'s non-negotiable. So is the rope.', 'The rope is eight and a half metres. That\'s the most space I can legally give you.'],
+  'coop.l1.ferry': ['A ferry. It goes back and forth. Like your last relationship.'],
+  'coop.l1.unrope': ['Untied! Breathe. Space is also important. Not too much.'],
+  'coop.l1.dash': ['One lever. One gate. Five seconds. Fifty metres. Somebody has to run, and somebody has to open the gate for them. Decide who loves who more.', 'The gate is open for five seconds. The hall is fifty metres. I\'ve done the maths. You can\'t. You can together.'],
+  'coop.l1.dashdone': ['Teamwork! I felt something. It passed.'],
+  'coop.l1.fake': ['FINISH! Congratulations! ...Kidding. Stairs.', 'You did it! Almost. There are stairs. There are always stairs.'],
+  'coop.l1.circle': ['Both of you. In the circle. At the same time. Yes, this includes the one who "just wants to get it over with".'],
+  'coop.l1.partnerdown': ['Ooh. Your partner fell. Ask them how they feel.', 'And down goes your partner. Don\'t worry, they\'re not hurt. Their pride is.'],
+
   // ---------------------------------------------------------------- global ---------------
   'death.first': [
     'And that\'s a death! Don\'t worry, that one was free. The rest are billed monthly.',

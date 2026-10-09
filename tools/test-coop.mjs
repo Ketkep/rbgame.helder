@@ -67,6 +67,32 @@ ok((await B.evaluate(() => window.__trust.state)) === 'playing', "'self' rule: p
 await A.waitForFunction(() => window.__trust.state === 'playing', null, { timeout: T });
 await sleep(500);
 
+// shared checkpoint
+await A.evaluate(() => window.__trust.player.teleport(0, 0.01, -34));
+await B.waitForFunction(() => Math.abs(window.__trust.world.respawn.z + 34) < 0.5, null, { timeout: T });
+ok(true, "a checkpoint touched by one player saves it for both");
+
+// 'both' rule
+await Promise.all([A, B].map((p) => p.evaluate(() => { window.__trust.world.coopRules.deathRule = 'both'; })));
+await A.evaluate(() => window.__trust.kill('void'));
+await B.waitForFunction(() => window.__trust.state === 'dead', null, { timeout: T });
+ok(true, "'both' rule: your partner goes back with you");
+for (const p of [A, B]) await p.waitForFunction(() => window.__trust.state === 'playing', null, { timeout: T });
+
+// 'revive' rule
+await Promise.all([A, B].map((p) => p.evaluate(() => { window.__trust.world.coopRules.deathRule = 'revive'; })));
+await A.evaluate(() => window.__trust.player.teleport(0, 0.01, -3));
+await B.evaluate(() => window.__trust.player.teleport(3, 0.01, -3));
+await sleep(600);
+await A.evaluate(() => window.__trust.kill('void'));
+await sleep(1500);
+ok((await A.evaluate(() => window.__trust.state)) === 'dead', "'revive' rule: you stay down until your partner reaches you");
+await B.evaluate(() => window.__trust.player.teleport(0.8, 0.01, -3));
+await A.waitForFunction(() => window.__trust.state === 'playing', null, { timeout: T });
+const pa = await A.evaluate(() => ({ x: window.__trust.player.x, z: window.__trust.player.z }));
+ok(Math.hypot(pa.x - 0.8, pa.z + 3) < 3, `...and is pulled up next to them (${pa.x.toFixed(1)}, ${pa.z.toFixed(1)})`);
+await Promise.all([A, B].map((p) => p.evaluate(() => { window.__trust.world.coopRules.deathRule = 'self'; })));
+
 // goal needs both
 await A.evaluate(() => window.__trust.player.teleport(0, 0.01, -40));
 await sleep(1500);

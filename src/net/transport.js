@@ -11,6 +11,14 @@ const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I
 export const makeCode = (n = 5) => Array.from({ length: n }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join('');
 export const cleanCode = (s) => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
 const PREFIX = 'trustme-coop-';
+// STUN finds each side's public address (enough for most home networks). The TURN entry is a free public relay used as a last
+// resort when two strict networks can't reach each other directly; if that service is gone, direct links still work.
+const ICE = {
+  iceServers: [
+    { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:global.stun.twilio.com:3478'] },
+    { urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turn:openrelay.metered.ca:443?transport=tcp'], username: 'openrelayproject', credential: 'openrelayproject' },
+  ],
+};
 
 class Base {
   constructor() { this.onopen = null; this.onclose = null; this.onmessage = null; this.onerror = null; this.open = false; }
@@ -22,7 +30,7 @@ export class PeerTransport extends Base {
     const t = new PeerTransport(); t.code = code; t.isHost = true;
     const { Peer } = await import('peerjs');
     await new Promise((resolve, reject) => {
-      const peer = (t.peer = new Peer(PREFIX + code, { debug: 0 }));
+      const peer = (t.peer = new Peer(PREFIX + code, { debug: 0, config: ICE }));
       peer.on('open', resolve);
       peer.on('error', (e) => reject(e));
       peer.on('connection', (conn) => {
@@ -38,7 +46,7 @@ export class PeerTransport extends Base {
     const t = new PeerTransport(); t.code = cleanCode(code); t.isHost = false;
     const { Peer } = await import('peerjs');
     await new Promise((resolve, reject) => {
-      const peer = (t.peer = new Peer({ debug: 0 }));
+      const peer = (t.peer = new Peer({ debug: 0, config: ICE }));
       peer.on('error', (e) => { reject(e); t.onerror?.(e); });
       peer.on('open', () => {
         const conn = peer.connect(PREFIX + t.code, { reliable: true, serialization: 'json' });

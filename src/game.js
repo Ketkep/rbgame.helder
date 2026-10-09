@@ -848,6 +848,7 @@ export class Game {
     e['end-title'].textContent = this.totalDeaths === 0 ? 'Zero deaths?! Cheater.' : this.baby ? 'You trusted no one. (After some help.)' : 'You trusted no one. You win.';
     e['end-share'].textContent = this._shareText();
     e['end-eyebrow'].textContent = `CAMPAIGN ${this.campaign.number} COMPLETE`;
+    e['btn-again'].classList.toggle('hidden', !!this.coop);
     e['end-next'].textContent = this.campaign.after || '';
     this.ui.hud(false);
     this.ui.showScreen('end');
@@ -1152,6 +1153,6 @@ export class Game {
       w.frame(dt, p, cam);
     }
 
-    this.composer.render(dt);
+    if (!window.__noRender) this.composer.render(dt);        // tests can skip drawing entirely
   }
 }

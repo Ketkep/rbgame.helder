@@ -84,7 +84,7 @@ export function plate(w, o, onChange) {
 
 /** A wall/door that slides up when `open(true)` is called. Solid for both players while closed. */
 export function gate(w, o) {
-  const { x, y = 0, z, w: ww = 6, h = 5, d = 0.8, color = 0x6b4a2e, tex = 'wood', speed = 4.5, glow = null } = o;
+  const { x, y = 0, z, w: ww = 6, h = 5, d = 0.8, color = 0x6b4a2e, tex = 'wood', speed = 7, glow = null } = o;
   const p = w.plat({ x, y: y + h, z, w: ww, d, h, tex, color, trim: glow, moving: true });
   const st = { plat: p, open: false, k: 0 };
   w.updaters.push((dt) => {
@@ -94,19 +94,20 @@ export function gate(w, o) {
     p.body.enabled = st.k < 0.98;
   });
   st.set = (v) => { st.open = !!v; };
+  Object.defineProperty(st, 'passable', { get: () => st.k > 0.98 });      // physically out of the way (for bots and timers)
   return st;
 }
 
 /** A platform that rises/lowers: raised = standing (solid), lowered = sunk out of the way. */
 export function riser(w, o) {
-  const { x, y, z, w: ww = 4, d = 4, h = 1, drop = 6, tex = 'wood', start = false, speed = 5 } = o;
+  const { x, y, z, w: ww = 4, d = 4, h = 1, drop = 6, tex = 'wood', start = false, speed = 5, always = false } = o;
   const p = w.plat({ x, y, z, w: ww, d, h, tex, moving: true, path: !!o.path, color: o.color, trim: o.trim });
   const st = { plat: p, up: !!start, k: start ? 1 : 0 };
   w.updaters.push((dt) => {
     const t = st.up ? 1 : 0;
     st.k += Math.sign(t - st.k) * Math.min(Math.abs(t - st.k), dt * speed / drop);
     p.setPos(p.base.x, p.base.y - (1 - st.k) * drop, p.base.z);
-    p.body.enabled = st.k > 0.04;
+    p.body.enabled = always || st.k > 0.04;
   });
   st.set = (v) => { st.up = !!v; };
   return st;
@@ -155,3 +156,54 @@ export function pairCheckpoint(w, x, y, z, label = 'CHECKPOINT') { return w.chec
 
 /** Narrator line for one role after a delay. */
 export function tellLater(w, sec, role, key, opts) { w.after(sec, () => w.coop.tell(role, key, opts)); }
+
+/**
+ * A one-shot beat for the pair: the first time EITHER of you enters the box, `fn(c)` runs once on both machines.
+ * (Use it for narrator lines, switching the death rule, turning the rope on, …)
+ */
+export function stage(w, name, box, fn) {
+  const c = w.coop;
+  let fired = false;
+  c.onEvent('stage:' + name, () => { if (fired) return; fired = true; fn(c); });
+  const z = c.zone({ ...box, need: 'any', shrink: 0 });
+  z.onChange((zn) => { if (zn.active && !fired) c.emit('stage:' + name); });
+  return z;
+}
+
+/** Rule for who respawns when. 'self' | 'both' | 'revive'. Call from a stage() so both machines switch together. */
+export function setDeathRule(w, rule) { w.coopRules.deathRule = rule; }
+
+/**
+ * Scripted bot support (tools/coop-bot.mjs). `byRole` = { p1: [step…], p2: [step…] }.
+ * step: { x, z }                    walk to (x,z) (numbers or functions), done on arrival (r metres, default 1)
+ *       { x, z, until: () => bool } walk there, then stand still until the condition is true
+ *       { until }                   just stand still until true
+ *       { jump: true|radius }       jump while moving toward the target (boosts, hops) once within `radius` metres (default 2.2)
+ *       { follow: true, until }     walk the path:true platforms until the condition holds
+ * Without a plan the bot follows `path:true` platforms in order.
+ */
+export function botSteps(w, byRole) {
+  const g = w.game, steps = byRole[w.coop.me] || [];
+  let i = 0;
+  const val = (v, d) => (typeof v === 'function' ? v() : v ?? d);
+  w.botPlan = () => {
+    const p = g.player;
+    for (let guard = 0; guard < 30 && i < steps.length; guard++) {
+      const s = steps[i];
+      if (s.follow) {                                    // let the bot walk the path:true platforms until the condition holds
+        if (s.until && s.until()) { i++; continue; }
+        return null;
+      }
+      const tx = val(s.x, p.x), tz = val(s.z, p.z);
+      const arrived = Math.hypot(tx - p.x, tz - p.z) < (s.r ?? 1.0);
+      const done = s.until ? s.until() : arrived;
+      if (done) { i++; s.then?.(); continue; }
+      const stand = s.until && (arrived || s.x === undefined);
+      if (s.use && arrived) g.useFocus();
+      return { x: tx, z: tz, wait: !!stand, jump: s.jump || false };
+    }
+    return null;                                        // out of steps: follow the path again
+  };
+  w.botIndex = () => i;
+  w.botSetIndex = (n) => { i = n; };
+}

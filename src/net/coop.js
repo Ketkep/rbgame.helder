@@ -51,7 +51,7 @@ export class Coop {
     this.send({ t: 'p', x: r(p.x), y: r(p.y), z: r(p.z), vx: r(p.vx, 1), vy: r(p.vy, 1), vz: r(p.vz, 1), yaw: r(g.yaw), pitch: r(g.pitch), g: p.grounded ? 1 : 0, d: g.state === 'dead' ? 1 : 0 });
   }
 
-  get rule() { return this.game.level?.deathRule || 'self'; }
+  get rule() { return this.world?.coopRules?.deathRule || this.game.level?.deathRule || 'self'; }
   get world() { return this.game.world; }
 
   // ------------------------------------------------------------------ link ------------------
