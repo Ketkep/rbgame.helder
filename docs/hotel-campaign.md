@@ -33,30 +33,32 @@
 - **Gags (look-only):** a departures board whose statuses keep changing, a clock with backwards numerals, four portraits whose eyes follow you and whose faces change while you are not looking (`inView`), an inspection certificate beside each elevator, a wet-floor sign standing where it is not wet.
 - The player spawns at z = 9.5, clear of the revolving door's glass wings (they sweep z ≥ 12.3 and pass through the camera if you start inside them).
 
-## The roster (proposal — tell me what to change)
+## The roster (floors 1–3 rebuilt: multi-stage, much longer, much trollier)
+
+Every level on floors 1–3 now has **4–6 stages with a checkpoint each**, a stage banner, an honest next-stage-only hint, Baby Mode behaviour, and a set of learnable tricks (fake exits, checkpoint betrayals, floors that lie, control twists, fake UI moments, a fake LEVEL COMPLETE). The brief is in `docs/hotel-redo.md`; the shared tricks are in `src/levels/hotel/trolls.js`. Perfect-play bot times (sim s, includes freezes) are in brackets.
 
 Types: 🏃 parkour/traps · ❓ quiz · 🔑 escape room · 🌀 maze/chase · 👔 boss · 🃏 trick
 
 **Floor 1 — Mezzanine (Easy).** Complimentary lies.
-1. 🏃 **Wet Floor** ✅ — the whole lobby floor is lethal; hop across furniture (one trolley rolls away, the marble is slippery), climb the cocktail tables.
-2. ❓ **Check-In** ✅ — four questions, three answer pads each; stand on one for a second to sign it. The host is honest exactly once. Questions are about things any player can know (controls, the hotel, Wet Floor; Campaign 1 only if you cleared it). **H** removes one wrong answer.
-3. 🔑 **Lost Luggage** ✅ — locked in the baggage office. The host gives you a code (it's wrong); the real one is the suitcase counts on the poster. One black suitcase is a mimic. Behind the door: the baggage handling hall (conveyor belts, a press). **H** gives three levels of clues.
-4. 🌀 **Revolving Door** ✅ — a new random hedge maze on the roof every attempt; revolving doors block passages on a schedule (green lamp = go), luggage-cart trains patrol the corridors (hop them), the host's directions are confident and wrong. **H** draws the way out from wherever you stand.
-5. 🏃 **Bellhop Blues** ✅ — a gigantic angry service bell chases you down the back-of-house corridor: belts, wet marble, stairs, a runaway luggage gondola. Baby mode slows it down.
+1. 🏃 **Wet Floor** — six stages across the lobby: furniture hop, a rolling trolley, a mop-bot lane, a service gantry (swap twist, a bridge that gives way), a climb and the mezzanine (broom-closet EXIT, a goal that runs away, a fake LEVEL COMPLETE + bonus climb). [~70]
+2. ❓ **Check-In** — ten questions in six stages (lying host, sliding pads, a clock, "none of the above", "pick the wrong one", the host changes his mind), luggage-trolley interludes, a survey, a fake CHECKED IN. [~110]
+3. 🔑 **Lost Luggage** — five rooms: the poster's suitcase count, belts (one reverses), a weigh-in, Lost Property with an X-ray, and the pile up to customs. [~80]
+4. 🌀 **Revolving Door** — two sealed hedge mazes (A: doors and carts; B: dusk, a loop door, a decoy exit) with a fountain courtyard and an ad gate between. [~95]
+5. 🏃 **Bellhop Blues** — a five-stage chase through back-of-house: a backwards express belt, laundry, kitchen pass, stairs and a freight elevator that goes the wrong way. [~80]
 
 **Floor 2 — Restaurant & Ballroom (Medium).** The soup is a trap.
-6. 🏃 **Soufflé** ✅ — a kitchen climb above a soufflé that rises 0.58 m/s: sliding trays, crumbling cookie sheets, hot plates, steam jets, swinging pans, and a fake EXIT door that is an oven.
-7. ❓ **Trivia Night** ✅ — six rounds in the ballroom: honest · the host lies · sliding pads · a 12-second clock · four answers · "which answer did I swear was right in round 2?" (the lie).
-8. 🔑 **Dinner Is Served** ✅ — serve six courses in the order the menu's riddles describe (the host says dessert first). Wrong course = a dessert trolley lands on you (a shadow warns you, you can dodge). Then the wine cellar: rolling barrels and spilled Merlot.
-9. 🌀 **Kitchen Maze** ✅ — a random maze of walk-in freezers (ice floors), one-way swing doors, and a chef who hunts you cell by cell after a head start.
-10. 🏃 **Dance Floor** ✅ — tiles blink on the beat (hop while they are lit), VIP booths to rest on, and every 15 s the DJ yells **FREEZE**: moving is fatal.
+6. 🏃 **Soufflé** — six kitchen stages; the soufflé waits under each pass counter. [~110]
+7. ❓ **Trivia Night** — ten rounds in six stages with chandelier-hop interludes, a fake CHAMPION, a lying audience poll. [~125]
+8. 🔑 **Dinner Is Served** — five rooms: six riddle courses, a cloche shell game, the pantry tip jar, the wine cellar, the dessert parlour. [~100]
+9. 🌀 **Kitchen Maze** — freezer maze with the chef, a hot-oil pass, then a dark pantry maze with two chefs. [~105]
+10. 🏃 **Dance Floor** — five sets and an encore, a real FREEZE and a bluff one, spotlight calls, a mirror-ball bridge. [~105]
 
 **Floor 3 — Guest Rooms (Hard).** Do not disturb. Seriously.
-11. 🔑 **Room 404** ✅ — three digits hidden in furniture that moves when you are not looking, a wardrobe that walks toward you when you are not looking, and blackouts. The armchair holds a lie (404).
-12. 🌀 **Do Not Disturb** ✅ — stealth in a random corridor maze: two housekeepers with wall-clipped vision cones; hide in laundry carts in the dead ends (and hope she does not walk in).
-13. ❓ **Minibar** ✅ — the answers are locked in minibars: open one for a (lying) price, hints cost money, you start with $45, and checkout has a tip you cannot refuse.
-14. 🌀 **Hallway Loop** ✅ — one corridor; if anything is different walk back, otherwise keep going; six right in a row. The host's opinion is wrong more often than not; the hint is honest.
-15. 🏃 **Window Ledge** ✅ — outside in a thunderstorm: wide sills, a cornice, AC units, crumbling sills, a pipe, a gondola and gargoyle perches, with gusts that push you off the wall (lean in with D).
+11. 🔑 **Room 404** — bedroom, mirror bathroom, hallway chase, a 32-step stairwell with a fake complete and a bonus climb. [~130]
+12. 🌀 **Do Not Disturb** — two sealed wings of stealth (housekeepers walk learnable rounds, DND signs, laundry carts), a vat between them, a service lift. [~150]
+13. ❓ **Minibar** — twelve rounds in six stages, prices that lie, a checkout-queue parkour, two bills. [~180]
+14. 🌀 **Hallway Loop** — eight rounds in four acts plus an encore, 33 kinds of anomaly, parkour floors, a fake way out. [~145]
+15. 🏃 **Window Ledge** — five window stages on a long facade, telegraphed lightning, gale gates, a painted-on EXIT window, a fake "ROOM 1502". [~160]
 
 **Floor 4 — Penthouse (Impossible).** The view is not worth it.
 16. 🏃 **Chandelier** — precision hops on swinging chandeliers.

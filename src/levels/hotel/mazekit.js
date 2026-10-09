@@ -27,6 +27,21 @@ export function generateMaze(N) {
   return { N, east, north, nbrs, open };
 }
 
+/**
+ * A random maze whose solution (cell [0,0] to [N-1,N-1]) is between `lo` and `hi` cells long, so a level's length does not swing
+ * with the dice (still a brand-new maze every attempt). Falls back to the closest one it saw.
+ */
+export function bandMaze(N, lo = 0, hi = Infinity, tries = 600) {
+  let best = null, bestD = Infinity;
+  for (let k = 0; k < tries; k++) {
+    const m = generateMaze(N), len = solveMaze(m, [0, 0]).length;
+    if (len >= lo && len <= hi) return m;
+    const d = len < lo ? lo - len : len - hi;
+    if (d < bestD) { bestD = d; best = m; }
+  }
+  return best;
+}
+
 /** BFS path of cells from `from` to `to` (inclusive). */
 export function solveMaze(maze, from, to = [maze.N - 1, maze.N - 1]) {
   const N = maze.N, key = (c) => c[0] * N + c[1];
@@ -55,12 +70,19 @@ export function mazeGrid({ N, C = 4.4, T = 0.8, WH = 3.6, Z0 = 8, X0 = null }) {
   return g;
 }
 
-/** Builds the wall runs (merged slabs). `entrance`/`exit` are the column indices of the gaps in the south/north walls. */
-export function buildMazeWalls(w, maze, g, { tex = 'hedge', color = 0xffffff, roughness = 0.95, radius = 0.1, metalness = undefined, entrance = 0, exit = maze.N - 1, slab = null } = {}) {
+/** Builds the wall runs (merged slabs). `entrance`/`exit` are the column indices of the gaps in the south/north walls; `reach` seals the room around the maze (see below). */
+export function buildMazeWalls(w, maze, g, { tex = 'hedge', color = 0xffffff, roughness = 0.95, radius = 0.1, metalness = undefined, entrance = 0, exit = maze.N - 1, slab = null, reach = null } = {}) {
   const { N, C, T, WH, X0, Z0 } = g;
   const make = slab || ((x, z, ww, dd) => w.plat({ x, y: WH, z, w: ww, d: dd, h: WH, tex, color, roughness, radius, metalness }));
   for (let j = 0; j <= N; j++) {                       // horizontal lines (z = Z0 - j*C)
     const present = (ii) => (j === 0 ? ii !== entrance : j === N ? ii !== exit : !maze.north[ii][j - 1]);
+    // `reach` = [x of the room's west wall, x of its east wall]: the south and north walls run on to the room's edges, so the
+    // floor beside the maze is sealed off and the only way from the entrance to the exit is through the maze itself
+    if (reach && (j === 0 || j === N)) {
+      const xe = X0 + N * C + T / 2, xw = X0 - T / 2;
+      if (xw - reach[0] > 0.05) make((reach[0] + xw) / 2, Z0 - j * C, xw - reach[0], T);
+      if (reach[1] - xe > 0.05) make((xe + reach[1]) / 2, Z0 - j * C, reach[1] - xe, T);
+    }
     let i = 0;
     while (i < N) {
       if (!present(i)) { i++; continue; }

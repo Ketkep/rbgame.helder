@@ -89,6 +89,7 @@ await page.evaluate(() => {
     const edge = !groundAhead || wallAhead;
     const edgeOk = !edge || window.__noMom || vproj > 2.5 || (bot.turn = (bot.turn || 0) + dt) > 0.35;
     const jump = p.grounded && !(plan && plan.wait) && !hold && ((edge && edgeOk) || skate || hop);
+    bot.dbg = (plan ? (plan.wait ? 'W' : 'P') : '-') + (hold ? 'H' : '-') + (jump ? 'J' : '-') + (groundAhead ? 'G' : '-') + (wallAhead ? 'w' : '-');   // trace column: plan/wait · hold · jump · ground ahead · wall ahead
     if (jump) g.jumpEdge = true;
     if (!p.grounded) g.keys.add('Space'); else if (jump) g.keys.add('Space');
     g.keys.add('Space'); // hold for full jumps; releasing happens naturally when we stop pressing in-air (kept simple)
@@ -96,11 +97,11 @@ await page.evaluate(() => {
     w.hooks.frame?.(dt, g);
     if (g.ui._creditsOn && g.ui.creditsUpdate(dt)) w.hooks.onCreditsEnd?.();
     bot.sim += dt;
-    if (window.__trace && bot.i >= window.__trace && Math.floor(bot.sim * 10) !== bot._lt) { bot._lt = Math.floor(bot.sim * 10); bot.log.push([+bot.sim.toFixed(1), +p.x.toFixed(2), +p.y.toFixed(2), +p.z.toFixed(2), +p.vx.toFixed(1), +p.vz.toFixed(1), p.grounded ? 1 : 0, g.state]); }
+    if (window.__trace && bot.i >= window.__trace && bot.sim >= (window.__traceT || 0) && Math.floor(bot.sim * 10) !== bot._lt) { bot._lt = Math.floor(bot.sim * 10); bot.log.push([+bot.sim.toFixed(1), +p.x.toFixed(2), +p.y.toFixed(2), +p.z.toFixed(2), +p.vx.toFixed(1), +p.vz.toFixed(1), p.grounded ? 1 : 0, g.state, bot.dbg]); }
   };
 });
 
-if (process.env.TRACE) await page.evaluate((t) => { window.__trace = t; }, +process.env.TRACE);
+if (process.env.TRACE) await page.evaluate((t) => { window.__trace = t.i; window.__traceT = t.t; }, { i: +process.env.TRACE, t: +(process.env.TRACE_T || 0) });   // TRACE=<min waypoint> TRACE_T=<min sim seconds> TRACE_N=<rows>
 if (process.env.PRE) await page.evaluate(process.env.PRE);   // e.g. PRE='window.__trust.world.souffle.scale=0.3' to take the time pressure off a level and test its hazards
 let done = false, lastLog = 0;
 while (!done) {
@@ -115,7 +116,7 @@ while (!done) {
   else if (r.sim > maxSim) { console.log('TIMEOUT', JSON.stringify(r)); done = true; }
   else if (r.state !== 'playing' || r.frozen) await page.waitForTimeout(250);
 }
-if (process.env.TRACE) console.log((await page.evaluate(() => window.__bot.log.slice(0, 160))).map((r) => r.join(' ')).join('\n'));
+if (process.env.TRACE) console.log((await page.evaluate((n) => window.__bot.log.slice(0, n), +(process.env.TRACE_N || 160))).map((r) => r.join(' ')).join('\n'));
 const said = await page.evaluate(() => window.__bot.said);
 console.log('narrator beats:', [...new Set(said)].join(', '));
 if (errs.length) console.log('PAGE ERRORS:\n' + errs.join('\n'));
