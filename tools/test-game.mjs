@@ -286,7 +286,7 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
   ok(/Bellhop Blues/.test(r.l5) && !/locked|renovation/.test(r.l5), `hotel: level 5 is playable (${r.l5})`);
   ok(/Soufflé/.test(r.l6) && !/locked|renovation/.test(r.l6), `hotel: floor 2's first level is playable (${r.l6})`);
   ok(r.calls2 === 3 && /Room 404/.test(r.l11) && !/locked|renovation/.test(r.l11), `hotel: clearing floor 2 opens floor 3's elevator (${r.calls2} elevators, ${r.l11})`);
-  ok(r.calls3 === 4 && /under renovation/.test(r.l16), `hotel: floor 4 is next and still under renovation (${r.l16})`);
+  ok(r.calls3 === 4 && /Chandelier/.test(r.l16) && !/under renovation/.test(r.l16), `hotel: clearing floor 3 opens floor 4 and its first level is playable (${r.l16})`);
   await page.close();
 }
 

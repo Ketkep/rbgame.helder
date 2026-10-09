@@ -1,17 +1,22 @@
-# Floor 4 — Penthouse (Impossible): starting notes
+# Floor 4 — Penthouse (Impossible): status
 
-Branch: `floor4-start` (not merged, not live). Levels 17–20 are still "under renovation" placeholders.
+Branch `floor4-start` — **not merged, not live.** Levels 16–20 are all playable first passes: the bot completes each, `smoke-hotel` is clean for 16–20, and the lobby's floor-4 elevator opens when floor 3 is cleared.
 
-## Level 16 · Chandelier — first pass built (`src/levels/hotel/chandelier.js`)
-Four stages: still chandeliers · swaying chandeliers · crumbling crystals (a fake checkpoint, a vanishing brass bar) · lights out (the room blinks dark, the goal runs away, fake LEVEL COMPLETE). Uses the troll kit. Bot: completes in ~45 s with 0 deaths — **far too easy/short for "Impossible"**.
+| # | Level | Stages | What is in it | Bot (sim s) |
+|---|-------|--------|---------------|-------------|
+| 16 | Chandelier | 6 | still / swaying chandeliers, a rotating carousel, an expiring checkpoint, a fake checkpoint, crumbling crystals, a brass bar that leaves, "follow the left" pairs (one side of each pair lets go, red glint = tell), lights-out finish, runaway goal, fake LEVEL COMPLETE | ~40, 0 deaths |
+| 17 | The Vault | 4 | laser hall (blinking walls telegraph before firing, low sweepers), count-the-lamps code door (host's 404 is a lie), three timing plates, fake alarm exit, runaway gold bar, fake VAULT CRACKED | ~120, 21 deaths (bot is poor at lasers) |
+| 18 | Pop Quiz | 5 | 14 timed rounds, every twist (lying host, 8/6/5 s clocks, pick-the-wrong-one, none of the above, pass, double, question switches, answer changes its mind, lying poll), a survey, a crash, a fake A+, sudden death | ~95, 0 deaths |
+| 19 | Skybridge | 5 | rooftop AC units, a 36 m beam in a turning crosswind (pennant tells), cable cars, crumbling rods + fake/expiring checkpoints + mirror mouse + vanishing rod, telegraphed lightning, decoy helipad exit, runaway goal, fake ROOF CLEARED | ~87, 0 deaths |
+| 20 | Checkout (boss) | 5 | queue with carts and a lying ticket, the bill (tip required) and a declined card, belts against you + laser walls + an ATM that loads, the long way (no floor), the second bill, fake CHECKED OUT, closet "manager" exit | ~56, 1 death |
 
-Next for level 16: narrower platforms (1.4 m) and wider gaps (4 m, running-jump territory), two more stages (a "revolving" ring of chandeliers you ride, a stage with the host's lies about which chandelier is safe), moving platforms that desync, an expiring checkpoint, the lights-out stage should hide the platforms for real (the rim glows = tell), bot target 190–240 s, human 5+ min with ~15+ first-time deaths. Falls must have a tell; no jump scares.
+## Known weak spots (honest)
+- **Too easy / too short for "Impossible":** 16, 19 and 20 take the bot under 90 s with almost no deaths. They need narrower platforms, wider gaps, more stages and tighter timings. Human death targets (15+ first time) are not met by design yet.
+- **17:** the bot dies a lot on the lasers; check the beams are fair for humans (telegraph timing, sweeper speeds).
+- **20 (the boss)** is a remix of earlier tricks, not yet a true "everything" finale (a maze or chase stage would suit it).
+- No dedicated test suites for 16–20 yet (only the bot + smoke); `test-floors.mjs` has none for floor 4.
+- No screenshots reviewed beyond the bot runs; platform visuals (supports, chains) are minimal.
 
-## Rest of the floor (from docs/hotel-campaign.md)
-- 17 The Vault (escape): laser grid + timing locks — reuse `escape-kit.js` and the keypad; lasers via `w.hazard` + `predict`.
-- 18 Pop Quiz (quiz): timed and brutal, the right answer changes after you pick — reuse `quiz-show.js`.
-- 19 Skybridge (parkour): rooftop gauntlet in a storm — reuse the Window Ledge weather (telegraphed lightning, gale gates).
-- 20 Checkout (boss): "pay the bill" — a multi-stage level mixing everything from floors 1–3 (maze, quiz, escape, chase), ending on the bill modal (`engine/bill.js`).
-
-Rules that still apply (docs/hotel-redo.md): stage banners, checkpoint per stage, honest next-stage-only hint, Baby Mode softening, every death has a tell, no jump scares or loud sounds, fakes of 5 s or less.
-Lessons learned the hard way: lobby/room columns are solid; adjacent platforms must be level or ≥1 m apart (a 0.2 m step blocks players and bots); route platforms need `o.path = true` in order.
+## Rules still apply (docs/hotel-redo.md)
+Stage banners, a checkpoint per stage, honest next-stage-only hint, Baby Mode softening, every death has a tell, no jump scares or loud sounds, fakes of 5 s or less.
+Lessons learned: room columns are solid; adjacent platforms must be level or >= 1 m apart; route platforms need `o.path = true` in order; never overwrite `w.sky`.
