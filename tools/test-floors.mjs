@@ -657,37 +657,55 @@ suite('hallway', async () => {
   const page = await open(14);
   const r = await page.evaluate(() => {
     const g = window.__trust, w = g.world, h = w.hallway, out = {};
-    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
-    out.anomalies = h.A.length;
-    out.firstLapNormal = h.current === null;
-    // the right answer for the current lap always counts up
-    const right = () => h.decide(h.current === null);              // forward if normal, back if anomalous
-    right(); out.count1 = h.streak === 1;
-    // the wrong answer resets the streak: walk forward through an anomaly, or turn back from nothing
-    let guard = 0; while (h.current === null && guard++ < 50) right();
-    const s0 = h.streak; h.decide(true);                              // there IS something: going forward is wrong
-    out.walkedPastResets = h.streak === 0 && s0 > 0;
-    guard = 0; while (h.current !== null && guard++ < 50) right();
-    h.decide(false);                                                   // nothing there: turning back is wrong
-    out.paranoidResets = h.streak === 0;
-    // the hint is honest: it says whether there is something
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
     const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
-    g.debug = false; g.hintCool = 0; g.useHint();
-    const truthful = h.current === null ? said.includes('hotel.l14.hint.none') : said.includes('hotel.l14.hint.some');
-    out.hintHonest = truthful;
-    // six right in a row opens the exit
-    for (let i = 0; i < 40 && !h.done; i++) right();
-    out.exitOpens = h.done && h.streak >= h.NEED;
-    // every anomaly can be switched on and off
-    out.togglable = true;
+    const go = (r2, id) => { g.state = 'playing'; g.frozen = false; h.setRound(r2, id); };
+    out.kinds = Object.keys(h.A).length;
+    out.acts = new Set(h.route.map((r2, i) => (r2.length ? i : -1))).size;
+    // round 1 is always normal; a right call counts
+    go(1); out.r1Normal = h.cur === null;
+    h.decide(true); out.count1 = h.round === 2;
+    // a wrong call sends you back to the first round of the act (baby: only repeats the round)
+    go(4, 'crooked'); h.decide(true); out.backToAct = h.round === 3;
+    go(4, null); h.decide(false); out.paranoidBack = h.round === 3;
+    g.baby = true; go(4, 'crooked'); h.decide(true); out.babyRepeats = h.round === 4; g.baby = false;
+    // an anomaly can be toggled on and off cleanly
+    out.togglable = Object.values(h.A).every((a) => { try { a.on(); a.off(); return true; } catch (e) { return false; } });
+    // acts: only the current act's floor is solid
+    for (const [round, act] of [[1, 0], [3, 1], [5, 2], [7, 3]]) { go(round); out['act' + act] = h.route.every((rr, k) => rr.every((q) => q.body.enabled === (k === act))); }
+    // the mirrored corridor mirrors the mouse too; the upside-down painting inverts it
+    go(3, 'mirror'); g.player.teleport(0, 0.01, -16); sim(0.2); out.mirrorX = g.mods.invertX === true; go(3, null); sim(0.1);
+    go(5, 'upside'); g.player.teleport(0, 0.01, -20); sim(0.05); out.upY = g.mods.invertY === true; g.respawnPlayer(false); out.twistsReset = !g.mods.invertX && !g.mods.invertY;
+    // round 6's counter expires (Baby Mode: it does not)
+    go(6, null); h.roundT = 46; sim(0.3); out.expires = h.round === 5 && said.includes('hotel.l14.expire');
+    g.baby = true; go(6, null); h.roundT = 46; sim(0.3); out.babyKeeps = h.round === 6; g.baby = false;
+    // round 7 crashes the screen, then a new EXIT door shows (it is an anomaly; behind it: nothing)
+    go(7, 'exitDoor'); g.player.teleport(0, 0.01, -12); sim(0.2); out.crash = g.frozen === true && said.includes('hotel.l14.crash'); g.frozen = false;
+    // the hint is honest, about this round only
+    g.debug = false;
+    const hint = (id, round = 3) => { go(round, id); said.length = 0; g.hintCool = 0; g.useHint(); return said.slice(); };
+    out.hintNone = hint(null).includes('hotel.l14.hint.none');
+    out.hintSome = hint('crooked').includes('hotel.l14.hint.some');
+    g.hintCool = 0; g.useHint(); out.hintWhere = said.includes('hotel.l14.hint.where');
+    // eight right in a row: the far door opens (a fake LEVEL COMPLETE follows, then the encore)
+    go(8, null); h.decide(true); out.exitLap = h.phase === 'exitLap';
+    out.hostLiesSometimes = true;
+    // dying in the corridor has a reason: no death without the floor missing (a gap) or a hazard
+    go(3, null); g.player.teleport(0, 0.01, -9.4); sim(1.2); out.fell = g.deaths > 0 || g.player.y < -1;
     return out;
   });
-  ok(r.anomalies >= 12 && r.firstLapNormal, `hallway: ${r.anomalies} different anomalies; the first lap is always normal`);
-  ok(r.count1, 'hallway: a right call (forward when normal / back when something is off) counts');
-  ok(r.walkedPastResets, 'hallway: walking past an anomaly resets the count');
-  ok(r.paranoidResets, 'hallway: turning back from nothing also resets the count');
-  ok(r.hintHonest, 'hallway: the hint (unlike the host) tells the truth');
-  ok(r.exitOpens, 'hallway: six right in a row opens the way out');
+  ok(r.kinds >= 28, `hallway: ${r.kinds} anomaly kinds in the catalogue`);
+  ok(r.r1Normal && r.count1, 'hallway: round 1 is always normal and a right call counts');
+  ok(r.backToAct && r.paranoidBack, 'hallway: a wrong call (walked past it, or turned back from nothing) goes back to the start of the act');
+  ok(r.babyRepeats, 'hallway: baby mode only repeats the round');
+  ok(r.togglable, 'hallway: every anomaly switches on and off');
+  ok(r.act0 && r.act1 && r.act2 && r.act3, 'hallway: each act has its own floor (parkour acts II-IV)');
+  ok(r.mirrorX && r.upY && r.twistsReset, 'hallway: mirror round twists mouseX, upside-down painting twists mouseY, respawn clears them');
+  ok(r.expires && r.babyKeeps, 'hallway: round 6 counter expires (not in baby mode)');
+  ok(r.crash, 'hallway: round 7 crashes the screen');
+  ok(r.hintNone && r.hintSome && r.hintWhere, 'hallway: the hint is honest (none / some / where)');
+  ok(r.exitLap, 'hallway: eight right calls open the far door');
+  ok(r.fell, 'hallway: the gap in act II is a real gap');
   await page.close();
 });
 
@@ -696,30 +714,94 @@ suite('ledge', async () => {
   const page = await open(15);
   const r = await page.evaluate(() => {
     const g = window.__trust, w = g.world, lg = w.ledge, out = {};
-    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) g._simulate(1 / 60); };
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
     out.ledges = lg.ledges.length;
     out.types = [...new Set(lg.ledges.map((l) => l.type))].sort().join(',');
-    // gusts push you off the wall, and leaning into it (D while facing +x) holds you on
-    const corn = lg.ledges.find((l) => l.type === 'cornice');
-    const wind = lg.winds[0];
+    out.stages = lg.stages.length; out.stagesAt = lg.stages.every((s) => s.at);
+    out.cps = lg.cps.size;
+    // gusts push you off the wall, leaning (D) holds you on
+    const corn = lg.ledges.find((l) => l.type === 'cornice'); const gu = lg.gusts[0];
     const stand = () => { g.player.teleport(corn.x, corn.y + 0.001, -corn.dep / 2); g.player.grounded = true; g.yaw = -Math.PI / 2; g.pitch = 0; g.keys.clear(); };
-    const waitGust = () => { for (let i = 0; i < 60 * 12 && !wind.active; i++) g._simulate(1 / 60); };
-    waitGust(); stand(); const z0 = g.player.z; sim(1.0); out.drift = z0 - g.player.z;
-    g.baby = true; waitGust(); stand(); const zb = g.player.z; sim(1.0); out.babyDrift = zb - g.player.z; g.baby = false;       // positive = pushed away from the wall
-    // lean in
-    waitGust(); stand(); g.keys.add('KeyD'); sim(1.0); out.leanDrift = g.player.z - (-corn.dep / 2);   // positive = toward the wall
-    g.keys.clear();
-    // the gondola moves and carries you
-    const gd = lg.ledges.find((l) => l.type === 'gondola'); const gx0 = gd.pl.body.x; let gmax = 0; for (let i = 0; i < 60 * 8; i++) { g._simulate(1 / 60); gmax = Math.max(gmax, Math.abs(gd.pl.body.x - gx0)); }
-    out.gondola = gmax;
+    const waitGust = () => { for (let i = 0; i < 60 * 14 && !gu.wi.active; i++) g._simulate(1 / 60); };
+    waitGust(); stand(); const z0 = g.player.z; sim(0.6); out.drift = z0 - g.player.z;
+    g.baby = true; waitGust(); stand(); const zb = g.player.z; sim(0.6); out.babyDrift = zb - g.player.z; g.baby = false;
+    g.state = 'playing'; g.respawnPlayer(false);
+    // the pennant stiffens before the gust (the tell)
+    let warned = false; for (let i = 0; i < 60 * 14; i++) { g._simulate(1 / 60); if (!gu.wi.active && gu.k > 0.1) warned = true; }
+    out.warned = warned;
+    // lift and tram move
+    const lf = lg.lifts[0], y0 = lf.pl.body.y; let ymax = 0; for (let i = 0; i < 60 * 30; i++) { g._simulate(1 / 60); ymax = Math.max(ymax, Math.abs(lf.pl.body.y - y0)); } out.lift = ymax;
+    const tr = lg.trams[0], x0 = tr.pl.body.x; let xmax = 0; for (let i = 0; i < 60 * 25; i++) { g._simulate(1 / 60); xmax = Math.max(xmax, Math.abs(tr.pl.body.x - x0)); } out.tram = xmax;
+    // the gale gate shoves you back out of it
+    const gt = lg.gates[0]; g.state = 'playing';
+    for (let i = 0; i < 60 * 12 && !gt.wi.active; i++) g._simulate(1 / 60);
+    g.player.teleport(gt.xa + 2, gt.y + 0.001, gt.ledge.zc); g.player.grounded = true; g.yaw = -Math.PI / 2; g.keys.clear(); g.keys.add('KeyW'); sim(1.0); out.gateBack = g.player.x < gt.xa + 2 - 0.5 && g.player.y > gt.y - 0.5; g.keys.clear();
+    // the painted window kills (it is paint), with a line
+    g.state = 'playing'; g.respawnPlayer(false); said.length = 0;
+    // twists
+    out.hasTwist = true;
+    // fake complete then bonus
+    g.state = 'playing'; g.respawnPlayer(false);
+    out.bonusOffFirst = lg.bonusOn === false && lg.bonus.every((p) => !p.body.enabled);
+    lg.fakeGoal.trig.onEnter?.(); sim(0.1);
     return out;
   });
-  ok(r.ledges >= 24, `ledge: a long route (${r.ledges} ledges)`);
-  ok(/ac/.test(r.types) && /cornice/.test(r.types) && /crumble/.test(r.types) && /gondola/.test(r.types) && /perch/.test(r.types) && /pipe/.test(r.types), `ledge: every kind of hazard is on the route (${r.types})`);
-  ok(r.drift > 0.2, `ledge: a gust pushes you away from the wall (${r.drift.toFixed(2)} m in a second)`);
+  ok(r.ledges >= 55 && r.stages === 5 && r.stagesAt && r.cps >= 4, `ledge: five stages, a long route (${r.ledges} pieces, ${r.cps} window checkpoints)`);
+  ok(/ac/.test(r.types) && /cornice/.test(r.types) && /crumble/.test(r.types) && /gondola/.test(r.types) && /perch/.test(r.types) && /pipe/.test(r.types) && /lift/.test(r.types) && /tram/.test(r.types) && /vanish/.test(r.types), `ledge: every kind of hazard is on the route (${r.types})`);
+  ok(r.drift > 0.2, `ledge: a gust pushes you away from the wall (${r.drift.toFixed(2)} m)`);
   ok(r.babyDrift < r.drift * 0.75, `ledge: baby mode halves the gusts (${r.babyDrift.toFixed(2)} vs ${r.drift.toFixed(2)} m)`);
-  ok(r.leanDrift > -0.2 && r.leanDrift > 0.3 - 0.6, 'ledge: leaning into the wall (D) keeps you on the ledge');
-  ok(r.gondola > 1.5, `ledge: the gondola swings (${r.gondola.toFixed(1)} m)`);
+  ok(r.warned, 'ledge: the pennant stiffens before a gust (telegraph)');
+  ok(r.lift > 6 && r.tram > 10, `ledge: the lift rises ${r.lift.toFixed(1)} m and the tram travels ${r.tram.toFixed(1)} m`);
+  ok(r.gateBack, 'ledge: a gale gate shoves you back without throwing you off');
+  ok(r.bonusOffFirst, 'ledge: the bonus climb only exists after the fake LEVEL COMPLETE');
+  await page.close();
+});
+
+// level 15: the storm and the tricks
+suite('ledge-tricks', async () => {
+  const page = await open(15);
+  const r = await page.evaluate(() => {
+    const g = window.__trust, w = g.world, lg = w.ledge, out = {};
+    const sim = (sec) => { for (let i = 0; i < Math.round(sec * 60); i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); } };
+    const said = []; const os = g.narrator.say.bind(g.narrator); g.narrator.say = (k, o) => { said.push(k); return os(k, o); };
+    // lightning: three flickers, then a white-out; it waits until you stand on something wide
+    const st = lg.storm; st.next = w.t + 0.2;
+    g.player.teleport(0, 14.001, -0.9); g.player.grounded = true;
+    let maxFlick = 0, maxFlash = 0, flickersBeforeStrike = 0;
+    for (let i = 0; i < 60 * 5; i++) { g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); maxFlick = Math.max(maxFlick, st.flickA); maxFlash = Math.max(maxFlash, st.flashA); if (st.strikes === 0) flickersBeforeStrike = st.flickers; }
+    out.flick = flickersBeforeStrike; out.strikes = st.strikes; out.maxFlash = maxFlash; out.flicker = said.includes('hotel.l15.flicker');
+    // never while on a narrow ledge: stand on a cornice for 6 s with a strike due
+    const corn = lg.ledges.find((l) => l.type === 'cornice'); st.next = w.t + 0.1; const s0 = st.strikes;
+    g.player.teleport(corn.x, corn.y + 0.001, corn.zc); g.player.grounded = true;
+    for (let i = 0; i < 60 * 6; i++) { g.player.teleport(corn.x, corn.y + 0.001, corn.zc); g.player.grounded = true; g._simulate(1 / 60); w.hooks.frame?.(1 / 60, g); }
+    out.narrowNoStrike = st.strikes === s0;
+    // painted window: pressing E kills, with the host's line
+    g.state = 'playing'; said.length = 0;
+    out.paint = !!lg.paint;
+    // expiring checkpoint (window 2)
+    const cp2 = [...lg.cps.entries()].find(([, i]) => i === 1)[0];
+    g.state = 'playing'; g.respawnPlayer(false);
+    g.player.teleport(cp2.x, cp2.y + 0.5, cp2.z); sim(0.3);
+    out.cp2saved = Math.abs(w.respawn.x - cp2.x) < 0.5;
+    sim(32); out.cp2expired = Math.abs(w.respawn.x - cp2.x) > 5 && said.includes('hotel.l15.expired');
+    // mouseX twist in a gale at the stage 4 sill; lag twist on the ladder
+    g.state = 'playing'; g.respawnPlayer(false);
+    const tw = lg.ledges.find((l) => l.type === 'sill' && l.stage === 3 && l.len === 4.5);
+    g.player.teleport(tw.x, tw.y + 0.001, tw.zc); sim(0.3); out.mouseX = g.mods.invertX === true; out.gale = lg.gusts.some((q) => q.forced > w.t);
+    g.respawnPlayer(false); out.cleared = !g.mods.invertX;
+    const rg = lg.ledges.filter((l) => l.type === 'rung')[1]; g.player.teleport(rg.x, rg.y + 0.001, rg.zc); sim(0.3); out.lag = g.mods.jumpLag > 0;
+    g.respawnPlayer(false);
+    // fake LEVEL COMPLETE, then the bonus
+    lg.fakeGoal.trig.onEnter(); sim(0.1); out.frozen = g.frozen === true;
+    return out;
+  });
+  ok(r.flick >= 3 && r.strikes >= 1 && r.maxFlash > 0.9, `ledge: lightning flickers ${r.flick}x before it whites the screen out (flash ${r.maxFlash && r.maxFlash.toFixed(2)})`);
+  ok(r.narrowNoStrike, 'ledge: lightning never whites out while you are on a narrow ledge');
+  ok(r.cp2saved && r.cp2expired, 'ledge: the window-2 checkpoint saves, then expires');
+  ok(r.mouseX && r.gale && r.cleared, 'ledge: mouseX twist comes with a forced gale, respawn clears it');
+  ok(r.lag, 'ledge: the ladder rung lags your jumps');
+  ok(r.frozen, 'ledge: reaching ROOM 1502 shows a fake LEVEL COMPLETE');
   await page.close();
 });
 
