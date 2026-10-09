@@ -66,7 +66,7 @@ const install = () => {
       const dy = tgt.body.top - p.y;
       let edgeT = Infinity;                                          // metres until I walk off the platform I'm standing on, heading for the target
       if (p.ground) { const gb = p.ground; for (const [pos, c, h, u] of [[p.x, gb.x, gb.hx, dx / len], [p.z, gb.z, gb.hz, dz / len]]) if (Math.abs(u) > 1e-6) edgeT = Math.min(edgeT, ((u > 0 ? c + h : c - h) - pos) / u); }
-      if ((onMover || toMover) && edgeT < 1.4 && (gapTo(tgt.body) > 2.1 || dy > 1.0 || dy < -3)) wait = true;
+      if ((onMover || toMover) && edgeT < 1.4 && (gapTo(tgt.body) - edgeT > 1.6 || dy > 1.0 || dy < -3)) wait = true;
     }
     if (!wait && !(plan && plan.jump && !p.grounded && len < 0.9)) g.keys.add('KeyW');       // hop-onto-a-head: stop pushing once over it
     const T0 = w.t, ux = dx / len, uz = dz / len;
