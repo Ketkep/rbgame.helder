@@ -400,7 +400,7 @@ suite('kitchen2', async () => {
     g.player.teleport(0, 0.001, (L.WATER_S + L.WATER_N) / 2 + 3); sim(0.6); out.oilKills = g.state === 'dead'; respawn();
     g.player.teleport(L.decoy.x, 0.001, L.decoy.z); sim(0.1); out.decoyKills = g.state === 'dead'; respawn();
     const door = w.interactables.find((i) => typeof i.label === 'function' ? false : /EXIT door|staff closet/.test(i.label));
-    g.player.teleport(door.body.x, 0.001, door.body.z + 2); door.onUse(g); await wait(1500); out.docklie = g.state === 'dead'; respawn();
+    g.player.teleport(door.body.x, 0.001, door.body.z + 2); door.onUse(g); for (let k = 0; k < 40 && g.state !== 'dead'; k++) await wait(250); out.docklie = g.state === 'dead'; respawn();   // (real-time timers: wait for them, however slow the machine is)
     // the pantry: the chefs start when you walk in (one after a head start, the big one later)
     const cB = L.chefB, cC = L.chefC;
     g.player.teleport(L.MB.cx(3), 0.01, L.MB.cz(3)); sim(2);
