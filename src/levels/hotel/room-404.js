@@ -3,7 +3,7 @@ import { plainMaterial, glowMaterial } from '../../engine/materials.js';
 import { hotelHalo, GOLD } from './kit.js';
 import { openKeypad } from '../../engine/keypad.js';
 import { inView } from '../../engine/view.js';
-import { trollCheckpoint, fakeComplete, evasiveGoal, twist, loadingScreen } from './trolls.js';
+import { trollCheckpoint, fakeComplete, evasiveGoal, twist, loadingScreen, crash } from './trolls.js';
 import { shuffle, rint, roomBox, wallZ, wallX, slideDoor, doorFrame, keypadBox, escapeStages, canvasPlane, darkLayer, mirror } from './escape-kit.js';
 
 // Hotel level 11 — "Room 404" (Hard · Guest Rooms). An escape room in four stages, one checkpoint each:
@@ -65,14 +65,14 @@ export default {
     w.light(0xffe0b0, 12, 18, 0, 4.4, 2); w.light(0xffd0a0, 8, 12, 0, 4.2, -8); w.light(0xffa860, 7, 9, -6, 1.8, 6);
     w.box({ x: 0, y: 3.0, z: Z1 + 0.35, w: 3.2, h: 1.8, d: 0.08, color: 0x2a3a5a, rough: 0.5, shadow: false });
     w.box({ x: 0, y: 3.0, z: Z1 + 0.3, w: 3.5, h: 2.1, d: 0.06, color: GOLD, metal: 1, rough: 0.4, shadow: false });
-    const doorA = slideDoor(w, game, { x: 0, z: WA, width: 3.4, height: 3.3, tex: 'wood', color: 0x5a3a24 });
+    const doorA = slideDoor(w, game, { x: 0, z: WA, width: 3.4, height: 3.3, tex: 'wood', color: 0x5a3a24, speed: 0.5 });
     wallZ(w, { z: WA, x0: X0 - 0.8, x1: X1 + 0.8, y0: -2, y1: H, gaps: [{ c: 0, w: 3.4, h: 3.3 }], mat: PANEL });
     w.sign({ text: '404', x: 0, y: 3.3 + 0.75, z: WA + 0.46, w: 1.8, h: 0.8, color: '#d8a94a', double: false, tw: 256, size: 130 });
     // the bathroom
     const BX = 6.2;
     w.plat({ x: 0, y: 0, z: (WA + WB) / 2, w: 2 * BX, d: WA - WB, h: 2, tex: 'tile', color: 0xc8d0d6, roughness: 0.3 });
     roomBox(w, { x0: -BX, x1: BX, z0: WB + 0.4, z1: WA - 0.4, H: 4.4, ceil: { tex: 'tile', color: 0xdfe4ea }, walls: { w: true, e: true }, wallMat: { tex: 'tile', color: 0xdde4e8 } });
-    const doorB = slideDoor(w, game, { x: 0, z: WB, width: 2.8, height: 3.3, tex: 'wood', color: 0x5a3a24 });
+    const doorB = slideDoor(w, game, { x: 0, z: WB, width: 2.8, height: 3.3, tex: 'wood', color: 0x5a3a24, speed: 0.5 });
     wallZ(w, { z: WB, x0: -BX - 0.8, x1: BX + 0.8, y0: -2, y1: 4.4, gaps: [{ c: 0, w: 2.8, h: 3.3 }], mat: { tex: 'tile', color: 0xdde4e8 } });
     // the hallway
     const HX = 3.7;
@@ -82,7 +82,7 @@ export default {
     const STAIRS_X = 2.4, LOOP_X = -2.4;
     wallZ(w, { z: WD, x0: -HX - 0.8, x1: HX + 0.8, y0: -2, y1: 30, gaps: [{ c: LOOP_X, w: 2.2, h: 3.0 }, { c: STAIRS_X, w: 2.2, h: 3.0 }], mat: PANEL });
     const doorLoop = slideDoor(w, game, { x: LOOP_X, z: WD, width: 2.2, height: 3.0, tex: 'wood', color: 0x5a3a24 });
-    const doorStairs = slideDoor(w, game, { x: STAIRS_X, z: WD, width: 2.2, height: 3.0, tex: 'metal', color: 0x6a8a74 });
+    const doorStairs = slideDoor(w, game, { x: STAIRS_X, z: WD, width: 2.2, height: 3.0, tex: 'metal', color: 0x6a8a74, speed: 0.4 });
     doorFrame(w, { x: LOOP_X, z: WD, width: 2.2, height: 3.0 }); doorFrame(w, { x: STAIRS_X, z: WD, width: 2.2, height: 3.0 });
     w.sign({ text: 'ROOM 404', x: LOOP_X, y: 3.7, z: WD + 0.46, w: 2.0, h: 0.6, color: '#d8a94a', double: false, tw: 512, size: 90 });
     w.sign({ text: 'EXIT · STAIRS', x: STAIRS_X, y: 3.7, z: WD + 0.46, w: 2.2, h: 0.6, color: '#6cf0b2', double: false, tw: 512, size: 80, glow: true });
@@ -90,7 +90,7 @@ export default {
     // the stairwell
     const SX = 6;
     w.plat({ x: 0, y: 0, z: -73.3, w: 2 * SX, d: 6.6, h: 2, tex: 'stone', color: 0x8a8478, roughness: 0.8 });
-    roomBox(w, { x0: -SX, x1: SX, z0: -158, z1: WD - 0.4, y: 0, H: 30, ceil: { tex: 'metal', color: 0x3a3e48 }, walls: { w: true, e: true, n: true }, wallMat: { tex: 'stone', color: 0x8a8478 }, yb: -14 });
+    roomBox(w, { x0: -SX, x1: SX, z0: -172, z1: WD - 0.4, y: 0, H: 30, ceil: { tex: 'metal', color: 0x3a3e48 }, walls: { w: true, e: true, n: true }, wallMat: { tex: 'stone', color: 0x8a8478 }, yb: -14 });
 
     // =====================================================================================================
     //  Stage 1 · the bedroom
@@ -380,13 +380,15 @@ export default {
       return p;
     };
     const stairs = [];
-    const NSTEP = 26, RISE = 0.6, ZS = -76.6, ZD = 2.75;
+    const NSTEP = 32, RISE = 0.6, ZS = -76.6, ZD = 2.75;
     for (let i = 0; i < NSTEP; i++) {
       let p = step(i % 2 ? 2.4 : -2.4, ZS - i * ZD, RISE * (i + 1));
       if (i % 6 === 3) p = w.crumble(p, { delay: 0.7, gone: 3 });
       if (i % 6 === 0 && i > 0) w.mover(p, (t) => ({ x: 1.4 * Math.sin(t * 0.9 + i) }));
       stairs.push(p);
     }
+    // halfway up the lights flicker, the picture breaks up and the world goes quiet for three seconds (it comes back)
+    w.trigger({ x: 0, y: RISE * 17 + 1.5, z: ZS - 16 * ZD, w: 10, h: 4, d: 3, once: true, resetOnRespawn: true, onEnter: () => { if (game.state === 'playing') crash(game, w, { sec: 3, say: 'hotel.l11.crash', sayAfter: 'hotel.l11.crash2' }); } });
     const LZ = ZS - NSTEP * ZD - 0.4, LTOP = RISE * (NSTEP + 1);
     const landing = step(0, LZ, LTOP, 10.2, 2.8);
     stairs.push(landing);
@@ -395,7 +397,7 @@ export default {
     w.light(0x9affc8, 10, 16, 0, LTOP + 1.5, LZ + 1);
     // the bonus climb: a fake LEVEL COMPLETE first (back along the west wall, higher)
     const bonus = [];
-    for (let i = 0; i < 8; i++) bonus.push([-4.6, LZ + 3 + i * 3.0, LTOP + 0.7 + i * 0.6, i === 7 ? 3.2 : 2.2]);
+    for (let i = 0; i < 10; i++) bonus.push([-4.6, LZ + 3 + i * 3.0, LTOP + 0.7 + i * 0.6, i === 9 ? 3.2 : 2.2]);
     const bonusPlats = bonus.map(([x, z, top, sz]) => {
       const p = w.plat({ x, y: top, z, w: sz, d: sz, h: 0.3, tex: 'stone', color: 0xc8c0a8, roughness: 0.7, radius: 0.05 }); p.o.path = true; p.setEnabled(false); p.group.visible = false; return p;
     });
