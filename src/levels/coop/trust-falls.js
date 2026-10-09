@@ -177,6 +177,7 @@ export default {
     const door2 = gate(w, { x: 29, z: FZ - 55, w: 14, h: 5 });
     sign(w, 'SAME DOOR. SAME PAD. DIFFERENT VOLUNTEER.', 29, 7.2, FZ - 54.6, { w: 11, h: 1.4, size: 34 });
     w.updaters.push(() => { door1.set(padA.latched); door2.set(padB.latched); });
+    w._tf = { padA, padB, FZ, zEnd };
     roleSign(w, 'p1', 'THE ORANGE PAD IS YOURS. STAND ON IT. YOUR PARTNER WILL PULL YOU UP.', 24, 3.6, FZ - 22, { w: 8, h: 1.6, size: 30 });
     roleSign(w, 'p2', 'THE ORANGE PAD IS THEIRS. WHEN THEY GO DOWN, STAND NEXT TO THEM.', 24, 3.6, FZ - 22, { w: 8, h: 1.6, size: 30 });
     stage(w, 'field', { x: 29, y: 1, z: FZ - 6, w: 14, h: 4, d: 6 }, () => { setDeathRule(w, 'revive'); tell('all', 'coop.l2.field'); });
@@ -186,7 +187,7 @@ export default {
     c.on('tf.door2', (v) => { if (v) tell('all', 'coop.l2.door2'); });
     w.hooks.onPartnerDeath = () => { tell('all', 'coop.l2.down'); return true; };
     // bots: wait out the lasers (hazard.predict), the volunteer stands on the pad, the other stays close and pulls them up
-    const reviveWatch = (pad) => [{ x: 29, z: pad.zone.body.z + 5, r: 1.0, until: () => P.dead }, { x: () => P.x + 1.3, z: () => P.z + 1.3, r: 0.4, until: () => !P.dead && pad.latched }];
+    const reviveWatch = (pad) => [{ x: 33, z: pad.zone.body.z + 5, r: 1.0, until: () => P.dead }, { x: () => P.x + 1.3, z: () => P.z + 1.3, r: 0.4, until: () => !P.dead && pad.latched }];
     const volunteer = (pad) => [{ x: 29, z: pad.zone.body.z, r: 0.35, until: () => pad.latched }];
     botP1.push({ x: 29, z: FZ - 4, r: 1.5 }, { x: 29, z: FZ - 14, r: 1.5 }, { x: 29, z: FZ - 21, r: 1.2 }, ...volunteer(padA),
       { x: 29, z: FZ - 44, r: 1.2 }, ...reviveWatch(padB), { x: 29, z: FZ - 58, r: 1.5 });
@@ -230,6 +231,7 @@ export default {
     roleSign(w, 'p1', 'THERE IS A LIFT HERE. YOU CAN\'T SEE IT. THEY CAN.', 24, 4.4, lz + 6, { w: 8, h: 1.5, size: 32 });
     roleSign(w, 'p2', 'THEY CAN\'T SEE THE LIFT. TELL THEM WHERE TO STAND.', 24, 4.4, lz + 6, { w: 8, h: 1.5, size: 32 });
     sign(w, 'THE OTHER LIFT IS FOR THE ONE LEFT BEHIND.', 34, 4.4, lz + 6, { w: 7, h: 1.4, size: 30 });
+    w._tf2 = { L1, L2, lp, tp, faZ1, lz };
     const gy = 4.2, gz = faZ1 - 10;
     w.goal({ x: 29, y: gy, z: gz });
     sign(w, 'BOTH OF YOU. IN THE CIRCLE. EYES OPEN IS OPTIONAL.', 29, gy + 5.2, gz - 5, { w: 10, h: 1.6 });
@@ -241,7 +243,7 @@ export default {
     // bots: P1 stands on the (invisible) lift where P2 says; P2 on its plate. Then P1 holds the top plate for P2's lift.
     botP1.push({ x: 29, z: fa0 - 6, r: 1.5 }, { x: 24, z: lz + 5, r: 1.0 }, { x: 24, z: lz, r: 0.6, until: () => gp().y > 4.0 && gp().grounded },
       { x: 29, z: faZ1 - 3, r: 0.4, until: () => P.has && P.sy > 3.6 && P.g }, { x: 29, z: gz, r: 1.0 });
-    botP2.push({ x: 29, z: fa0 - 6, r: 1.5 }, { x: 24, z: faZ1 + 11, r: 0.4, until: () => P.has && P.sy > 3.6 && P.g },
+    botP2.push({ x: 29, z: fa0 - 6, r: 1.5 }, { x: 29, z: fa0 - 6, r: 1.5, until: () => P.has && Math.hypot(P.sx - 24, P.sz - lz) < 1.2 }, { x: 24, z: faZ1 + 11, r: 0.4, until: () => P.has && P.sy > 3.6 && P.g },
       { x: 34, z: lz + 5, r: 1.0 }, { x: 34, z: lz, r: 0.6, until: () => gp().y > 4.0 && gp().grounded }, { x: 29, z: gz, r: 1.0 });
 
     botSteps(w, { p1: botP1, p2: botP2 });
