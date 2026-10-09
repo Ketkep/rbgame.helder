@@ -65,7 +65,7 @@ const install = () => {
       const toMover = tgt.body && w.movers.some((m) => m.plat === tgt);
       const dy = tgt.body.top - p.y;
       let edgeT = Infinity;                                          // metres until I walk off the platform I'm standing on, heading for the target
-      if (p.ground) { const gb = p.ground; for (const [pos, c, h, u] of [[p.x, gb.x, gb.hx, ux], [p.z, gb.z, gb.hz, uz]]) if (Math.abs(u) > 1e-6) edgeT = Math.min(edgeT, ((u > 0 ? c + h : c - h) - pos) / u); }
+      if (p.ground) { const gb = p.ground; for (const [pos, c, h, u] of [[p.x, gb.x, gb.hx, dx / len], [p.z, gb.z, gb.hz, dz / len]]) if (Math.abs(u) > 1e-6) edgeT = Math.min(edgeT, ((u > 0 ? c + h : c - h) - pos) / u); }
       if ((onMover || toMover) && edgeT < 1.4 && (gapTo(tgt.body) > 2.1 || dy > 1.0 || dy < -3)) wait = true;
     }
     if (!wait && !(plan && plan.jump && !p.grounded && len < 0.9)) g.keys.add('KeyW');       // hop-onto-a-head: stop pushing once over it
@@ -135,6 +135,7 @@ while (!done) {
   await new Promise((r) => setTimeout(r, 2000));
   const [a, b] = await Promise.all([snap(A), snap(B)]);
   const sim = Math.max(a.sim, b.sim);
+  if (errs.length && !globalThis.__shown) { globalThis.__shown = 1; console.log('PAGE ERROR:', errs[0]); }
   if (sim - last >= 20) { console.log(`sim ${sim}s · host ${JSON.stringify(a)} · guest ${JSON.stringify(b)}`); last = sim; }
   if ((a.st === 'complete' || a.st === 'ended') && (b.st === 'complete' || b.st === 'ended')) { console.log(`COMPLETED in ${sim}s sim (${Math.round((Date.now() - t0) / 1000)}s wall) · deaths host ${a.d} guest ${b.d}`); done = true; }
   else if (sim > maxSim) { console.log(`TIMEOUT host ${JSON.stringify(a)} · guest ${JSON.stringify(b)}`); done = true; process.exitCode = 1; }
