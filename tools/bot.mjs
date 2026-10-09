@@ -45,7 +45,7 @@ await page.evaluate(() => {
     const T = w.t, ux = dx / len, uz = dz / len;
     for (const h of w.hazards) {
       const hb = h.body;
-      if (Math.max(hb.hx, hb.hz) > 4) continue;   // floor-sized hazards (wet floor, lava…) aren't lasers to wait for
+      if (Math.max(hb.hx, hb.hz) > 4 && !h.predict && !h.jumpable) continue;   // floor-sized hazards (wet floor, lava…) aren't lasers to wait for
       const ahead = (hb.x - p.x) * ux + (hb.z - p.z) * uz;
       if (h.jumpable) { if (ahead > 0.2 && ahead < 2.7 && Math.abs(hb.y - p.y) < 2 && Math.hypot(hb.x - p.x, hb.z - p.z) < 3.6) hop = true; continue; }   // low carts: hop them
       if (!window.__near) {   // campaign-1 style: wait for lasers that are on (or about to fire) just ahead
