@@ -356,8 +356,6 @@ export default {
     //  Stage 4 · the stairwell (up in the dark; the exit is a lie; the goal runs)
     // =====================================================================================================
     const path = (p) => { p.o.path = true; return p; };
-    const entry = path(w.plat({ x: 0, y: 0, z: -73.3, w: 5, d: 3, h: 0.2, tex: 'stone', color: 0x8a8478 }));
-    entry.group.visible = false;
     const edge = (p) => { w.box({ x: p.body.x, y: p.top + 0.03, z: p.body.z + p.body.hz - 0.06, w: p.body.hx * 2 - 0.2, h: 0.04, d: 0.08, glow: 0x6affc0, glowIntensity: 1.6, shadow: false }); w.box({ x: p.body.x, y: p.top + 0.03, z: p.body.z - p.body.hz + 0.06, w: p.body.hx * 2 - 0.2, h: 0.04, d: 0.08, glow: 0x6affc0, glowIntensity: 1.6, shadow: false }); return p; };
     const step = (x, z, top, ww = 3.4, dd = 2.4, o = {}) => {
       const p = edge(path(w.plat({ x, y: top, z, w: ww, d: dd, h: 0.5, tex: 'stone', color: 0xa89c88, roughness: 0.8, radius: 0.04, ...o })));
