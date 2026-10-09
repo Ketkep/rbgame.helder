@@ -26,6 +26,7 @@ await new Promise((r) => setTimeout(r, 400));
 const B = await open('join', 'Bob');
 for (const p of [A, B]) await p.waitForFunction(() => window.__trust?.coop?.connected && window.__trust.coop.helloed, null, { timeout: 60000 });
 await A.evaluate((i) => window.__trust.coop.startLevel(i), level);
+setTimeout(() => { if (errs.length) console.log("EARLY ERR", errs[0]); }, 15000);
 for (const p of [A, B]) await p.waitForFunction(() => window.__trust.state === 'playing' && window.__trust.world && window.__trust.coop, null, { timeout: 90000 });
 
 const install = () => {
