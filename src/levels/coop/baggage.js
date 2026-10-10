@@ -39,7 +39,7 @@ export default {
       const pp = g.player;
       let near = null, nd = 3;
       let best = null;
-      for (const m of marks) if (m.y <= pp.y + 0.5) best = m;
+      for (const m of marks) if (m.y <= pp.y + 0.5 && (!best || m.y > best.y)) best = m;       // equal heights keep the earliest mark
       if (best) w.botSetIndex(best[me]);
     });
     const pl = () => g.player;
@@ -457,6 +457,7 @@ export default {
     /** close a stage: wide transfer deck to the next lane, then the next frame */
     const finish = (F0, r) => {
       const len = F0.transfer(w, r.s, r.y);
+      mark(r.y);                                                                      // a respawn up here replays the crossing to the next lane
       both({ x: F0.nextX, z: F0.Z(r.s + len / 2), r: 1.5 });                        // bots: cross the transfer deck to the next lane (not along its edge)
       return nextFrame(F0, r.s + len, r.y, len);
     };
