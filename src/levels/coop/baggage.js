@@ -200,7 +200,7 @@ export default {
       // braked pair: p2 stands on the brake at ledge iB (plate plA); p1 crosses, then holds the end brake (plate plB)
       add('p2', { ...ledgeSpot0(iB, 1.4), r: 0.4, until: () => plB.pressed });
       add('p1', { x: F.X(ledges[iB].side * 6.5), z: F.Z(a0 + 6.2), r: 0.6, until: () => plA.pressed }, ...unit(2, () => plA.pressed), ...unit(3), { ...ledgeSpot0(iEnd, 1.4), r: 0.4, until: aboveEnd });
-      add('p2', ...unit(2), ...unit(3));
+      add('p2', ...unit(2), ...unit(3), { x: F.X(ledges[iEnd].side * 6.5), z: F.Z(a0 + 5.5), r: 0.5, until: () => !plB.pressed });      // stay on the end ledge until the partner has seen us and come off the brake
       return { s: a0 + 8, y, len: 8, ledges };
     };
 
