@@ -83,6 +83,7 @@ and respawn on death like players. **Always `npm run build` after editing source
 | 5 | Spa Day | control | self | One runs the control room (console shows hazard states) while the other crosses; swap wings. |
 | 6 | The Newlywed Game | quiz / betrayal | self | Game show: answer questions about each other; the Host lies to each of you; "split or steal" rounds with a cooperative way out. **Built** (`newlywed.js`: know-your-partner answer/guess + make-up course, backstage leapfrog, whisper booth with a lying counsellor + truth board, split-or-steal with 4 routes and a trust-free middle lane, blind date with a hiding wall + role swap, 45 s lightning round, fake grand prize + real one). |
 | 7 | Dinner Date | team | self | Carry plates between stations, kitchen conveyors, timed courses, a chef who dislikes both of you. |
+| 7 | Dinner Date | team | self | Carry plates between stations (E to pick up / put down / hand over), kitchen conveyors, timed courses, a chef who dislikes both of you. **Built** (8 stages; carry kit in `dinner-date-kit.js`). |
 | 8 | Secret Santa | betrayal | self | Gifts: one is a trap. Secret buttons that let one of you sabotage the other for a shortcut — but it can be beaten cleanly. |
 | 9 | Shared Baggage | climb | both | A very tall pile of luggage: counterweights, boosts, pendulums, plates that raise the other. |
 | 10 | The Vows | finale | mix | A wedding chapel gauntlet recycling every mechanic, then the Counsellor as a boss. |

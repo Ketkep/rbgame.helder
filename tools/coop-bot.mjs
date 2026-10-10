@@ -125,7 +125,8 @@ if (process.env.JUMP) {          // JUMP='{"at":[x,y,z],"p1":stepIndex,"p2":step
   for (const p of [A, B]) await p.evaluate((J) => {
     const g = window.__trust, w = g.world, me = g.coop.me;
     if (J.at) { const o = me === 'p1' ? -1 : 1; g.player.teleport(J.at[0] + o, J.at[1] + 0.01, J.at[2]); w.respawn = { x: J.at[0] + o, y: J.at[1] + 0.01, z: J.at[2], yaw: 0 }; }
-    if (J[me] !== undefined) w.botSetIndex?.(J[me]);
+    if (J.mark && window.__marks?.[J.mark]) w.botSetIndex?.(window.__marks[J.mark][me === 'p1' ? 0 : 1]);
+    else if (J[me] !== undefined) w.botSetIndex?.(J[me]);
     return [me, J[me], w.botIndex?.()];
   }, J).then((r) => console.log('jump', r));
 }
