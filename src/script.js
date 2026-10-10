@@ -814,6 +814,8 @@ Object.assign(SCRIPT, {
   'coop.l4.chim': ['The chimney. A wall. Another wall. A person is, for these purposes, a staircase.'],
   'coop.l4.chim1': ['Climb the crate. Stand on their head. It is a trust exercise. Also a head. Then they take the lift, which needs you on a plate.', 'Three metres. Your jump is one and a half. So be nice to your partner. They are holding the ladder.'],
   'coop.l4.chim2': ['Taller. Four point two. Low step: stand there. High step: hop onto their head from it. You cannot do this alone. Nobody can do anything alone. It is a very sad design.', 'Same thing but harder and with more steps. We call that progress.'],
+  'coop.l4.chim3.p1': ['Third wall. Now you climb, which is a thing you have been doing all along. Metaphorically. Also literally.'],
+  'coop.l4.chim3.p2': ['Third wall. You are the ladder again. Do try to feel useful. It is not a feeling I can provide.'],
   'coop.l4.summit': ['THE SUMMIT! I can see it from here. It is a very nice summit. It has a ring. It has a sign. You should go and stand in it.', 'You made it! That is the top. That is definitely the top. I would not lie about a top.'],
   'coop.l4.fake': ['...Kidding! That is a ring on a plank. The summit is up there. Behind that. Over there. Up. Go up.', 'The summit is not here. The summit is where the stairs go. I am sorry. I was not sorry.'],
   'coop.l4.fakecp': ['Checkpoint? Saved? That one is made of cardboard. I made it. Look at the pole. It leans. It has always leaned.'],

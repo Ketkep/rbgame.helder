@@ -182,11 +182,24 @@ export default {
     stage(w, 'chim2', { x: 0, y: Yl1 + 1, z: zf2 + 4, w: 16, h: 4, d: 4 }, () => tell('all', 'coop.l4.chim2'));
     w.checkpoint({ x: 0, y: Yl2, z: zf2 - 5, real: true });
     for (const lx of [-7, 7]) lantern(w, lx, Yl2, zf2 - 3);
+    // tier three: mirrored, taller again (4.4 m), and the jobs swap: p2 is the ladder, p1 climbs
+    const zf3 = zf2 - 14, Yl3 = Yl2 + 4.4;
+    const U3 = ledge({ x: 0, y: Yl3, z: zf3 - 7, w: 16, d: 14, h: 4.4, tex: 'wood', color: 0xffffff });
+    const crate3 = (x, top, color) => w.plat({ x, y: Yl2 + top, z: zf3 + 1.25, w: 2.5, d: 2.5, h: top, tex: 'wood', color });
+    crate3(0, 1.4, 0xa8784a); crate3(-2.5, 2.4, 0xb98a55); crate3(-5, 1.2, 0xb98a55);
+    const lift3 = riser(w, { x: 5.5, y: Yl3, z: zf3 + 4, w: 3.2, d: 3.2, h: 0.6, drop: 4.4, always: true, speed: 4.6, color: 0xe9d9b0, trim: COL.good });
+    const col3 = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 4.8, 10), new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.8 })); col3.position.set(5.5, Yl2 + 1.9, zf3 + 6); w.add(col3);
+    const px3 = plate(w, { x: 0, y: Yl3, z: zf3 - 10, need: 'any', label: 'LIFT: STAND HERE' });
+    w.updaters.push(() => lift3.set(px3.pressed));
+    sign(w, 'SAME AGAIN, BACKWARDS. SWAP JOBS. YES, AGAIN.', 0, Yl2 + 6.6, zf3 + 0.4, { w: 11, h: 1.2, size: 32 });
+    stage(w, 'chim3', { x: 0, y: Yl2 + 1, z: zf3 + 4, w: 16, h: 4, d: 4 }, () => { tell('p1', 'coop.l4.chim3.p1'); tell('p2', 'coop.l4.chim3.p2'); });
+    w.checkpoint({ x: 0, y: Yl3, z: zf3 - 5, real: true });
+    for (const lx of [-7, 7]) lantern(w, lx, Yl3, zf3 - 3);
 
     // ============================================================ 7. the summit (it is not) ==========================
-    const Z7 = zf2 - 14;
+    const Z7 = zf3 - 14;
     rope.push({ z: Z7, max: 8, k: 8 });
-    const s7 = chain(w, { x: 0, y: Yl2, z: Z7 }, [
+    const s7 = chain(w, { x: 0, y: Yl3, z: Z7 }, [
       { gap: 2.4, d: 5, w: 7, dy: 1 },
       { gap: 2.6, d: 4, w: 6, dy: 1 },
       { gap: 2.6, d: 4, w: 6, dy: 1 },
@@ -294,6 +307,22 @@ export default {
         { x: 0, z: zf2 - 10, until: () => P.has && P.g && P.sy > Yl2 - 0.3 },
       ],
     };
+    const tier3 = {
+      p2: [
+        { x: -5, z: zf3 + 1.25, r: 0.3, until: () => pl.y > Yl2 + 1.1 && pl.grounded },       // stairs: mid crate, high crate, then down onto the low one
+        { x: -2.5, z: zf3 + 1.1, r: 0.3, until: () => pl.y > Yl2 + 2.2 && pl.grounded },
+        { x: -0.75, z: zf3 + 0.6, r: 0.2, until: () => P.has && P.g && P.sy > Yl3 - 0.3 && P.sz < zf3 - 0.8 },
+        { x: 5.5, z: zf3 + 4, until: () => pl.y > Yl3 - 0.3 },
+      ],
+      p1: [
+        { x: -5, z: zf3 + 1.25, r: 0.3, until: () => pl.y > Yl2 + 1.1 && pl.grounded },
+        { x: -2.5, z: zf3 + 1.1, r: 0.3, until: () => pl.y > Yl2 + 2.2 && pl.grounded },
+        { x: -2.5, z: zf3 + 0.9, r: 0.1, until: () => P.has && P.g && P.sy > Yl2 + 1.0 && Math.abs(P.sx + 0.75) < 0.2 && Math.abs(P.sz - (zf3 + 0.6)) < 0.3 && Math.hypot(pl.x + 2.5, pl.z - (zf3 + 0.9)) < 0.2 && Math.hypot(pl.vx, pl.vz) < 0.3 },
+        { x: () => P.sx, z: () => P.sz, jump: 1.3, stop: 0.5, r: 0.05, until: () => pl.y > Yl2 + 3.0 && pl.grounded },
+        { x: 0, z: zf3 - 2.4, jump: 3, until: () => pl.y > Yl3 - 0.2 && pl.grounded },
+        { x: 0, z: zf3 - 10, until: () => P.has && P.g && P.sy > Yl3 - 0.3 },
+      ],
+    };
     const plan = (role) => [
       { follow: true, until: onDeck(lodge) },
       ...(role === 'p1' ? climbSteps(W1) : beleaySteps(W1)),
@@ -301,7 +330,7 @@ export default {
       { follow: true, until: () => pl.z < mz + 3 && pl.y > Y3 - 0.2 && pl.grounded },
       ...(role === 'p1' ? caveRunner : caveHolder),
       { follow: true, until: onDeck(base6) },
-      ...tier1[role], ...tier2[role],
+      ...tier1[role], ...tier2[role], ...tier3[role],
       { follow: true },
     ];
     botSteps(w, { p1: plan('p1'), p2: plan('p2') });
