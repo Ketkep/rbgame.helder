@@ -438,7 +438,7 @@ export default {
     // ---- 3
     const y3 = r2.y;
     beat(F, F.skip, y3, () => { tell('all', 'coop.l9.pend'); raiseKill(y2 - 3); });
-    approach(F, y3);
+    both({ follow: true, until: () => feet(y3) && Math.abs(pl().x - F.X(0)) < 11 });         // onto the transfer deck, then the ladder() waypoint lines up with the first ledge
     const r3 = ladder(F, y3, F.skip, 4);
     beat(F, F.skip + 3, r3.ledges[2].y, () => tell('all', 'coop.l9.pend2'));
     decorate(F, 0, r3.s + 12, y3, r3.y, 22); tagAt(F, 'HIS EX', 14, y3 + 3);
