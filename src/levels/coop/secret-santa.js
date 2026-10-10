@@ -163,10 +163,12 @@ export default {
 
     // ============================================================ 3. the prank ravine =======================
     const Zb = [-130.5, -147.5, -164.5];                                               // bridge centres (9 long)
-    snowdeck(w, { x: 0, y: 0, z: -139, w: 16, d: 8, path: true });                     // -135 … -143
-    snowdeck(w, { x: 0, y: 0, z: -156, w: 16, d: 8, path: true });                     // -152 … -160
-    snowdeck(w, { x: 0, y: 0, z: -175, w: 16, d: 12, path: true });                    // -169 … -181
-    const bridges = Zb.map((z, k) => retractBridge(w, { x: 0, y: 0, z, id: k + 1 }));
+    const bridges = [];                                                                // created in route order (bots follow creation order)
+    const ravineDecks = [[-139, 8], [-156, 8], [-175, 12]];                            // -135…-143, -152…-160, -169…-181
+    Zb.forEach((z, k) => {
+      bridges.push(retractBridge(w, { x: 0, y: 0, z, id: k + 1 }));
+      snowdeck(w, { x: 0, y: 0, z: ravineDecks[k][0], w: 16, d: ravineDecks[k][1], path: true });
+    });
     const hops = Zb.map((zb, k) => [2.6, 0, -2.6].map((dz) => { const t = riser(w, { x: 5.8, y: 0, z: zb + dz, w: 1.6, d: 1.5, h: 0.5, drop: 4, speed: 6, color: 0xbfd6ee }); t.plat.body.slip = 0.9; return t; }));
     w.updaters.push(() => hops.forEach((row, k) => { const e = w.t - bridges[k].t0; row.forEach((t) => { t.set(e >= 0 && e < 7); t.plat.group.visible = t.k > 0.04; }); }));
     sign(w, 'THE BRIDGES ARE FINE. PROBABLY.', 0, 5.0, -127, { w: 8, h: 1.1 });
