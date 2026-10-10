@@ -10,23 +10,31 @@ import { glowMaterial, plainMaterial, softTexture } from '../../engine/materials
  */
 export function frame(cur) {
   const F = { ...cur };
-  F.X = (x) => x;
+  F.X = (x) => cur.x + x;
   F.Z = (s) => cur.z - cur.dz * s;
   F.S = (z) => (cur.z - z) / cur.dz;
+  F.nextX = cur.x === 0 ? LANE : 0;
   /** Platform spanning s0..s1 (any order) with its top at y. o.x = local centre offset. */
   F.plat = (w, s0, s1, y, o = {}) => {
     const { x = 0, ...rest } = o;
-    return w.plat({ tex: 'wood', x, y, z: F.Z((s0 + s1) / 2), w: 16, h: 1, ...rest, d: Math.abs(s1 - s0) });
+    return w.plat({ tex: 'wood', x: cur.x + x, y, z: F.Z((s0 + s1) / 2), w: 16, h: 0.8, ...rest, d: Math.abs(s1 - s0) });
+  };
+  /** The wide deck at the end of a stage: it reaches across to the next stage's lane. Returns its length. */
+  F.transfer = (w, s, y, len = 12) => {
+    const dx = F.nextX - cur.x;
+    F.plat(w, s, s + len, y, { x: dx / 2, w: 16 + Math.abs(dx), h: 0.8, path: true, color: 0xe9d9b0 });
+    return len;
   };
   return F;
 }
+export const LANE = 26;
 
-/** Next frame: starts where this stage's last deck ends and turns back over it. */
-export function nextFrame(F, s, y, lastLen) { return frame({ x: 0, z: F.Z(s), y, dz: -F.dz, skip: lastLen }); }
+/** Next frame: starts where this stage's transfer deck ends and turns back over it, one lane across. */
+export function nextFrame(F, s, y, lastLen) { return frame({ x: F.nextX, z: F.Z(s), y, dz: -F.dz, skip: lastLen }); }
 
 /** Is the partner standing (grounded) near local (x, s) within r metres, at a height in [yLo, yHi]? */
 export function partnerAt(P, F, x, s, yLo, yHi, r = 2.2) {
-  return !!(P.has && !P.dead && P.sy >= yLo && P.sy <= yHi && Math.hypot(P.sx - x, P.sz - F.Z(s)) < r);
+  return !!(P.has && !P.dead && P.sy >= yLo && P.sy <= yHi && Math.hypot(P.sx - F.X(x), P.sz - F.Z(s)) < r);
 }
 
 let _rng = 7;
@@ -37,8 +45,8 @@ export function luggageStacks(w, F, { s0, s1, y0, y1, count = 22, inner = 17, ou
   const cols = [0x8c4a2f, 0x2e5d7a, 0xc2873c, 0x6b3f66, 0x3d7a5c, 0xb0413e, 0x44474f, 0xa07a4a, 0x2a3a5a];
   const boxes = [];
   for (let i = 0; i < count; i++) {
-    const side = rnd() < 0.5 ? -1 : 1;
-    const x = side * (inner + rnd() * (outer - inner));
+    const side = F.x === 0 ? -1 : 1;
+    const x = F.x + side * (inner + rnd() * (outer - inner));
     const s = s0 + rnd() * (s1 - s0);
     const wd = 5 + rnd() * 9, dd = 4 + rnd() * 8;
     let y = y0 - below + rnd() * 6;
