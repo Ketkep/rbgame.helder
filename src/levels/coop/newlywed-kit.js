@@ -7,7 +7,7 @@ import { COL, plate, riser } from './kit.js';
 const FONT = '"Archivo Black", Impact, sans-serif';
 
 /** A sign whose text can change (a canvas texture that is redrawn on `.set(text)`). Purely local/visual. */
-export function liveSign(w, { x, y, z, w: ww = 4, h = 1.2, rotY = 0, rotX = 0, tw = 512, color = '#fff3d0', bg = 'rgba(20,16,12,0.78)', border = '#ffc83d', size = 0, align = 'center', glow = 1.6 }) {
+export function liveSign(w, { x, y, z, w: ww = 4, h = 1.2, rotY = 0, rotX = 0, tw = 512, color = '#fff3d0', bg = 'rgba(20,16,12,0.78)', border = '#ffc83d', size = 0, align = 'center', glow = 1.15 }) {
   const th = Math.max(32, Math.round(tw * h / ww));
   const cv = document.createElement('canvas'); cv.width = tw; cv.height = th;
   const ctx = cv.getContext('2d');

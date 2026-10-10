@@ -37,7 +37,7 @@ export default {
   titleCam: { center: [0, 2, -60], radius: 30, height: 12 },
 
   build(w, game) {
-    retreatEnv(w, { mood: 'night' });
+    retreatEnv(w, { mood: 'dusk' });
     lake(w, -30, 900, 0x1b3d57);
     const c = w.coop, me = c.me, N = c.names, P = c.partner;
     const tell = (r, k, o) => c.tell(r, k, o);
@@ -319,9 +319,9 @@ export default {
       for (let k = 0; k < 6; k++) { safe.push(cur); cur = Math.max(0, Math.min(3, cur + Math.floor(rng() * 3) - 1)); }
       for (let k = 0; k < 6; k++) {
         for (let j = 0; j < 4; j++) {
-          const p = deck(w, { x: XC4[j], y: 0, z: zRow(z0, k), w: 3.0, d: 3.0, trim: COL[walker], color: 0xc9b99a });
+          const p = stone(w, { x: XC4[j], y: 0, z: zRow(z0, k), w: 3.0, d: 3.0, trim: COL[walker], color: 0xe6dcc4 });
           if (j !== safe[k]) w.crumble(p, { delay: 0.18, gone: 3.0 });
-          flat(LETTERS[j], XC4[j], 0.04, zRow(z0, k), { w: 1.6, h: 1.6, color: '#3a2c20', tw: 128 });
+          flat(LETTERS[j], XC4[j], 0.04, zRow(z0, k), { w: 2.0, h: 2.0, color: '#2a1a0c', tw: 256 });
         }
         dsign(`ROW ${k + 1}`, -side * 8.6, 1.5, zRow(z0, k), { w: 2.4, h: 0.8, size: 30 });
       }
@@ -330,7 +330,7 @@ export default {
       wall({ x: side * 9.5, y: 9, z: (z0 - 12 + zEnd - 1.5) / 2, w: 1, d: z0 - 12 - zEnd + 1.5, h: 9 });
       deck(w, { x: side * 16, y: 0, z: (z0 - 12 + zEnd - 1.5) / 2, w: 8, d: z0 - 12 - zEnd + 1.5, trim: COL[guide] });
       if (me === guide) {
-        const mp = liveSign(w, { x: side * 10.7, y: 4.6, z: (z0 - 12 + zEnd) / 2, w: 9, h: 6.4, rotY: side * Math.PI / 2, tw: 768, border: roleCss(guide), align: 'left', size: 40 });
+        const mp = liveSign(w, { x: side * 10.7, y: 4.6, z: (z0 - 12 + zEnd) / 2, w: 7.5, h: 5.2, rotY: side * Math.PI / 2, tw: 768, border: roleCss(guide), align: 'left' });
         mp.set('THE SAFE ROUTE\n(YOU CAN SEE IT. THEY CANNOT SEE YOU.)\n' + safe.map((s, k) => `ROW ${k + 1}   ▸   ${LETTERS[s]}`).join('\n') + '\n\nLeft to right as THEY walk forward: A B C D');
       } else {
         dsign('NO MAP FOR YOU.\nYOUR PARTNER HAS ONE. LISTEN.', 0, 3.6, z0 - 12 - 1.2, { w: 9, h: 1.7, size: 36, border: roleCss(guide) });
