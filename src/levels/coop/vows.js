@@ -381,14 +381,15 @@ export default {
     // bot plans: wait in the bay, cross when the figure is far enough away, stand on the far plate
     const cross = (s) => () => s.safeToCross();
     const bz = (k, far) => bayZ(k, far);
+    const hop = (sx, k) => ({ x: sx * 5.5, z: (bz(k, false) + bz(k, true)) / 2, r: 1.2 });          // bays are separate islands: cross the lane between them
     B.p1.push({ x: -10.5, z: bz(0, false), r: 0.7, until: () => D1.b.pressed },                                                       // p1 sits on its plate; p2 runs first
       { x: -10.5, z: bz(0, false), r: 0.7, until: () => G[0].passable && cross(sw[0])() }, { x: 0, z: S0 - 29, r: 1.5 },
       { x: -10.5, z: bz(1, false), r: 0.7, until: () => cross(sw[1])() && D2.a.pressed },                                               // seg 2 (toward): p1 runs first
-      { x: -10.5, z: bz(1, true), r: 0.7, until: () => P.has && P.sz < S0 - 52 },
-      { x: -10.5, z: bz(2, false), r: 0.7, until: () => cross(sw[2])() }, { x: -10.5, z: bz(2, true), r: 0.7, until: () => G[2].passable });
-    B.p2.push({ x: 10.5, z: bz(0, false), r: 0.7, until: () => cross(sw[0])() }, { x: 10.5, z: bz(0, true), r: 0.7, until: () => P.has && P.sz < S0 - 28 },
+      hop(-1, 1), { x: -10.5, z: bz(1, true), r: 0.7, until: () => P.has && P.sz < S0 - 52 },
+      { x: -10.5, z: bz(2, false), r: 0.7, until: () => cross(sw[2])() }, hop(-1, 2), { x: -10.5, z: bz(2, true), r: 0.7, until: () => G[2].passable });
+    B.p2.push({ x: 10.5, z: bz(0, false), r: 0.7, until: () => cross(sw[0])() }, hop(1, 0), { x: 10.5, z: bz(0, true), r: 0.7, until: () => P.has && P.sz < S0 - 28 },
       { x: 10.5, z: bz(1, false), r: 0.7, until: () => G[1].passable && cross(sw[1])() }, { x: 0, z: S0 - 53, r: 1.5 },
-      { x: 10.5, z: bz(2, false), r: 0.7, until: () => cross(sw[2])() }, { x: 10.5, z: bz(2, true), r: 0.7, until: () => G[2].passable });
+      { x: 10.5, z: bz(2, false), r: 0.7, until: () => cross(sw[2])() }, hop(1, 2), { x: 10.5, z: bz(2, true), r: 0.7, until: () => G[2].passable });
     both({ x: 0, z: outZ - 6, r: 2 });
 
     // ============================================================ 9. the fake "I do" ===================================
