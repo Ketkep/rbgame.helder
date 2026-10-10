@@ -269,7 +269,8 @@ export default {
         add(oper,
           { x: F.X(-1), z: F.Z(s + 2.5), r: 0.9, until: onL },
           { x: F.X(-1), z: F.Z(s + 2.5), r: 0.9, use: true, until: () => lA.on },
-          { x: F.X(4.5), z: zL, r: 0.6, until: () => pl().y > y + H - 0.6 && F.S(pl().z) > s + 10.6 });
+          { x: F.X(4.5), z: zL, r: 0.6, until: up },
+          { x: F.X(4.5), z: F.Z(s + 12.5), r: 0.8, until: () => F.S(pl().z) > s + 10.6 });
         cs += 10.4; cy += H;
       }
       return { s: cs + 10, y: cy, len: 10 };
