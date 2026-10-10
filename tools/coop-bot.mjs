@@ -121,6 +121,7 @@ const install = () => {
   setInterval(run, 16);       // a timer, not rAF: the page that isn't in front gets no animation frames
 };
 for (const p of [A, B]) await p.evaluate(install);
+if (process.env.TRACE_FROM) for (const p of [A, B]) await p.evaluate((a) => { window.__tr = a; }, [+process.env.TRACE_FROM, +process.env.TRACE_TO]);   // TRACE_FROM/TRACE_TO: bot sim-second window, logged into the 'deaths:' line
 if (process.env.JUMP) {          // JUMP='{"at":[x,y,z],"p1":stepIndex,"p2":stepIndex}' – start from the middle of a level
   const J = JSON.parse(process.env.JUMP);
   for (const p of [A, B]) await p.evaluate((J) => {

@@ -104,8 +104,10 @@ export default {
         const onCartL = () => partnerAt(P, F, -3, s + 12.2, y - 0.5, y + 1.2, 2.1);
         const pastCarts = () => P.has && P.sy > y + H - 0.4 && P.g && F.S(P.sz) > s + 14.9;
         const meUp = () => pl().y > y + H - 0.5 && pl().grounded;
+        const onCartR = () => partnerAt(P, F, 3, s + 12.2, y - 0.5, y + 1.2, 2.1);
         add(rider,
           { x: F.X(-3), z: F.Z(s + 12.2), r: 0.5, until: meUp },
+          { x: F.X(0), z: F.Z(s + 19.5), r: 1.5, until: onCartR },                              // wait up top until the partner is standing on their cart
           { x: F.X(6), z: F.Z(s + 17.4), r: 0.4, until: pastCarts });
         add(weight,
           { x: F.X(-6), z: F.Z(s + 6.5), r: 0.5, until: onCartL },
