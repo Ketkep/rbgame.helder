@@ -460,7 +460,9 @@ export default {
     const finish = (F0, r) => {
       const len = F0.transfer(w, r.s, r.y);
       mark(r.y);                                                                      // a respawn up here replays the crossing to the next lane
-      both({ x: F0.X(0), z: F0.Z(r.s + len / 2), r: 1.5 }, { x: F0.nextX, z: F0.Z(r.s + len / 2), r: 1.5 });                        // bots: cross the transfer deck to the next lane (not along its edge)
+      const cx = F0.X(0), cz = F0.Z(r.s + len / 2);
+      both({ follow: true, until: () => Math.hypot(pl().x - cx, pl().z - cz) < 14 && Math.abs(pl().y - r.y) < 1.2 },    // far away (e.g. after a respawn)? follow the route until we are on the transfer deck
+        { x: cx, z: cz, r: 1.5 }, { x: F0.nextX, z: cz, r: 1.5 });                        // bots: cross the transfer deck to the next lane (not along its edge)
       return nextFrame(F0, r.s + len, r.y, len);
     };
 
