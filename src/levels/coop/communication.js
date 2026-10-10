@@ -376,7 +376,7 @@ export default {
       text(g, rl.t0 === null ? `${WIN} S · STARTS ON FIRST PRESS` : `${left.toFixed(1)} S`, W / 2, H * 0.36, rl.t0 === null ? 26 : 50, left < 6 ? '#ff9aa5' : '#fff3d0');
       g.fillStyle = '#2a3042'; g.fillRect(40, H * 0.68, W - 80, 22); g.fillStyle = left < 6 ? '#ff4d5e' : '#ffc83d'; g.fillRect(40, H * 0.68, (W - 80) * (left / WIN), 22);
     } } });
-    w.dbg = { rl, rtgt, get rooms() { return { R1: [R1.z0, R1.z1], R2: [R2.z0, R2.z1], R3: [R3.z0, R3.z1], R4: [R4.z0, R4.z1], R6: [R6.z0, R6.z1], R7: [R7.z0, R7.z1], y: [R1.y, R2.y, R3.y, R4.y, R6.y, R7.y] }; }, get geo() { return { Zlob, zDiv, zS, zN, MY, c4: C4.endZ, c4y: C4.endY }; } };
+    w.dbg = { rl, rtgt, bomb, wires, solveWires, get d7() { return { exit7, lock7, na, nb }; }, get rooms() { return { R1: [R1.z0, R1.z1], R2: [R2.z0, R2.z1], R3: [R3.z0, R3.z1], R4: [R4.z0, R4.z1], R6: [R6.z0, R6.z1], R7: [R7.z0, R7.z1], y: [R1.y, R2.y, R3.y, R4.y, R6.y, R7.y] }; }, get geo() { return { Zlob, zDiv, zS, zN, MY, c4: C4.endZ, c4y: C4.endY }; } };
     const bothIn = c.zone({ x: CX, y: R6.y + 1.5, z: R6.at(10), w: 19, h: 4, d: 19, need: 'both', shrink: 0 });
     const rbtn = [0, 1].map((sd) => button(w, { x: CX + (sd ? 5 : -5), z: R6.at(17.6), color: sd ? COL.p2 : COL.p1, label: `${WHO[sd ? 'p2' : 'p1']}'S BUTTON`, enabled: () => me === (sd ? 'p2' : 'p1'), onPress: () => {
       if (rl.lock[sd] || rl.ok) return;
@@ -480,18 +480,18 @@ export default {
     const door1x = truth1 ? 5 : -5;
     const s1 = p1
       ? [{ press: b1[truth1], until: () => R1.gatesN[truth1].passable }]
-      : [{ x: door1x, z: R1.at(14.5), r: 1.0 }, { wait: () => R1.gatesN[truth1].passable }];
+      : [{ x: door1x + 1.5, z: R1.at(11.5), r: 0.6 }, { wait: () => R1.gatesN[truth1].passable }, { x: door1x + 1.5, z: R1.z1 - 2.5, r: 0.8 }];
     const out1 = [{ x: door1x, z: R1.z1 - 2.5, r: 0.8 }];
     // room 2: ORANGE (reads) waits, TEAL presses the colours
     const s2 = p1
-      ? [{ wait: () => R2.gatesN[0].passable, at: { x: 0, z: R2.at(9) } }]
+      ? [{ wait: () => R2.gatesN[0].passable, at: { x: -6, z: R2.at(9) } }]
       : need.map((ci, k) => ({ press: codeBtn[ci], until: () => cd.n > k }));
     const out2 = (rm, cx = 0) => [{ x: cx, z: rm.z1 - 2.5, r: 0.8 }];
     // room 3: each turns their own dials to the target (the bot knows both)
     const s3 = [0, 1, 2, 3].filter((i) => dialOwner[i] === me).map((i) => ({ press: dialBtn[i], until: () => dv[i] === dialT[i] }));
     // room 4: TEAL cuts, ORANGE waits
     const s4 = p1
-      ? [{ wait: () => R4.gatesN[0].passable, at: { x: 0, z: R4.at(9) } }]
+      ? [{ wait: () => R4.gatesN[0].passable, at: { x: -6, z: R4.at(9) } }]
       : [0, 1, 2].map((r) => ({ press: cutBtn[solveWires(wires[r])], until: () => bomb.r > r }));
     // maze
     const lane = (L) => L;
@@ -536,7 +536,7 @@ export default {
     const door7x = CX - 6.5 + exit7 * 6.5;
     const s7 = p1
       ? [{ press: b7[exit7], until: () => R7.gatesN[exit7].passable }]
-      : [{ x: door7x, z: R7.at(14.5), r: 1.0 }, { wait: () => R7.gatesN[exit7].passable }];
+      : [{ x: door7x + 1.5, z: R7.at(11.5), r: 0.6 }, { wait: () => R7.gatesN[exit7].passable }, { x: door7x + 1.5, z: R7.z1 - 2.5, r: 0.8 }];
     const out7 = [{ x: door7x, z: R7.z1 - 2.5, r: 0.8 }];
     bots(w, {
       p1: [...s1, ...out1, ...toRoom(R2, 0), ...s2, ...out2(R2), ...toRoom(R3, 0), ...s3, { wait: () => R3.gatesN[0].passable, at: { x: -4, z: R3.at(9) } }, ...out2(R3), ...toRoom(R4, 0), ...s4, ...out2(R4), { follow: true, until: () => pl().z < Zlob - 1.2 && pl().grounded }, ...mazeP1, ...toRoom(R6, CX), ...s6, ...out2(R6, CX), ...toRoom(R7, CX), ...s7, ...out7, { follow: true }],
