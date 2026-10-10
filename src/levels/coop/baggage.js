@@ -156,6 +156,7 @@ export default {
       // bots: free pair, then the braked pair with one holding each end
       const onLedge = (i) => () => feet(ledges[i].y) && Math.abs(pl().x - F.X(ledges[i].side * 6.5)) < 2.2;
       const ledgeSpot = (i, s) => ({ x: F.X(ledges[i].side * 6.5), z: F.Z(a0 + s) });
+      both({ x: F.X(-6.5), z: F.Z(a0 + 9.8), r: 1.0 });                                    // line up with the first ledge before following the path (the others stick out past the deck edge)
       both({ follow: true, until: onLedge(iB) });
       add('p2',
         { ...ledgeSpot(iB, 1.4), r: 0.4, until: () => plB.pressed },

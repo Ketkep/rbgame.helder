@@ -109,13 +109,14 @@ const install = () => {
     const edgeOk = !edge || vproj > 2.5 || (bot.turn = (bot.turn || 0) + dt) > 0.35;
     let jump = p.grounded && !wait && !hold && ((edge && edgeOk) || hop || (gm && len < 4.4 && edge));
     if (plan && plan.jump && p.grounded && len < (typeof plan.jump === 'number' ? plan.jump : 2.2)) jump = true;
+    bot.dbg2 = `${wait ? 'W' : '-'}${hold ? 'H' : '-'}${jump ? 'J' : '-'}${groundAhead ? 'g' : '-'}${wallAhead ? 'w' : '-'} tgt ${tx.toFixed(1)},${tz.toFixed(1)} i${bot.i}${plan ? 'P' : ''}`;
     if (jump) g.jumpEdge = true;
     if (plan && plan.stop !== undefined && !p.grounded && len < plan.stop + 0.4 && vproj > 1.2) { g.keys.delete('KeyW'); g.keys.add('KeyS'); }   // air brake for hops onto a head
     g.keys.add('Space');
     g._simulate(dt);
     w.hooks.frame?.(dt, g);
     bot.sim += dt;
-    if (window.__trace && Math.floor(bot.sim * 4) !== Math.floor((bot.sim - dt) * 4)) window.__trace.push(`${bot.sim.toFixed(2)} s${w.botIndex?.()} ${p.x.toFixed(2)},${p.y.toFixed(2)},${p.z.toFixed(2)} ${p.grounded ? 'G' : 'a'} P ${c.partner.sx.toFixed(2)},${c.partner.sy.toFixed(2)},${c.partner.sz.toFixed(2)}`);
+    if (window.__trace && Math.floor(bot.sim * 4) !== Math.floor((bot.sim - dt) * 4)) window.__trace.push(`${bot.sim.toFixed(2)} s${w.botIndex?.()} ${p.x.toFixed(2)},${p.y.toFixed(2)},${p.z.toFixed(2)} ${p.grounded ? 'G' : 'a'} P ${c.partner.sx.toFixed(2)},${c.partner.sy.toFixed(2)},${c.partner.sz.toFixed(2)} ${bot.dbg2}`);
   };
   const run = () => { if (!window.__botOn) return; for (let k = 0; k < window.__speed && g.state === 'playing'; k++) window.__bot.step(1 / 60); };
   setInterval(run, 16);       // a timer, not rAF: the page that isn't in front gets no animation frames
