@@ -49,6 +49,18 @@ const install = () => {
     if (!plan) {
       const ix = Math.max(0.15, tgt.body.hx - 0.6), iz = Math.max(0.15, tgt.body.hz - 0.6);
       tx = Math.max(tgt.body.x - ix, Math.min(tgt.body.x + ix, p.x)); tz = Math.max(tgt.body.z - iz, Math.min(tgt.body.z + iz, p.z));
+      if (p.grounded && p.ground && p.ground !== tgt.body && Math.abs(tgt.body.top - p.ground.top) < 1.5) {       // platforms touching edge to edge: slide along the ground until lined up with the shared edge, then cross it (no corner cutting over the void)
+        const G = p.ground, T = tgt.body;
+        const ox0 = Math.max(G.x - G.hx, T.x - T.hx), ox1 = Math.min(G.x + G.hx, T.x + T.hx), oz0 = Math.max(G.z - G.hz, T.z - T.hz), oz1 = Math.min(G.z + G.hz, T.z + T.hz);
+        const cl = (v, a, b) => Math.max(a, Math.min(b, v));
+        if (Math.abs(Math.abs(G.z - T.z) - (G.hz + T.hz)) < 0.15 && ox1 - ox0 > 1.0) {
+          tx = cl(p.x, ox0 + 0.6, ox1 - 0.6);
+          tz = p.x < ox0 + 0.35 || p.x > ox1 - 0.35 ? p.z : T.z;
+        } else if (Math.abs(Math.abs(G.x - T.x) - (G.hx + T.hx)) < 0.15 && oz1 - oz0 > 1.0) {
+          tz = cl(p.z, oz0 + 0.6, oz1 - 0.6);
+          tx = p.z < oz0 + 0.35 || p.z > oz1 - 0.35 ? p.x : T.x;
+        }
+      }
       if (Math.hypot(tx - p.x, tz - p.z) < 0.3) { tx = tgt.body.x; tz = tgt.body.z; }          // already over it (overlapping platforms): head for its middle
       if (bot.i >= path.length - 1 && w.goalObj) { tx = w.goalObj.x; tz = w.goalObj.z; }
     }
