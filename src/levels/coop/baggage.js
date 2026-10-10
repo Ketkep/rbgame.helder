@@ -27,6 +27,16 @@ export default {
     const bots = { p1: [], p2: [] };
     const add = (role, ...steps) => bots[role].push(...steps);
     const both = (...steps) => { add('p1', ...steps); add('p2', ...steps); };
+    // bot recovery: after a fall both respawn at a checkpoint, so each bot rewinds its script to the start of the stage it respawned in
+    const marks = [];
+    const mark = (yy) => marks.push({ y: yy, p1: bots.p1.length, p2: bots.p2.length });
+    w.onRespawn(() => {
+      if (!w.botSetIndex) return;
+      const ry = g.player.y;
+      let best = null;
+      for (const m of marks) if (m.y <= ry + 0.5) best = m;
+      if (best) w.botSetIndex(best[me]);
+    });
     const pl = () => g.player;
     const feet = (yy, tol = 0.35) => pl().grounded && Math.abs(pl().y - yy) < tol;
     /** the local player is up on ledge level yy and past local s */
@@ -421,6 +431,7 @@ export default {
     const finish = (F0, r) => { const len = F0.transfer(w, r.s, r.y); return nextFrame(F0, r.s + len, r.y, len); };
 
     // ---- 1
+    mark(0);
     const r1 = headWalls(F, 0, -8, 22, 2);
     beat(F, 8, 0, () => tell('all', 'coop.l9.wall'));
     beat(F, 22, 3, () => tell('all', 'coop.l9.wall2'));
@@ -430,6 +441,7 @@ export default {
     const y2 = r1.y;
     beat(F, F.skip, y2, () => { tell('all', 'coop.l9.pulley'); raiseKill(-3); });
     beat(F, F.skip + 20, y2 + 6, () => tell('all', 'coop.l9.pulley2'));
+    mark(y2);
     approach(F, y2);
     const r2 = pulleys(F, y2, F.skip, 2);
     decorate(F, 0, r2.s + 12, y2, r2.y, 30); tagAt(F, 'LAST SUMMER', 20, y2 + 6); tagAt(F, 'UNRESOLVED', 40, y2 + 12);
@@ -438,6 +450,7 @@ export default {
     // ---- 3
     const y3 = r2.y;
     beat(F, F.skip, y3, () => { tell('all', 'coop.l9.pend'); raiseKill(y2 - 3); });
+    mark(y3);
     both({ follow: true, until: () => feet(y3) && Math.abs(pl().x - F.X(0)) < 11 });         // onto the transfer deck, then the ladder() waypoint lines up with the first ledge
     const r3 = ladder(F, y3, F.skip, 4);
     beat(F, F.skip + 3, r3.ledges[2].y, () => tell('all', 'coop.l9.pend2'));
@@ -446,6 +459,7 @@ export default {
     // ---- 4
     const y4 = r3.y;
     beat(F, F.skip, y4, () => { tell('all', 'coop.l9.belt'); raiseKill(y3 - 3); });
+    mark(y4);
     approach(F, y4);
     const r4 = belts(F, y4, F.skip, 4, true);
     decorate(F, 0, r4.s + 12, y4, r4.y, 22); tagAt(F, 'BAGGAGE CLAIM', 18, y4 + 6);
@@ -454,6 +468,7 @@ export default {
     // ---- 5
     const y5 = r4.y;
     beat(F, F.skip, y5, () => { tell('all', 'coop.l9.elev'); raiseKill(y4 - 3); });
+    mark(y5);
     approach(F, y5);
     const r5 = elevators(F, y5, F.skip, 2, 12, 'p1');
     beat(F, F.skip + 20, y5 + 12, () => tell('all', 'coop.l9.elev2'));
@@ -463,6 +478,7 @@ export default {
     // ---- 6
     const y6 = r5.y;
     beat(F, F.skip, y6, () => { tell('all', 'coop.l9.wind'); raiseKill(y5 - 3); c.tether({ max: 13, k: 12, rope: true, on: true }); });
+    mark(y6);
     approach(F, y6);
     const r6 = windBeams(F, y6, F.skip, 4, true);
     stage(w, 'unrope', { x: F.X(0), y: r6.y + 2.5, z: F.Z(r6.s - 5), w: 14, h: 6, d: 6 }, () => { c.tether({ on: false }); tell('all', 'coop.l9.unrope'); });
@@ -473,6 +489,7 @@ export default {
     beat(F, F.skip, y7, () => { tell('all', 'coop.l9.stones'); raiseKill(y6 - 3); });
     let toldBoth = false;
     c.onEvent('l9stones', () => { if (toldBoth) return; toldBoth = true; tell('all', 'coop.l9.stonesboth'); });
+    mark(y7);
     approach(F, y7);
     const r7 = fragile(F, y7, F.skip, 3, 'p1');
     decorate(F, 0, r7.s + 12, y7, r7.y, 28); tagAt(F, 'FRAGILE', 20, y7 + 6);
@@ -481,6 +498,7 @@ export default {
     // ---- 8
     const y8 = r7.y;
     beat(F, F.skip, y8, () => { tell('all', 'coop.l9.signs'); raiseKill(y7 - 3); });
+    mark(y8);
     approach(F, y8);
     const r8 = lies(F, y8, F.skip);
     decorate(F, 0, r8.s + 12, y8, r8.y, 34); tagAt(F, 'WELL-INTENTIONED ADVICE', 24, y8 + 10);
@@ -489,6 +507,7 @@ export default {
     // ---- 9: a recap, fast
     const y9 = r8.y;
     beat(F, F.skip, y9, () => { tell('all', 'coop.l9.recap'); raiseKill(y8 - 3); });
+    mark(y9);
     approach(F, y9);
     const a9 = headWalls(F, y9, F.skip, 14, 1);
     decorate(F, 0, a9.s + 12, y9, a9.y, 12);
