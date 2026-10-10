@@ -46,6 +46,8 @@ export default {
     const partnerSteps = (a) => a;
     void partnerSteps; void riser; void beacon; void glowMaterial; void THREE; void lit;
     const G = {};      // gates by name
+    const mark = (n) => { (window.__marks ||= {})[n] = [bots.p1.length, bots.p2.length]; };      // for JUMP='{"p1":i,"p2":j}' tests
+    mark('s1');
 
     // ============================================================ 1. reservations + kitchen tutorial =====================
     planks(0, 0, -1, 24, 18, { path: true });                                           // z 8 … -10
@@ -196,6 +198,7 @@ export default {
     w.updaters.push(() => G.g3.set(bridge.k > 0.95));
     sgn('KITCHEN · STAFF ONLY · (THAT IS YOU)', 0, 6.2, F1z - 13.8, { w: 11, h: 1.2 });
 
+    mark('s2');
     bots.p1.push(
       { follow: true, until: () => G.g2.passable && game.player.z < z0 - 2 },
       ...['a', 'b', 'c'].flatMap((n, i) => [
@@ -272,6 +275,7 @@ export default {
       if (!ice1 && K.at('svcA')) { ice1 = true; tell('all', 'coop.l7.ice1'); }
       if (!ice2 && K.at('svcB')) { ice2 = true; tell('all', 'coop.l7.ice2'); }
     });
+    mark('s3');
     bots.p2.push(
       { x: -8, z: z3a - 4.6, r: 0.4, until: () => !!K.at('svcA') },
       { x: FB.x1 + 4, z: z3a - 10, r: 1.0, until: () => FB.door.passable },
@@ -296,7 +300,7 @@ export default {
     counter(-4, zp - 5, 3.2, 1.6); counter(4, zp - 5, 3.2, 1.6);
     ['A', 'B'].forEach((n, i) => {
       const sx = i ? 4 : -4;
-      K.item('soup' + n, 'soup', 'soup' + n + '_home', { name: 'Bowl of soup', accel: 0.018 });
+      K.item('soup' + n, 'soup', 'soup' + n + '_home', { name: 'Bowl of soup', accel: 0.011 });
       K.station('soup' + n + '_home', { x: sx, y: 1, z: zp - 5, label: 'Soup', accept: ['soup'], color: 0xe8a23c, takeable: () => stir.theirs });
     });
     const stir = plate(w, { x: 0, y: 0, z: zp - 9, size: 2.4, need: 'any', label: 'STIR THE POT' });
@@ -346,25 +350,31 @@ export default {
     let soupsDone = false;
     w.updaters.push(() => { if (!soupsDone && K.at('soupT1') && K.at('soupT2')) { soupsDone = true; tell('all', 'coop.l7.soupdone'); } });
     // bots: p1 ladles A while p2 stirs, then p2 ladles B while p1 stirs; both cross in their own lane; both ride the same trolley
+    let warmA = false; c.onEvent('bot:warmA', () => { warmA = true; });
     const ride = (lane) => [
-      { x: lane, z: vz - 1.5, r: 0.8, until: () => P.has && P.sz < vz + 3 },
-      { x: lane, z: vz - 4.0, r: 0.8, until: () => P.has && P.sz < vz - 3 },
+      { x: lane, z: vz - 1.0, r: 0.5 },
+      { x: lane, z: vz - 5.0, r: 0.5 },
+      { x: lane, z: vz - 5.0, r: 0.5, until: () => P.has && P.sz < vz - 3.0 },            // both wait at the front of the island, then board together
       { x: -3.5 + (lane < 0 ? -0.8 : 0.8), z: tz0 - 1.4, r: 0.7 },
       { x: -3.5 + (lane < 0 ? -0.8 : 0.8), z: nearZ, r: 99, until: () => troA.body.z < nearZ - TL + 0.6 },
       { x: lane, z: nz - 4, r: 1.0 },
     ];
+    mark('s4');
     bots.p1.push(
       S.take('soupA_home', 'soupA'),
-      { x: 0, z: zp - 9, r: 0.4, until: () => K.holder('soupB') === 'p2' },
-      { x: -1.5, z: wetZ - 1.5, r: 0.8 }, { x: -1.5, z: vz - 0.8, r: 0.8 },
-      ...ride(-1.5),
+      { x: -1.2, z: zp - 3.0, r: 0.6 }, { x: 0, z: zp - 9, r: 0.4, until: () => K.holder('soupB') === 'p2' },
+      { x: -1.2, z: zp - 3.0, r: 0.6 }, { x: -2.2, z: wetZ - 1.5, r: 0.8 }, { x: -2.2, z: vz - 0.8, r: 0.8 },
+      S.put('warmer'), { ...S.take('warmer', 'soupA'), then: () => c.emit('bot:warmA') },
+      ...ride(-2.2),
       S.put('soupT1'),
     );
     bots.p2.push(
       { x: 0, z: zp - 9, r: 0.4, until: () => K.holder('soupA') === 'p1' },
       S.take('soupB_home', 'soupB'),
-      { x: 1.5, z: wetZ - 1.5, r: 0.8 }, { x: 1.5, z: vz - 0.8, r: 0.8 },
-      ...ride(1.5),
+      { x: 1.2, z: zp - 3.0, r: 0.6 }, { x: 2.2, z: wetZ - 1.5, r: 0.8 }, { x: 2.2, z: vz - 0.8, r: 0.8 },
+      { x: 2.2, z: vz - 0.8, r: 0.8, until: () => warmA },
+      S.put('warmer'), S.take('warmer', 'soupB'),
+      ...ride(2.2),
       S.put('soupT2'),
     );
     both({ x: 0, z: nz - 11.4, r: 1.2, until: () => G.g5.passable }, { x: 0, z: nz - 16, r: 1.2 });
