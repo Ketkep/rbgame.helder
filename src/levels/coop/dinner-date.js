@@ -378,7 +378,74 @@ export default {
       S.put('soupT2'),
     );
     both({ x: 0, z: nz - 11.4, r: 1.2, until: () => G.g5.passable }, { x: 0, z: nz - 16, r: 1.2 });
-    const endZ = nz - 14.2;
+    const z5 = nz - 14.2;                                                                // where the chef's kitchen starts (the gate sits just before it)
+
+    // ============================================================ 5. the chef: hold the noise, carry the herbs =================
+    // d = distance into the kitchen, z = z5 - d.  South hall d 0..10, the aisle d 10..28 (x +-4, shelves either side), north hall d 28..40.
+    const Z5 = (d) => z5 - d;
+    planks(0, 0, Z5(5), 24, 10, { path: true });
+    w.checkpoint({ x: 0, y: 0, z: Z5(3), real: true });
+    for (const lx of [-10, 10]) { lit(lx, 0, Z5(2)); lit(lx, 0, Z5(37)); }
+    const SHELF = { tex: 'wood', color: 0x9a7448 };
+    const shelf = (x, d0, d1, ww) => w.plat({ x, y: 3, z: Z5((d0 + d1) / 2), w: ww, d: d1 - d0, h: 3, ...SHELF });
+    planks(0, 0, Z5(19), 8, 18, { path: true });                                         // the aisle
+    shelf(-8, 10, 28, 8); shelf(8, 10, 17, 8); shelf(8, 23, 28, 8);
+    planks(8, 0, Z5(20), 8, 6, { color: 0xd7cfc0 });                                     // the service hatch the chef goes to
+    sgn('SERVICE HATCH', 9.5, 3.4, Z5(20), { w: 4, h: 0.8, rotY: Math.PI / 2 * -1, border: '#ffb43d' });
+    sgn('CHEF\'S AISLE · STAFF ONLY', 0, 5.4, Z5(10), { w: 7, h: 1, border: '#ff4d5e' });
+    planks(0, 0, Z5(34), 24, 12, { path: true });                                        // the north hall
+    w.checkpoint({ x: 0, y: 0, z: Z5(31), real: true });
+    const chefBar = K.bar('chef', { label: 'SPOTTED!', color: '#ff4d5e' });
+    const Chef = makeChef(w, {
+      y: 0, speed: 2.1, len: 7, half: 0.6, bar: chefBar,
+      path: [{ x: 0, z: Z5(12.5), wait: 1.4 }, { x: 0, z: Z5(27.5), wait: 1.4 }],
+      lure: { x: 9, z: Z5(20), face: [1, 0] },
+      occluders: [{ x0: -12, x1: -4, z0: Z5(28), z1: Z5(10) }, { x0: 4, x1: 12, z0: Z5(17), z1: Z5(10) }, { x0: 4, x1: 12, z0: Z5(28), z1: Z5(23) }],
+      onSpot: () => tell('all', 'coop.l7.chefseen'),
+    });
+    const lureS = plate(w, { x: -9, y: 0, z: Z5(5), size: 2.4, need: 'any', label: 'CLATTER THE POTS · HOLD' });
+    const lureN = plate(w, { x: -9, y: 0, z: Z5(34), size: 2.4, need: 'any', label: 'CLATTER THE POTS · HOLD' });
+    w.updaters.push((dt) => Chef.hold(lureS.mine || lureN.mine, dt));
+    counter(-5, Z5(9), 3.2, 1.6); counter(5, Z5(9), 3.2, 1.6);
+    K.item('herb', 'crate', 'herb_home', { name: 'Fresh herbs', color: 0x4caf50 });
+    K.item('garlic', 'crate', 'garlic_home', { name: 'Garlic', color: 0xf1e6c8 });
+    K.station('herb_home', { x: -5, y: 1, z: Z5(9), label: 'Fresh herbs', approach: [-5, Z5(7.2)], accept: ['herb'] });
+    K.station('garlic_home', { x: 5, y: 1, z: Z5(9), label: 'Garlic', approach: [5, Z5(7.2)], accept: ['garlic'] });
+    sgn('PANTRY', 0, 3.6, Z5(9), { w: 4, h: 0.8 });
+    counter(-6, Z5(36), 3.2, 1.6); counter(6, Z5(36), 3.2, 1.6);
+    K.station('potA', { x: -6, y: 1, z: Z5(36), label: 'Stock pot', approach: [-6, Z5(34.4)], accept: ['herb'], takeable: () => false, color: 0x39d7c9 });
+    K.station('potB', { x: 6, y: 1, z: Z5(36), label: 'Stock pot', approach: [6, Z5(34.4)], accept: ['garlic'], takeable: () => false, color: 0x39d7c9 });
+    sgn('HERBS + GARLIC · IN THE POTS', 0, 4.4, Z5(36), { w: 8, h: 1 });
+    G.g6 = gate(w, { x: 0, z: Z5(39.6), w: 24, h: 5 });
+    w.updaters.push(() => G.g6.set(!!K.at('potA') && !!K.at('potB')));
+    stage(w, 'chef1', { x: 0, y: 1, z: Z5(3), w: 24, h: 4, d: 4 }, () => tell('all', 'coop.l7.chef'));
+    stage(w, 'chef2', { x: 0, y: 1, z: Z5(6), w: 6, h: 4, d: 3 }, () => tell('all', 'coop.l7.chefcone'));
+    let lureSaid = false;
+    w.updaters.push(() => { if (!lureSaid && Chef.mode === 'at') { lureSaid = true; tell('all', 'coop.l7.chefaway'); } });
+    stage(w, 'chef3', { x: 0, y: 1, z: Z5(30), w: 24, h: 4, d: 3 }, () => tell('all', 'coop.l7.chefswap'));
+    let potsSaid = false;
+    w.updaters.push(() => { if (!potsSaid && K.at('potA') && K.at('potB')) { potsSaid = true; tell('all', 'coop.l7.chefdone'); } });
+    mark('s5');
+    bots.p1.push(
+      S.take('herb_home', 'herb'),
+      { x: 0, z: Z5(8.6), r: 0.8 },
+      { x: 0, z: Z5(8.6), r: 0.8, until: () => Chef.mode === 'at' },
+      { x: 0, z: Z5(29.5), r: 1.0 },
+      { x: -9, z: Z5(34), r: 0.6 },
+      { x: -9, z: Z5(34), r: 0.6, until: () => P.has && P.sz < Z5(30.5) },
+      S.put('potA'),
+    );
+    bots.p2.push(
+      S.take('garlic_home', 'garlic'),
+      { x: -9, z: Z5(5), r: 0.5 },
+      { x: -9, z: Z5(5), r: 0.5, until: () => P.has && P.sz < Z5(32) },
+      { x: 0, z: Z5(8.6), r: 0.8 },
+      { x: 0, z: Z5(8.6), r: 0.8, until: () => Chef.mode === 'at' },
+      { x: 0, z: Z5(29.5), r: 1.0 },
+      S.put('potB'),
+    );
+    both({ x: 0, z: Z5(37.6), r: 1.2, until: () => G.g6.passable }, { x: 0, z: Z5(42), r: 1.5 });
+    const endZ = Z5(40);
 
     // ============================================================ finish (placeholder) ============
     planks(0, 0, endZ - 7, 14, 14, { path: true });

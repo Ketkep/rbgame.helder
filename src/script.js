@@ -48,6 +48,12 @@ export const SCRIPT = {
   'coop.l7.wet': ['Wet floor. There is a sign. The sign is spelled correctly. The bar on your screen is the soup\'s opinion of your footwork.'],
   'coop.l7.trolley': ['A trolley! Step on, hold your breath, hold your soup. It leaves after a moment. It is not a taxi. It does not wait. Nobody has ever been waited for.'],
   'coop.l7.soupdone': ['Two bowls, two tables, no puddles. I\'d clap but I\'m a voice.'],
+  'coop.l7.chef': ['The kitchen. The chef lives here. He dislikes you both, equally, which I consider progress. Do not stand in the orange cone. It is not a spotlight. It is his opinion.'],
+  'coop.l7.chefcone': ['Watch him walk the aisle. Same route every time. He is a creature of habit. Habits are called a pattern when it is someone else\'s.'],
+  'coop.l7.chefaway': ['Ah. Noise. The chef cannot resist noise. He is at the service hatch with his back to the aisle. Run. Quietly. Somehow.'],
+  'coop.l7.chefswap': ['Now the other one holds the pots, and the one who held them gets to be brave. Herbs and garlic. In the pots. Taste is optional.'],
+  'coop.l7.chefseen': ['Spotted! He saw you for nearly a whole second. That is a long time to be looked at by someone who hates you.', 'The chef noticed you. The chef notices everything. Sadly this includes you.'],
+  'coop.l7.chefdone': ['Herbs in. Garlic in. The chef is going back to his rounds, none the wiser. I am so proud. I am also complicit.'],
 
   // ---------------------------------------------------------------- global ---------------
   'death.first': [

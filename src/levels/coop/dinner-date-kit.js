@@ -328,8 +328,8 @@ export function carryKit(w, opts = {}) {
 // =================================================================================================================================
 /**
  * A patrolling chef with a vision cone drawn on the floor. Everything about him is a function of the world clock (plus the bell
- * rings, which both machines receive), so both worlds see the same chef. Seen for ~0.9 s in his cone = caught.
- * o: { y, path:[{x,z,wait,look:[dx,dz]}], speed, len, half, bells:[{x,z,face:[dx,dz],wait}], bellSpeed, occluders:[{x0,x1,z0,z1}], onSpot }
+ * lure events, which both machines receive), so both worlds see the same chef. Seen for ~0.9 s in his cone = caught.
+ * o: { y, path:[{x,z,wait,look:[dx,dz]}], speed, len, half, lure:{x,z,face:[dx,dz]}, bellSpeed, occluders:[{x0,x1,z0,z1}], onSpot }
  */
 export function chef(w, o) {
   const c = w.coop, g = w.game;
@@ -359,13 +359,26 @@ export function chef(w, o) {
     }
     const s = segs[segs.length - 1]; out.x = s.a.x; out.z = s.a.z; out.h = s.h1; out.walk = false; return out;
   };
-  // --- bell interludes
-  const rings = [], bs = o.bellSpeed ?? 3.6;
+  // --- lure: while anyone holds a lure plate the chef walks to `o.lure` ({x,z,face}) and waits there; when everyone lets go he walks
+  // back to where he left the patrol. Intervals come from events (who, on/off, sender's world time), the ring list is rebuilt from the
+  // merged intervals, so both machines end up with the same chef whatever order the events arrive in.
+  const bs = o.bellSpeed ?? 3.6, L = o.lure || null;
+  let rings = [];
+  const ivBy = { p1: [], p2: [] };
+  const polyLen = (pts) => { let t = 0; for (let i = 1; i < pts.length; i++) t += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z); return t; };
+  const polyAt = (pts, d, out) => {
+    for (let i = 1; i < pts.length; i++) {
+      const dx = pts[i].x - pts[i - 1].x, dz = pts[i].z - pts[i - 1].z, l = Math.hypot(dx, dz);
+      if (l < 1e-6) continue;
+      if (d <= l || i === pts.length - 1) { const u = Math.min(1, d / l); out.x = pts[i - 1].x + dx * u; out.z = pts[i - 1].z + dz * u; out.h = hd(dx, dz); return out; }
+      d -= l;
+    }
+    return out;
+  };
   const interlude = (r, e, out) => {
-    const bell = r.bell, d1 = r.d1;
-    if (e < d1 / bs) { const u = e * bs / d1; out.x = r.x0 + (bell.x - r.x0) * u; out.z = r.z0 + (bell.z - r.z0) * u; out.h = hd(bell.x - r.x0, bell.z - r.z0); out.walk = true; out.mode = 'go'; }
-    else if (e < d1 / bs + r.W) { out.x = bell.x; out.z = bell.z; out.h = bell.face ? hd(bell.face[0], bell.face[1]) : hd(bell.x - r.x0, bell.z - r.z0); out.walk = false; out.mode = 'at'; }
-    else { const u = (e - d1 / bs - r.W) * bs / d1; out.x = bell.x + (r.x0 - bell.x) * u; out.z = bell.z + (r.z0 - bell.z) * u; out.h = hd(r.x0 - bell.x, r.z0 - bell.z); out.walk = true; out.mode = 'back'; }
+    if (e < r.tGo) { polyAt(r.go, e * bs, out); out.walk = true; out.mode = 'go'; }
+    else if (e < r.tGo + r.W) { const q = r.go[r.go.length - 1]; out.x = q.x; out.z = q.z; out.h = L.face ? hd(L.face[0], L.face[1]) : out.h; out.walk = false; out.mode = 'at'; }
+    else { polyAt(r.back, (e - r.tGo - r.W) * bs, out); out.walk = true; out.mode = 'back'; }
     return out;
   };
   const stateAt = (t, out) => {
@@ -377,13 +390,31 @@ export function chef(w, o) {
     }
     return patrol(t - shift, out);
   };
-  const busy = (t) => { const r = rings[rings.length - 1]; return !!r && t < r.t0 + r.I + 0.5; };
-  c.onEvent('chef:bell', (a) => {
-    if (busy(a.t - 0.01) || rings.some((r) => r.t0 === a.t)) return;
-    if (a.t > w.t + 3) return;
-    const p0 = stateAt(a.t, {}), bell = o.bells[a.i], W = bell.wait ?? 8;
-    const d1 = Math.hypot(bell.x - p0.x, bell.z - p0.z);
-    rings.push({ t0: a.t, bell, W, d1, x0: p0.x, z0: p0.z, I: 2 * d1 / bs + W });
+  const rebuild = () => {
+    const all = [...ivBy.p1, ...ivBy.p2].filter((v) => v.a !== undefined).sort((p, q) => p.a - q.a);
+    const merged = [];
+    for (const v of all) { const m = merged[merged.length - 1]; if (m && v.a <= m.b) m.b = Math.max(m.b, v.b ?? Infinity); else merged.push({ a: v.a, b: v.b ?? Infinity }); }
+    rings = [];
+    for (const m of merged) {
+      const prev = rings[rings.length - 1];
+      let q0, R, chained = false;
+      if (prev && m.a < prev.t0 + prev.I) { chained = true; prev.I = m.a - prev.t0; q0 = interlude(prev, prev.I, {}); R = prev.R; }
+      else { const saved = rings; q0 = stateAt(m.a, {}); R = { x: q0.x, z: q0.z }; void saved; }
+      void chained;
+      const go = [{ x: q0.x, z: q0.z }, { x: q0.x, z: L.z }, { x: L.x, z: L.z }];
+      const back = [{ x: L.x, z: L.z }, { x: R.x, z: L.z }, { x: R.x, z: R.z }];
+      const tGo = polyLen(go) / bs, tBack = polyLen(back) / bs;
+      const W = Number.isFinite(m.b) ? Math.max(0, m.b - m.a - tGo) : Infinity;
+      rings.push({ t0: m.a, go, back, tGo, W, R, I: tGo + W + tBack });
+    }
+  };
+  c.onEvent('chef:lure', (e) => {
+    const list = ivBy[e.who]; if (!list) return;
+    const last = list[list.length - 1];
+    if (e.on) { if (last && last.b === undefined) return; list.push({ a: e.t }); }
+    else if (last && last.b === undefined) last.b = Math.max(last.a, e.t);
+    else return;
+    rebuild();
   });
   // --- look
   const grp = new THREE.Group(); w.add(grp);
@@ -405,7 +436,7 @@ export function chef(w, o) {
   const coneEdge = new THREE.Mesh(new THREE.RingGeometry(len - 0.12, len, 28, 1, Math.PI / 2 - half, half * 2), new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
   coneEdge.rotation.x = -Math.PI / 2; coneEdge.position.y = 0.05; grp.add(coneEdge);
   // --- state
-  const S = { x: o.path[0].x, z: o.path[0].z, h: 0, mode: 'patrol', walk: false, see: 0, exposure: 0, busy: false, seeing: false, get busyNow() { return busy(w.t); } };
+  const S = { x: o.path[0].x, z: o.path[0].z, h: 0, mode: 'patrol', walk: false, see: 0, exposure: 0, seeing: false };
   const occ = o.occluders || [];
   const blocked = (ax, az, bx, bz) => {
     for (const q of occ) {
@@ -445,7 +476,14 @@ export function chef(w, o) {
     coneMat.color.setRGB(1, 0.71 - ex * 0.5, 0.24 - ex * 0.2); coneMat.opacity = 0.17 + ex * 0.4 + (S.mode === 'at' ? -0.08 : 0);
     if (bar) { bar.show(ex > 0.02); bar.set(ex, 'SPOTTED!', '#ff4d5e'); }
   })(w.hooks.frame);
-  S.ring = (i) => c.emit('chef:bell', { i, t: +w.t.toFixed(3) });
+  // my own lure flag (call every frame with whether I'm standing on a lure plate); emits on change
+  let myLure = false, linger = 0;
+  S.hold = (on, dt) => {
+    linger = on ? 0.9 : Math.max(0, linger - dt);
+    const v = on || linger > 0;
+    if (v !== myLure) { myLure = v; c.emit('chef:lure', { who: c.me, on: v, t: +w.t.toFixed(3) }); }
+  };
+  S.lured = () => ivBy.p1.concat(ivBy.p2).some((v) => v.b === undefined) ;
   S.at = (t) => stateAt(t, {});
   return S;
 }
