@@ -226,11 +226,11 @@ export default {
     const L2 = riser(w, { x: 34, y: 4.2, z: lz, w: 3.2, d: 3.2, h: 0.6, drop: 4.2, always: true, speed: 3.2, color: 0xe9d9b0, trim: COL.good });
     const lp = plate(w, { x: 24, y: 0, z: faZ1 + 11, size: 2.6, need: 'p2', label: `${N.p2}: LIFT` });
     w.updaters.push(() => L1.set(lp.pressed));
-    const tp = plate(w, { x: 29, y: 4.2, z: faZ1 - 3, size: 2.6, need: 'p1', label: `${N.p1}: LIFT` }, (v) => { if (v) c.set('tf.l2', true); });
-    c.on('tf.l2', (v) => L2.set(!!v));
+    const tp = plate(w, { x: 29, y: 4.2, z: faZ1 - 3, size: 2.6, need: 'p1', label: `${N.p1}: LIFT` });
+    w.updaters.push(() => L2.set(tp.pressed));
     roleSign(w, 'p1', 'THERE IS A LIFT HERE. YOU CAN\'T SEE IT. THEY CAN.', 24, 4.4, lz + 6, { w: 8, h: 1.5, size: 32 });
     roleSign(w, 'p2', 'THEY CAN\'T SEE THE LIFT. TELL THEM WHERE TO STAND.', 24, 4.4, lz + 6, { w: 8, h: 1.5, size: 32 });
-    sign(w, 'THE OTHER LIFT IS FOR THE ONE LEFT BEHIND.', 34, 4.4, lz + 6, { w: 7, h: 1.4, size: 30 });
+    sign(w, 'THE OTHER LIFT IS FOR THE ONE LEFT BEHIND. IT RUNS WHILE YOUR PARTNER STANDS ON THE TOP PLATE.', 34, 4.4, lz + 6, { w: 9, h: 2, size: 28 });
     w._tf2 = { L1, L2, lp, tp, faZ1, lz };
     const gy = 4.2, gz = faZ1 - 10;
     w.goal({ x: 29, y: gy, z: gz });
@@ -242,8 +242,9 @@ export default {
 
     // bots: P1 stands on the (invisible) lift where P2 says; P2 on its plate. Then P1 holds the top plate for P2's lift.
     botP1.push({ x: 29, z: fa0 - 6, r: 1.5 }, { x: 24, z: lz + 5, r: 1.0 }, { x: 24, z: lz, r: 0.6, until: () => gp().y > 4.0 && gp().grounded },
-      { x: 29, z: faZ1 - 3, r: 0.4, until: () => P.has && P.sy > 3.6 && P.g }, { x: 29, z: gz, r: 1.0 });
-    botP2.push({ x: 29, z: fa0 - 6, r: 1.5 }, { x: 29, z: fa0 - 6, r: 1.5, until: () => P.has && Math.hypot(P.sx - 24, P.sz - lz) < 1.2 }, { x: 24, z: faZ1 + 11, r: 0.4, until: () => P.has && P.sy > 3.6 && P.g },
+      { x: 27, z: faZ1 - 6, r: 1.0, until: () => P.has && Math.hypot(P.sx - 34, P.sz - lz) < 1.0 },
+      { x: 29, z: faZ1 - 3, r: 0.4, until: () => P.has && P.sy > 3.6 && P.g && P.sz < faZ1 - 0.8 }, { x: 29, z: gz, r: 1.0 });
+    botP2.push({ x: 29, z: fa0 - 6, r: 1.5 }, { x: 29, z: fa0 - 6, r: 1.5, until: () => P.has && Math.hypot(P.sx - 24, P.sz - lz) < 1.2 }, { x: 24, z: faZ1 + 11, r: 0.4, until: () => P.has && P.sy > 3.6 && P.g && P.sz < faZ1 - 0.8 },
       { x: 34, z: lz + 5, r: 1.0 }, { x: 34, z: lz, r: 0.6, until: () => gp().y > 4.0 && gp().grounded }, { x: 29, z: gz, r: 1.0 });
 
     botSteps(w, { p1: botP1, p2: botP2 });
