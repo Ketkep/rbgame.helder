@@ -248,7 +248,7 @@ export default {
       sign(w, 'THE LIFT ONLY WORKS WHILE SOMEONE STANDS ON THEIR PLATE.', 0, y0 + 6.4, zc - 3, { w: 11, h: 1.4, size: 34 });
       // bots
       const steps = me === holder
-        ? [{ x: -2, z: zc - 2.5, until: () => cocoa[r] }, { x: -4, z: zc - 7.7, until: () => game.player.y > top - 0.6 }, { x: -6.5, z: zc - 13.5, use: true, until: () => thanks[r] }]
+        ? [{ x: -4.2, z: zc - 1, until: () => P.has && P.sz < zc - 6 }, { x: -2, z: zc - 2.5, until: () => cocoa[r] }, { x: -4, z: zc - 7.7, until: () => game.player.y > top - 0.6 }, { x: -6.5, z: zc - 13.5, use: true, until: () => thanks[r] }]
         : [{ x: 4, z: zc - 7.7, until: () => game.player.y > top - 0.6 }, { x: 6.5, z: zc - 13.5, use: true, until: () => cocoa[r] },
            { x: 0, z: zc - 11.9, until: () => P.has && P.sy > top - 0.6 }, { x: 0, z: zc - 14.3, until: () => thanks[r] }];
       return steps;
@@ -267,7 +267,7 @@ export default {
     const pa = plate(w, { x: -6.5, y: Yw, z: -266.5, need: 'any', label: 'HOLD: STOPS THE PRESSES' });
     const belt = snowdeck(w, { x: 0, y: Yw, z: -276.4, w: 10, d: 14, path: true });
     w.conveyor(belt, { vz: 3.2 });
-    const pb = plate(w, { x: 6.5, y: Yw, z: -287, need: 'any', label: 'HOLD: STOPS THE PRESSES' });
+    const pb = plate(w, { x: 3.8, y: Yw, z: -287, need: 'any', label: 'HOLD: STOPS THE PRESSES' });
     const stopped = () => pa.pressed || pb.pressed;
     [[-273.5, 0, 'A'], [-279.5, 1.05, 'B']].forEach(([zz, o]) => [-2.5, 2.5].forEach((dx, ci) => stomper(w, { x: dx, y: Yw, z: zz, size: 4.6, period: 4.2, offset: o + ci * 2.1, paused: stopped, coal: false })));
     sign(w, 'THE PRESSES RUN WHEN NOBODY HOLDS A PLATE.', 0, Yw + 5.2, -268, { w: 11, h: 1.3 });
@@ -381,13 +381,13 @@ export default {
     void holderOf2;
     const workshop = me === 'p1'
       ? [{ x: -6.5, z: -266.5, until: () => pb.pressed }, { follow: true, until: () => zP() < -300 }]          // p1 holds the presses while p2 crosses, then crosses
-      : [{ x: 0, z: -266, until: () => pa.pressed }, { follow: true, until: () => zP() < -284 }, { x: 6.5, z: -287, until: () => P.has && P.sz < -284 }, { follow: true, until: () => zP() < -300 }];
+      : [{ x: 0, z: -266, until: () => pa.pressed }, { follow: true, until: () => zP() < -284 }, { x: 3.8, z: -287, until: () => P.has && P.sz < -284 }, { follow: true, until: () => zP() < -300 }];
     botSteps(w, {
-      p1: [{ follow: true, until: () => zP() < -40 }, ...gift('p1'), { follow: true, until: () => zP() < -184 }, shoot([0, 1]),
+      p1: [{ follow: true, until: () => zP() < -40 }, ...gift('p1'), { follow: true, until: () => zP() < -184 }, shoot([0, 1]), { x: 0, z: -219, r: 1 },
         { follow: true, until: () => zP() < -219 }, ...t1, ...t2, { follow: true, until: () => zP() < -262 }, ...workshop,
         { follow: true, until: () => zP() < -340 }, { x: -1, z: fz, until: () => fake }, { follow: true, until: () => zP() < -363 },
         { x: -5, z: -367, until: () => g8.passable }, { follow: true }],
-      p2: [{ follow: true, until: () => zP() < -40 }, ...gift('p2'), { follow: true, until: () => zP() < -184 }, shoot([2, 3]),
+      p2: [{ follow: true, until: () => zP() < -40 }, ...gift('p2'), { follow: true, until: () => zP() < -184 }, shoot([2, 3]), { x: 0, z: -219, r: 1 },
         { follow: true, until: () => zP() < -219 }, ...t1, ...t2, { follow: true, until: () => zP() < -262 }, ...workshop,
         { follow: true, until: () => zP() < -340 }, { x: 1, z: fz, until: () => fake }, { follow: true, until: () => zP() < -363 },
         { x: 5, z: -367, until: () => g8.passable }, { follow: true }],
