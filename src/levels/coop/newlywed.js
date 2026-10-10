@@ -448,15 +448,16 @@ export default {
     const laneSteps = [];
     if (NW.sos === 'central') laneSteps.push({ x: 0, z: ZH1 + 3, r: 1.5 }, ...CL.steps(me), { x: 0, z: ZM + 4, r: 1.5 });
     else {
-      laneSteps.push(guard(() => ex() === 0, s * XC, ZH1 + 2.5, 1.0, () => RX[me][0].k > 0.97), guard(() => ex() === 0, s * XC, ZH1 - 3.1), guard(() => ex() === 0, s * XC, ZM + 3, 1.5));
+      laneSteps.push(guard(() => ex() === 0, s * XC, ZH1 + 2.5, 1.0, () => RX[me][0].k > 0.97), guard(() => ex() === 0, s * XC, ZH1 - 3.1), guard(() => ex() === 0, s * XC, ZM - 3, 1.0));
       laneC[me].forEach((row, b) => {
         row.forEach((p, j) => laneSteps.push(guard(() => ex() > b, p.x, p.z, 1.0, j === 2 ? () => (ex() === b + 1 && b < 3 ? RX[me][b + 1].k > 0.97 : true) : undefined)));
-        if (b < 3) laneSteps.push(guard(() => ex() === b + 1, s * XR, row[2].z), guard(() => ex() === b + 1, s * XC, row[2].z - 2), guard(() => ex() === b + 1, s * XC, ZM + 3, 1.5));
+        if (b < 3) laneSteps.push(guard(() => ex() === b + 1, s * XR, row[2].z), guard(() => ex() === b + 1, s * XC, row[2].z - 2), guard(() => ex() === b + 1, s * XC, ZM - 3, 1.0));
       });
     }
     const sosSteps = [
       ...(NW.sos === 'central' ? [] : [useP(pedX(me, 0, 2, 3.4) + (NW.sos?.[me] === 'steal' ? 3.4 : 0), hz, () => !!c.get(sosKey(me), null)), { x: 0, z: ZH1 + 3, r: 1.5, until: () => !!exits() }]),
       ...laneSteps,
+      guard(() => ex() === 4, s * XL, ZM - 3, 1.0),
       { x: 0, z: ZM - 8, r: 2 },
     ];
     const rowSteps = (fld) => fld.safe.map((sf, k) => ({ x: XC4[sf], z: zRow(fld === FA ? zF : zSw, k), r: 0.7 }));
