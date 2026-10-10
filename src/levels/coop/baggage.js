@@ -161,6 +161,7 @@ export default {
       const iB = 2, iEnd = units;
       const plA = plate(w, { x: F.X(ledges[iB].side * 6.5), y: ledges[iB].y, z: F.Z(a0 + 1.4), need: 'any', size: 1.9, label: 'BRAKE' });
       const plB = plate(w, { x: F.X(ledges[iEnd].side * 6.5), y: ledges[iEnd].y, z: F.Z(a0 + 1.4), need: 'any', size: 1.9, label: 'BRAKE' });
+      const ledgeSpot0 = (i, sz) => ({ x: F.X(ledges[i].side * 6.5), z: F.Z(a0 + sz) });
       w.updaters.push((dt) => {
         const target = plA.pressed || plB.pressed ? 0.4 : 1;
         brakeRate += (target - brakeRate) * Math.min(1, dt * 4);
@@ -169,18 +170,37 @@ export default {
       for (const iL of [iB, iEnd]) w.checkpoint({ x: F.X(ledges[iL].side * 6.5), y: ledges[iL].y, z: F.Z(a0 + 6.2), real: true });
       sign(w, 'THE SUITCASES SWING. THE ROPES DO NOT LIE.', F.X(0), y0 + 6, F.Z(a0 + 4), { w: 9, h: 1.2 });
       sign(w, 'THESE ONES ARE FAST. SOMEONE STANDS ON THE BRAKE.', F.X(0), ledges[iB].y + 6, F.Z(a0 + 4), { w: 10, h: 1.2, border: '#ff4d5e' });
-      // bots: free pair, then the braked pair with one holding each end
+      // bots: p1 crosses first (hop on at the ledge edge when the suitcase is next to it, hop off when it reaches the far ledge);
+      // p2 follows, except in the braked pair where p2 stands on the brake at ledge iB and p1 holds the other brake at the end
       const onLedge = (i) => () => feet(ledges[i].y) && Math.abs(pl().x - F.X(ledges[i].side * 6.5)) < 2.2;
-      const ledgeSpot = (i, s) => ({ x: F.X(ledges[i].side * 6.5), z: F.Z(a0 + s) });
-      both({ x: F.X(-6.5), z: F.Z(a0 - 1.8), r: 1.0 });                                    // line up with the first ledge before following the path (the others stick out past the deck edge)
-      both({ follow: true, until: onLedge(iB) });
-      add('p2',
-        { ...ledgeSpot(iB, 1.4), r: 0.4, until: () => plB.pressed },
-        { follow: true, until: onLedge(iEnd) });
-      add('p1',
-        { ...ledgeSpot(iB, 6.2), r: 0.5, until: () => plA.pressed },
-        { follow: true, until: onLedge(iEnd) },
-        { ...ledgeSpot(iEnd, 1.4), r: 0.4, until: () => P.has && P.g && Math.abs(P.sy - ledges[iEnd].y) < 0.4 && Math.abs(P.sx - F.X(ledges[iEnd].side * 6.5)) < 2.4 });
+      const ox = (u) => pend[u].body.x - F.X(0);
+      const pzu = (u) => F.Z(a0 + (u % 2 ? 5.8 : 2.2));
+      const hop = (u, gate = null) => {
+        const sd = ledges[u].side;
+        return [
+          { x: F.X(sd * 5.4), z: pzu(u), r: 0.3, until: () => (!gate || gate()) && sd * ox(u) > 2.0 && onLedge(u)() },                         // wait at the ledge edge until the suitcase swings over
+          { x: () => pend[u].body.x, z: pzu(u), r: 0.1, jump: 4, until: () => pl().grounded && pl().ground === pend[u].body },                // hop on
+          { x: F.X(-sd * 5.4), z: pzu(u), r: 0.1, stop: 0.2, jump: 7, until: () => sd * ox(u) < -2.0 && false },                           // (replaced below)
+        ];
+      };
+      const crossOver = (u) => {
+        const sd = ledges[u].side;
+        return [
+          { x: () => pend[u].body.x, z: pzu(u), r: 0.2, until: () => sd * ox(u) < -2.0 || onLedge(u + 1)() },                                   // ride until it is over by the far ledge
+          { x: F.X(-sd * 6.0), z: pzu(u), r: 0.2, jump: 8, until: onLedge(u + 1) },                                                          // hop off
+        ];
+      };
+      const unit = (u, gate = null) => [hop(u, gate)[0], hop(u)[1], ...crossOver(u)];
+      const aboveEnd = () => P.has && P.g && Math.abs(P.sy - ledges[iEnd].y) < 0.4 && Math.abs(P.sx - F.X(ledges[iEnd].side * 6.5)) < 2.4;
+      const p1On = (u) => () => P.has && P.g && Math.abs(P.sy - ledges[u].y) < 0.4;
+      both({ x: F.X(-6.5), z: F.Z(a0 - 1.8), r: 1.0 });                                      // line up with the first ledge (the others stick out past the deck edge)
+      both({ x: F.X(-6.5), z: F.Z(a0 + 1.0), r: 0.8, until: onLedge(0) });
+      add('p1', ...unit(0), ...unit(1));
+      add('p2', { x: F.X(-6.5), z: F.Z(a0 + 1.0), r: 0.8, until: p1On(1) }, ...unit(0), { x: F.X(ledges[1].side * 6.5), z: F.Z(a0 + 1.0), r: 0.8, until: p1On(2) }, ...unit(1));
+      // braked pair: p2 stands on the brake at ledge iB (plate plA); p1 crosses, then holds the end brake (plate plB)
+      add('p2', { ...ledgeSpot0(iB, 1.4), r: 0.4, until: () => plB.pressed });
+      add('p1', { x: F.X(ledges[iB].side * 6.5), z: F.Z(a0 + 6.2), r: 0.6, until: () => plA.pressed }, ...unit(2, () => plA.pressed), ...unit(3), { ...ledgeSpot0(iEnd, 1.4), r: 0.4, until: aboveEnd });
+      add('p2', ...unit(2), ...unit(3));
       return { s: a0 + 8, y, len: 8, ledges };
     };
 
