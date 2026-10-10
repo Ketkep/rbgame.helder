@@ -435,7 +435,11 @@ export default {
     /** bots: walk the path until standing on the first deck of the next piece */
     const approach = (F0, yy) => both({ follow: true, until: () => feet(yy) && F0.S(pl().z) > F0.skip + 2 && Math.abs(pl().x - F0.X(0)) < 9 });
     /** close a stage: wide transfer deck to the next lane, then the next frame */
-    const finish = (F0, r) => { const len = F0.transfer(w, r.s, r.y); return nextFrame(F0, r.s + len, r.y, len); };
+    const finish = (F0, r) => {
+      const len = F0.transfer(w, r.s, r.y);
+      both({ x: F0.nextX, z: F0.Z(r.s + len / 2), r: 1.5 });                        // bots: cross the transfer deck to the next lane (not along its edge)
+      return nextFrame(F0, r.s + len, r.y, len);
+    };
 
     // ---- 1
     mark(0);
