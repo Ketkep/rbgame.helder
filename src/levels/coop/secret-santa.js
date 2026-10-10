@@ -284,15 +284,39 @@ export default {
     stage(w, 'work2', { x: 0, y: Yw + 1, z: -288, w: 10, h: 4, d: 4 }, () => tell('all', 'coop.l8.work.done'));
     stage(w, 'ferry', { x: 0, y: Yw + 1, z: -294, w: 10, h: 4, d: 3 }, () => tell('all', 'coop.l8.ferry'));
 
-    // ============================================================ 7. the fake grand prize ===================
+    // ============================================================ 6b. the wrapping line: one reads, one presses =====
     snowdeck(w, { x: 0, y: Yw, z: -349.4, w: 20, d: 24, path: true });                 // -337.4 … -361.4
-    cp(0, Yw, -342);
-    const fz = -352;
+    cp(0, Yw, -340);
+    const wr = c.rng(77), SEQ = Array.from({ length: 6 }, () => (wr() < 0.5 ? 'L' : 'R')), SIDE = { L: 'LEFT (red)', R: 'RIGHT (green)' };
+    const listSign = liveSign(w, 0, Yw + 4.2, -356, { w: 11, h: 3.4, tw: 900, border: '#' + COL.p1.toString(16).padStart(6, '0'), size: 34 });
+    listSign.mesh.visible = me === 'p1';
+    listSign.set('WRAPPING ORDER\n' + SEQ.map((s, i) => `${i + 1}. ${SIDE[s]}`).join('   ') + '\n(only you can read this)');
+    const prog = liveSign(w, 0, Yw + 3.6, -344, { w: 9, h: 1.7, tw: 720, border: '#3ddc97', size: 36 });
+    let wi = 0, wrapDone = false, bad = 0;
+    const refreshWrap = () => prog.set(wrapDone ? 'WRAPPED.\nThe gate is open.' : `WRAPPED: ${wi} / ${SEQ.length}${bad ? '\nWrong button: start again' : '\n' + (me === 'p2' ? 'Your partner has the list.' : 'You have the list. They press.')}`);
+    refreshWrap();
+    const g6b = gate(w, { x: 0, y: Yw, z: -360.8, w: 20, h: 5 });
+    c.onEvent('wp', (side) => {
+      if (wrapDone) return;
+      if (SEQ[wi] === side) { wi++; bad = 0; game.audio.confirm?.(); if (wi >= SEQ.length) { wrapDone = true; g6b.set(true); tell('all', 'coop.l8.wrap.done'); } }
+      else { wi = 0; bad = 1; tell('all', 'coop.l8.wrap.wrong'); }
+      refreshWrap();
+    });
+    for (const [side, bx, col] of [['L', -4, 0xff4d5e], ['R', 4, 0x3ddc97]]) {
+      pedestal(w, { x: bx, y: Yw, z: -346, color: col, label: me === 'p2' ? `${SIDE[side]} button` : 'These buttons are your partner\'s', enabled: () => me === 'p2' && !wrapDone, onUse: () => c.emit('wp', side) });
+    }
+    sign(w, 'THE LIST IS FOR ONE OF YOU. THE BUTTONS ARE FOR THE OTHER.', 0, Yw + 6.4, -342, { w: 11, h: 1.2, size: 34 });
+    stage(w, 'wrap', { x: 0, y: Yw + 1, z: -340, w: 20, h: 4, d: 4 }, () => { tell('p1', 'coop.l8.wrap.p1', { priority: 2 }); tell('p2', 'coop.l8.wrap.p2', { priority: 2 }); tell('all', 'coop.l8.wrap'); });
+
+    // ============================================================ 7. the fake grand prize ===================
+    snowdeck(w, { x: 0, y: Yw, z: -373.4, w: 20, d: 24, path: true });                 // -361.4 … -385.4
+    cp(0, Yw, -366);
+    const fz = -376;
     const ring = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.14, 12, 48), glowMaterial(0xffc83d, 2.2)); ring.position.set(0, Yw + 1.9, fz); w.add(ring);
     sign(w, 'GRAND PRIZE', 0, Yw + 4.6, fz, { w: 5, h: 1.1, border: '#ffc83d' });
     [[0, 0.3], [-1.4, 0.4], [1.3, 0.2]].forEach(([dx, dz], i) => present(w, dx, Yw, fz - 2.2 - dz, [0xffc83d, 0xd84a4a, 0x4a78d8][i], 1.2));
     beacon(w, 0, Yw, fz, 0xffe9a8, 16);
-    const g7 = gate(w, { x: 0, y: Yw, z: -359.5, w: 20, h: 5 });
+    const g7 = gate(w, { x: 0, y: Yw, z: -383.5, w: 20, h: 5 });
     let fake = false;
     const fakeZ = c.zone({ x: 0, y: Yw + 1.9, z: fz, w: 3.6, h: 3.6, d: 3.6, need: 'both', shrink: 0 });
     // what the counsellor claims to each player about the OTHER, and what is actually true
@@ -315,18 +339,18 @@ export default {
       }
       w.after(20, () => tell('all', 'coop.l8.claim.after'));
     });
-    stage(w, 'prize', { x: 0, y: Yw + 1, z: -341, w: 20, h: 4, d: 4 }, () => tell('all', 'coop.l8.prize'));
+    stage(w, 'prize', { x: 0, y: Yw + 1, z: -365, w: 20, h: 4, d: 4 }, () => tell('all', 'coop.l8.prize'));
 
     // ============================================================ 8. the real goal ============================
-    snowdeck(w, { x: 0, y: Yw, z: -369.4, w: 20, d: 16, path: true });                 // -361.4 … -377.4
-    const g8 = gate(w, { x: 0, y: Yw, z: -373, w: 20, h: 5 });
-    const fa = plate(w, { x: -5, y: Yw, z: -367, need: 'p1', label: nm('p1') });
-    const fb = plate(w, { x: 5, y: Yw, z: -367, need: 'p2', label: nm('p2') });
+    snowdeck(w, { x: 0, y: Yw, z: -393.4, w: 20, d: 16, path: true });                 // -385.4 … -401.4
+    const g8 = gate(w, { x: 0, y: Yw, z: -397, w: 20, h: 5 });
+    const fa = plate(w, { x: -5, y: Yw, z: -391, need: 'p1', label: nm('p1') });
+    const fb = plate(w, { x: 5, y: Yw, z: -391, need: 'p2', label: nm('p2') });
     const door = { t: 0 };
     w.updaters.push((dt) => { door.t = fa.pressed && fb.pressed ? 8 : Math.max(0, door.t - dt); g8.set(door.t > 0); });
-    sign(w, 'ONE EACH. THE REAL PRIZE IS UPSTAIRS.', 0, Yw + 6.4, -372, { w: 11, h: 1.2 });
-    cp(0, Yw, -376);
-    const st = chain(w, { x: 0, y: Yw, z: -377.4 }, Array.from({ length: 8 }, (_, i) => ({ gap: i === 0 ? 1.8 : 1.7, d: 4, w: 6 - (i % 3), dy: 1.2 })));
+    sign(w, 'ONE EACH. THE REAL PRIZE IS UPSTAIRS.', 0, Yw + 6.4, -396, { w: 11, h: 1.2 });
+    cp(0, Yw, -400);
+    const st = chain(w, { x: 0, y: Yw, z: -401.4 }, Array.from({ length: 8 }, (_, i) => ({ gap: i === 0 ? 1.8 : 1.7, d: 4, w: 6 - (i % 3), dy: 1.2 })));
     w.crumble(st[3], { delay: 1.0, gone: 3 }); w.crumble(st[6], { delay: 1.0, gone: 3 });
     cp(0, st[2].top, st[2].body.z);
     const gy = st.endY + 1.0, gz = st.endZ - 1.8 - 8;
@@ -353,7 +377,7 @@ export default {
     stage(w, 'reveal', { x: 0, y: gy + 1, z: gz + 4, w: 16, h: 4, d: 5 }, () => {
       c.set('falls.' + me, game.deaths); refreshRecap(); tell('all', 'coop.l8.reveal');
     });
-    stage(w, 'stairs', { x: 0, y: Yw + 1, z: -379, w: 10, h: 4, d: 3 }, () => tell('all', 'coop.l8.stairs'));
+    stage(w, 'stairs', { x: 0, y: Yw + 1, z: -403, w: 10, h: 4, d: 3 }, () => tell('all', 'coop.l8.stairs'));
 
     // ---- mole bookkeeping and the results-screen payoff (cosmetic only) ----
     let molePartnerFalls = 0;
@@ -381,16 +405,20 @@ export default {
     void holderOf2;
     const workshop = me === 'p1'
       ? [{ x: -6.5, z: -266.5, until: () => pb.pressed }, { follow: true, until: () => zP() < -300 }]          // p1 holds the presses while p2 crosses, then crosses
-      : [{ x: 0, z: -266, until: () => pa.pressed }, { follow: true, until: () => zP() < -284 }, { x: 3.8, z: -287, until: () => P.has && P.sz < -284 }, { follow: true, until: () => zP() < -300 }];
+      : [{ x: 3, z: -265, until: () => pa.pressed }, { follow: true, until: () => zP() < -284 }, { x: 3.8, z: -287, until: () => P.has && P.sz < -284 }, { follow: true, until: () => zP() < -300 }];
+    // p1 waits (it can read the list but the bot just waits for p2), p2 presses the sequence in order
+    const wrapBot = me === 'p2'
+      ? SEQ.map((s, i) => ({ x: s === 'L' ? -4 : 4, z: -346, r: 1.0, use: true, until: () => wi > i }))
+      : [{ x: 0, z: -341, until: () => wrapDone }];
     botSteps(w, {
       p1: [{ follow: true, until: () => zP() < -40 }, ...gift('p1'), { follow: true, until: () => zP() < -184 }, shoot([0, 1]), { x: 0, z: -219, r: 1 },
         { follow: true, until: () => zP() < -219 }, ...t1, ...t2, { follow: true, until: () => zP() < -262 }, ...workshop,
-        { follow: true, until: () => zP() < -340 }, { x: -1, z: fz, until: () => fake }, { follow: true, until: () => zP() < -363 },
-        { x: -5, z: -367, until: () => g8.passable }, { follow: true }],
+        { follow: true, until: () => zP() < -339 }, ...wrapBot, { follow: true, until: () => zP() < -364 }, { x: -1, z: fz, until: () => fake }, { follow: true, until: () => zP() < -387 },
+        { x: -5, z: -391, until: () => g8.passable }, { follow: true }],
       p2: [{ follow: true, until: () => zP() < -40 }, ...gift('p2'), { follow: true, until: () => zP() < -184 }, shoot([2, 3]), { x: 0, z: -219, r: 1 },
         { follow: true, until: () => zP() < -219 }, ...t1, ...t2, { follow: true, until: () => zP() < -262 }, ...workshop,
-        { follow: true, until: () => zP() < -340 }, { x: 1, z: fz, until: () => fake }, { follow: true, until: () => zP() < -363 },
-        { x: 5, z: -367, until: () => g8.passable }, { follow: true }],
+        { follow: true, until: () => zP() < -339 }, ...wrapBot, { follow: true, until: () => zP() < -364 }, { x: 1, z: fz, until: () => fake }, { follow: true, until: () => zP() < -387 },
+        { x: 5, z: -391, until: () => g8.passable }, { follow: true }],
     });
     void yP;
   },
