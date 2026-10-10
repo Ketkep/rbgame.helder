@@ -397,6 +397,33 @@ export const SCRIPT = {
   'l5.complete': 'Credits. Real ones, this time. ...Mostly.',
 };
 
+// ---------------------------------------------------------------- Campaign 3, session 9: Shared Baggage ---
+Object.assign(SCRIPT, {
+  'coop.l9.intro.p1': ['Session nine: Shared Baggage. A pile of luggage, a long way up. Orange, you are carrying more than your partner. Statistically.', 'Shared Baggage. Everyone says "we\'ll carry it together." Then one of you ends up holding the bag. Orange, that\'s a guess.'],
+  'coop.l9.intro.p2': ['Session nine: Shared Baggage. Teal, you are carrying less than you think. Your partner has noticed. They\'re being nice about it.', 'Shared Baggage. Up is that way. A hundred metres. I\'ve measured. Roughly. With feelings.'],
+  'coop.l9.wall': ['A wall of trunks. Three metres. One of you stands there and is a step. The other one climbs. I won\'t say who deserves which.', 'Trunks. Stand against the wall; let your partner use your head. It\'s the closest you\'ll come to being supportive today.'],
+  'coop.l9.wall2': ['Now swap. Fair is fair. And fair is a word I\'ve heard people use.', 'Again. The other way. Last time you were the step; try being the one who climbs.'],
+  'coop.l9.pulley': ['A counterweight. One of you is the weight. The other is what goes up. Notice nobody asked which you\'d prefer.', 'Pulleys. If you stand on the pan, they go up. If they stand on the pan, you go up. It\'s a metaphor and it\'s also a pulley.'],
+  'coop.l9.pulley2': ['Good. Now they get to be the weight. It builds character. Theirs, mostly.', 'And swap. Being held up is easy. Holding up is the part that\'s tiring.'],
+  'coop.l9.pend': ['Suitcases on ropes. They swing. They always swing. Ropes don\'t lie; they don\'t say much either.', 'Swinging luggage. Step on when it\'s close. Step off when it\'s close. You\'ll be good at this; you do it in conversations.'],
+  'coop.l9.pend2': ['Those ones are faster. Somebody is standing on a brake. It is, tragically, a metaphor again.', 'Fast ones now. One of you holds the brake while the other crosses. Then swap. Everyone gets a turn at being the brake.'],
+  'coop.l9.belt': ['The baggage carousel. The belt is faster than you. So someone stops it. It\'s called "support."', 'A conveyor belt that runs backwards, quicker than your legs. Your partner can stop it. Ask nicely.'],
+  'coop.l9.elev': ['Lifts. Each of you works the other\'s. Don\'t pull your own lever. You can\'t. I made sure.', 'Two lifts, two levers. Each lever is on the wrong side from where you\'ll be riding. I planned that.'],
+  'coop.l9.elev2': ['The other direction now. Remember: it was you who sent them up. They\'ll remember.', 'Again, swapped. Whoever got sent up last time: your turn to send.'],
+  'coop.l9.wind': ['A narrow beam and a lot of wind. You\'re roped together. One of you holds the line while the other goes. Hold it properly.', 'Gusts. The flags tell you when. The plate tells you who holds the line. The wind tells you nothing; it just arrives.'],
+  'coop.l9.unrope': ['And the rope comes off. You had a good run being attached.', 'Unroped. I\'m told that\'s liberating. I\'m also told it\'s a long way down.'],
+  'coop.l9.stones': ['Fragile stones. They hold one of you. Only one. The green ledges are safe. Please, keep it to one at a time. For once.', 'Old stones. They take one person\'s weight. Two people\'s weight is a conversation they won\'t survive.'],
+  'coop.l9.stonesboth': ['Two of you on the stones! Amber means someone is on them. Red means ... well. Look at the red.', 'Both of you on fragile stones. Even I would not have done that. Actually, I would. And I did.'],
+  'coop.l9.signs': ['Signs. One of yours is lying. I\'m not saying whose. I\'m saying one of you should talk to the other.', 'Directions! Each of you sees a different sign. How you reconcile them is a communication exercise. This is the communication exercise.'],
+  'coop.l9.fakeview': ['Look at that summit. Isn\'t it lovely. So close. So lit. So very much a thing I would put there.', 'The summit! There it is! With lanterns! You\'re welcome.'],
+  'coop.l9.fakesummit': ['It\'s a pavilion. The summit is up there. Behind the dark steps. Nobody ever believes the dark steps.', 'Congratulations on reaching the fake summit. It\'s a very good fake. I was rather proud of the lanterns.'],
+  'coop.l9.recap': ['Almost there. A quick refresher: every single thing you just learned, again, at speed. It\'s what couples do before the final argument.', 'The last stretch. A recap. Heads, weights, brakes, lifts, stones. Everything you owe each other, in one place.'],
+  'coop.l9.recap2': ['Lifts again. Remember who sends whom. Or don\'t; I\'ll watch.', 'Another lift. You know how this goes. Do it anyway.'],
+  'coop.l9.top': ['The real top. I almost didn\'t build one. Go on. Together.', 'This is genuinely the top. I can tell because I\'m running out of metaphors.'],
+  'coop.l9.circle': ['Both of you. In the circle. After all that. Don\'t let one of you wander off now.', 'The ring. The two of you. At the same time. You\'ve practised.'],
+  'coop.l9.partnerdown': ['Your partner fell. And so, by clause nine, did you. We all go down together.', 'Down they go. Down you go. A very trusting way to fall.'],
+});
+
 // ---------------------------------------------------------------- hints ---
 Object.assign(SCRIPT, {
   'hint.use': ['Oh, you need help? Of course you do. Follow the dots.', 'A hint! Free of charge. The dignity, however, will be billed later.', 'Fine. Follow the trail. Try not to die ON the trail.', 'Glowing dots. You\'re welcome. Please don\'t thank me.'],
