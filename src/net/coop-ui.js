@@ -111,14 +111,14 @@ export class CoopUI {
     const grid = $('coop-levels'); grid.innerHTML = '';
     if (!full) return;
     camp.levels.forEach((lv, i) => {
-      const open = !lv.placeholder && (c.isHost ? (isLevelUnlocked(camp, cs, i, g.debug) || g.debug) : false);
+      const open = !lv.placeholder && c.isHost;                       // 2 Player Mode: the host can pick any built session (no lock-step unlocking)
       const done = !!cs.levelBest[i];
       const t = document.createElement('button');
       t.className = 'tile ' + (done ? 'done' : lv.placeholder ? 'locked' : 'open');
       t.disabled = !c.isHost || lv.placeholder || !open;
       const n = document.createElement('span'); n.className = 'n'; n.textContent = lv.placeholder ? '🔧' : done ? '✔' : i + 1;
       const b = document.createElement('b'); b.textContent = lv.name;
-      const sm = document.createElement('small'); sm.textContent = lv.placeholder ? 'under construction' : (c.isHost ? (open ? (lv.tagline || 'ready') : 'clear the one before') : 'host picks');
+      const sm = document.createElement('small'); sm.textContent = lv.placeholder ? 'under construction' : (c.isHost ? (lv.tagline || 'ready') : 'host picks');
       t.append(n, b, sm);
       if (!t.disabled) t.addEventListener('click', () => { g.audio.click(); c.startLevel(i); });
       grid.appendChild(t);
