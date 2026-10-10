@@ -73,7 +73,7 @@ and respawn on death like players. **Always `npm run build` after editing source
 | # | Name | Kind | Death rule | Idea |
 |---|------|------|-----------|------|
 | 1 | Icebreakers | tutorial | self → both (rope) | Plates by colour, leapfrog bridges, stand-on-head wall + lift, rope, lever + 5-second gate. **Built.** |
-| 2 | Trust Falls | trust | revive | One of you can't see the platforms (the other can). Blindfold sections, swap roles, a real trust fall onto a net the partner positions. |
+| 2 | Trust Falls | trust | revive | One of you can't see the platforms (the other can). Blindfold sections, swap roles, a real trust fall onto a net the partner positions. **Built.** |
 | 3 | Communication Exercise | split info | self | Escape-room wing: one sees the symbols/map, the other holds the keypad/levers. Maze with a map-reader and a walker. |
 | 4 | Tethered Trek | rope | both | Mountain climb on a rope: swings, belay plates, wind, a falling-rock cave. |
 | 5 | Spa Day | control | self | One runs the control room (console shows hazard states) while the other crosses; swap wings. |
