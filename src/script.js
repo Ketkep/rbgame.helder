@@ -44,6 +44,11 @@ export const SCRIPT = {
   'coop.l7.ice1': ['One block of ice. Now swap. It is only fair. It is only cold.'],
   'coop.l7.ice2': ['Both blocks! Nobody froze. I will update the paperwork. I will put "mostly".'],
 
+  'coop.l7.soup': ['The soup course. One of you stirs. The other ladles. Then you swap and the other ladles. Soup is a team sport. So is spilling it.'],
+  'coop.l7.wet': ['Wet floor. There is a sign. The sign is spelled correctly. The bar on your screen is the soup\'s opinion of your footwork.'],
+  'coop.l7.trolley': ['A trolley! Step on, hold your breath, hold your soup. It leaves after a moment. It is not a taxi. It does not wait. Nobody has ever been waited for.'],
+  'coop.l7.soupdone': ['Two bowls, two tables, no puddles. I\'d clap but I\'m a voice.'],
+
   // ---------------------------------------------------------------- global ---------------
   'death.first': [
     'And that\'s a death! Don\'t worry, that one was free. The rest are billed monthly.',

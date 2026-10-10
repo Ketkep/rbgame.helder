@@ -287,11 +287,91 @@ export default {
       { x: 8, z: z3a - 15.4, r: 0.4, until: () => !!K.at('svcB') },
     );
     both({ x: 0, z: z3a - 19.4 + 2.5, r: 1.2, until: () => G.g4.passable });
-    const endZ = z3a - 22;
+    const zp = z3a - 22.4;
+
+    // ============================================================ 4. soup: stir, ladle, don't slosh ============================
+    planks(0, 0, zp - 7, 24, 14, { path: true });                                        // the pot room
+    w.checkpoint({ x: 0, y: 0, z: zp - 2, real: true });
+    for (const lx of [-10, 10]) lit(lx, 0, zp - 2);
+    counter(-4, zp - 5, 3.2, 1.6); counter(4, zp - 5, 3.2, 1.6);
+    ['A', 'B'].forEach((n, i) => {
+      const sx = i ? 4 : -4;
+      K.item('soup' + n, 'soup', 'soup' + n + '_home', { name: 'Bowl of soup', accel: 0.018 });
+      K.station('soup' + n + '_home', { x: sx, y: 1, z: zp - 5, label: 'Soup', accept: ['soup'], color: 0xe8a23c, takeable: () => stir.theirs });
+    });
+    const stir = plate(w, { x: 0, y: 0, z: zp - 9, size: 2.4, need: 'any', label: 'STIR THE POT' });
+    const potM = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 0.9, 1.1, 20, 1, true), new THREE.MeshStandardMaterial({ color: 0x8e949f, metalness: 0.7, roughness: 0.3, side: THREE.DoubleSide }));
+    potM.position.set(0, 0.55, zp - 11.5); w.add(potM);
+    const soupTop = new THREE.Mesh(new THREE.CircleGeometry(1.0, 20), new THREE.MeshStandardMaterial({ color: 0xe8a23c, emissive: 0x442200, emissiveIntensity: 0.6 }));
+    soupTop.rotation.x = -Math.PI / 2; soupTop.position.set(0, 0.95, zp - 11.5); w.add(soupTop);
+    sgn('THE POT NEEDS STIRRING · THE OTHER ONE LADLES', 0, 4.3, zp - 9, { w: 9, h: 1.1 });
+    sgn('SOUP · DON\'T SLOSH', 0, 4.3, zp - 5, { w: 4.4, h: 0.8 });
+    K.slosh = (() => { let tz = null; return () => { const gr = game.player.ground; if (gr && gr.tag === 'trolley') { const mv = tz !== null && Math.abs(gr.z - tz) > 1e-4; tz = gr.z; return mv ? 0.05 : 0; } tz = null; return 0; }; })();
+    // the wet floor
+    const wetZ = zp - 14;
+    deck(w, { x: 0, y: 0, z: wetZ - 9, w: 12, d: 18, tex: 'tile', color: 0xb9d4e8, slippery: 1, path: true });
+    for (const [px, pz] of [[-4, wetZ - 4], [4, wetZ - 9.5], [-4, wetZ - 14.5]]) w.plat({ x: px, y: 2.2, z: pz, w: 1.6, d: 1.6, h: 2.2, ...STEEL });
+    sgn('WET FLOOR', 0, 3.6, wetZ - 0.6, { w: 4, h: 0.9, border: '#ffb43d' });
+    sgn('SOUP SLOSHES WHEN YOU START, STOP, TURN OR JUMP. WATCH THE BAR.', 0, 5.4, wetZ - 0.6, { w: 9, h: 1.2 });
+    const vz = wetZ - 18;                                                                // the warm island
+    planks(0, 0, vz - 3, 12, 6, { path: true });
+    counter(0, vz - 3.4, 3, 1.4);
+    K.station('warmer', { x: 0, y: 1, z: vz - 3.4, label: 'Warmer', accept: ['soup'], refill: true, approach: [0, vz - 1.8], color: 0xffb43d });
+    sgn('WARMER · PUT IT DOWN, PICK IT UP: FULL AGAIN', 0, 3.6, vz - 3.4, { w: 6.5, h: 0.9, border: '#ffb43d' });
+    w.checkpoint({ x: 0, y: 0, z: vz - 1.2, real: true });
+    // the trolleys
+    const tz0 = vz - 6, TD = 4, TL = 11;
+    const nearZ = tz0 - 0.3 - TD / 2, farEdge = tz0 - 0.3 - TD - TL - 0.3;
+    const troA = w.plat({ x: -3.5, y: 0, z: nearZ, w: 4, d: TD, h: 0.6, tex: 'wood', color: 0xd9c9a0, tag: 'trolley', path: true });
+    w.rollaway(troA, { dir: [0, -1], dist: TL, accel: 4, speed: 5, delay: 1.6, hold: 3.0, back: 2.0 });
+    const troB = w.plat({ x: 3.5, y: 0, z: farEdge + 0.3 + TD / 2, w: 4, d: TD, h: 0.6, tex: 'wood', color: 0xd9c9a0, tag: 'trolley' });
+    w.rollaway(troB, { dir: [0, 1], dist: TL, accel: 4, speed: 5, delay: 1.6, hold: 3.0, back: 2.0 });
+    for (const t of [troA, troB]) for (const sx of [-1.7, 1.7]) { const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.12, 12), new THREE.MeshStandardMaterial({ color: 0x222 })); wh.rotation.z = Math.PI / 2; wh.position.set(sx, -0.45, 0); t.group.add(wh); }
+    sgn('TROLLEY · HOLD ON · IT ROLLS', -3.5, 3.4, tz0 - 0.6, { w: 4.4, h: 0.8 });
+    sgn('RETURN TROLLEY', 3.5, 3.4, farEdge + 0.8, { w: 4.4, h: 0.8 });
+    const nz = farEdge;                                                                  // dock where you deliver
+    planks(0, 0, nz - 6.7, 14, 13.4, { path: true });
+    counter(-3, nz - 9, 3, 1.4); counter(3, nz - 9, 3, 1.4);
+    K.station('soupT1', { x: -3, y: 1, z: nz - 9, label: 'Table 4', accept: ['soup'], takeable: () => false, color: 0x39d7c9 });
+    K.station('soupT2', { x: 3, y: 1, z: nz - 9, label: 'Table 5', accept: ['soup'], takeable: () => false, color: 0x39d7c9 });
+    sgn('TWO BOWLS · TWO TABLES', 0, 4.4, nz - 9, { w: 7, h: 1 });
+    w.checkpoint({ x: 0, y: 0, z: nz - 3, real: true });
+    G.g5 = gate(w, { x: 0, z: nz - 13.8, w: 14, h: 5 });
+    w.updaters.push(() => G.g5.set(!!K.at('soupT1') && !!K.at('soupT2')));
+    stage(w, 'soup', { x: 0, y: 1, z: zp - 3, w: 24, h: 4, d: 5 }, () => tell('all', 'coop.l7.soup'));
+    stage(w, 'wet', { x: 0, y: 1, z: wetZ - 1, w: 12, h: 4, d: 3 }, () => tell('all', 'coop.l7.wet'));
+    stage(w, 'trolley', { x: 0, y: 1, z: vz - 4, w: 12, h: 4, d: 3 }, () => tell('all', 'coop.l7.trolley'));
+    const prevOnPut = K.onPut;
+    K.onPut = (id, item, who) => { prevOnPut?.(id, item, who); if (window.__bot) window.__bot.log.push(`put ${item} at ${id} sp=${K.sp(item).toFixed(2)}`); };
+    let soupsDone = false;
+    w.updaters.push(() => { if (!soupsDone && K.at('soupT1') && K.at('soupT2')) { soupsDone = true; tell('all', 'coop.l7.soupdone'); } });
+    // bots: p1 ladles A while p2 stirs, then p2 ladles B while p1 stirs; both cross in their own lane; both ride the same trolley
+    const ride = (lane) => [
+      { x: lane, z: vz - 1.5, r: 0.8, until: () => P.has && P.sz < vz + 3 },
+      { x: lane, z: vz - 4.0, r: 0.8, until: () => P.has && P.sz < vz - 3 },
+      { x: -3.5 + (lane < 0 ? -0.8 : 0.8), z: tz0 - 1.4, r: 0.7 },
+      { x: -3.5 + (lane < 0 ? -0.8 : 0.8), z: nearZ, r: 99, until: () => troA.body.z < nearZ - TL + 0.6 },
+      { x: lane, z: nz - 4, r: 1.0 },
+    ];
+    bots.p1.push(
+      S.take('soupA_home', 'soupA'),
+      { x: 0, z: zp - 9, r: 0.4, until: () => K.holder('soupB') === 'p2' },
+      { x: -1.5, z: wetZ - 1.5, r: 0.8 }, { x: -1.5, z: vz - 0.8, r: 0.8 },
+      ...ride(-1.5),
+      S.put('soupT1'),
+    );
+    bots.p2.push(
+      { x: 0, z: zp - 9, r: 0.4, until: () => K.holder('soupA') === 'p1' },
+      S.take('soupB_home', 'soupB'),
+      { x: 1.5, z: wetZ - 1.5, r: 0.8 }, { x: 1.5, z: vz - 0.8, r: 0.8 },
+      ...ride(1.5),
+      S.put('soupT2'),
+    );
+    both({ x: 0, z: nz - 11.4, r: 1.2, until: () => G.g5.passable }, { x: 0, z: nz - 16, r: 1.2 });
+    const endZ = nz - 14.2;
 
     // ============================================================ finish (placeholder) ============
     planks(0, 0, endZ - 7, 14, 14, { path: true });
-    both({ x: 0, z: endZ - 4, r: 1.2 });
     w.goal({ x: 0, y: 0, z: endZ - 6 });
 
     dinnerBots(w, K, bots);
