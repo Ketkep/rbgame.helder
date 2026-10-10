@@ -9,7 +9,7 @@ const glassMat = new THREE.MeshBasicMaterial({ color: 0xbfe9ff, transparent: tru
 const frameMat = () => plainMaterial(0x39424f, { metalness: 0.6, roughness: 0.4 });
 
 /** A glass pane (visual only) from (x,z) with length `len` along z (axis 'z') or x (axis 'x'). */
-function glass(w, { x, y, z, len, h = 3.6, axis }) {
+function glass(w, { x, y, z, len, h = 8, axis }) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(len, h), glassMat);
   m.position.set(x, y + h / 2, z);
   if (axis === 'z') m.rotation.y = Math.PI / 2;
@@ -40,15 +40,19 @@ export function controlRoom(w, { side, z0, z1, y = 3, dz0, dz1, exitZ, title }) 
   wallBody(w, { x: xc, y, z: z1, len: 16, axis: 'x' }); glass(w, { x: xc, y, z: z1, len: 16, axis: 'x' });
   for (const [a, b] of [[z0, dz0], [dz1, z1]]) if (a - b > 0.1) { wallBody(w, { x: xi, y, z: (a + b) / 2, len: a - b, axis: 'z' }); glass(w, { x: xi, y, z: (a + b) / 2, len: a - b, axis: 'z' }); }
   const exit = gate(w, { x: xo, y, z: exitZ, w: 0.5, d: 4, h: 3.6, color: 0x39424f, tex: 'metal', glow: 0xff4d5e });
-  sign(w, title, xc, y + 4.9, z0 - 0.3, { w: 9, h: 1.1, size: 40 });
+  sign(w, title, xc, y + 8.6, z0 - 0.3, { w: 9, h: 1.1, size: 40 });
   // desk + screen on the south wall
   const bz = z1 + 1.0;
   w.box({ x: xc, y: y + 0.5, z: bz + 0.05, w: 15.2, h: 1.0, d: 1.1, color: 0x2b2f3a, rough: 0.5 });
   w.box({ x: xc, y: y + 1.04, z: bz + 0.05, w: 15.2, h: 0.08, d: 1.2, color: 0x4a5160, rough: 0.4 });
-  w.box({ x: xc, y: y + 3.95, z: z1 + 0.28, w: 14.4, h: 3.2, d: 0.14, color: 0x14171f, rough: 0.5 });
+  w.box({ x: xc, y: y + 5.0, z: z1 + 0.28, w: 14.4, h: 5.1, d: 0.14, color: 0x14171f, rough: 0.5 });
+  // a second desk on the north wall (diffusers etc.)
+  w.box({ x: xc, y: y + 0.5, z: z0 - 1.05, w: 15.2, h: 1.0, d: 1.1, color: 0x2b2f3a, rough: 0.5 });
+  w.box({ x: xc, y: y + 1.04, z: z0 - 1.05, w: 15.2, h: 0.08, d: 1.2, color: 0x4a5160, rough: 0.4 });
+  const north = { bx: (i) => side * (22.2 + i * 1.5), bz: z0 - 1.0, floorY: y, standZ: z0 - 2.7, dir: -1 };
   const draw = { fn: null };
-  const screen = canvasPlane(w, { x: xc, y: y + 3.95, z: z1 + 0.39, width: 14, height: 2.9, px: 1792, draw: (g, cw, ch) => idleScreen(g, cw, ch, title) });
-  const room = { exit, screen, bz, standZ: bz + 1.7, floorY: y, xc, side, z0, z1, draw, bx: (i) => side * (22.2 + i * 1.5) };
+  const screen = canvasPlane(w, { x: xc, y: y + 5.0, z: z1 + 0.39, width: 14, height: 4.8, px: 1792, draw: (g, cw, ch) => idleScreen(g, cw, ch, title) });
+  const room = { exit, screen, bz, standZ: bz + 1.7, floorY: y, xc, side, z0, z1, draw, north, dir: 1, bx: (i) => side * (22.2 + i * 1.5) };
   return room;
 }
 
@@ -73,13 +77,13 @@ export function liveScreen(w, room, enabled, fn, hz = 8) {
  * A console button/lever. `onPress()` runs locally on the presser; the level turns it into shared state.
  * `lit()` says whether it glows (state shown on the cap). Returns { index, x, z, y }.
  */
-export function consoleButton(w, room, i, { label, color = 0xffc83d, onPress, lit = () => false, enabled = true }) {
-  const x = room.bx(i), z = room.bz, y = room.floorY + 1.08;
+export function consoleButton(w, room, i, { label, color = 0xffc83d, onPress, lit = () => false, enabled = true, size = 26 }) {
+  const x = room.bx(i), z = room.bz, y = room.floorY + 1.08, dir = room.dir || 1;
   const g = new THREE.Group(); g.position.set(x, y, z); w.add(g);
   const base = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.4, 0.22, 20), plainMaterial(0x1b1e27, { metalness: 0.6, roughness: 0.4 })); base.position.y = 0.11; g.add(base);
   const mat = glowMaterial(color, 1.0);
   const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.16, 20), mat); cap.position.y = 0.3; g.add(cap);
-  sign(w, label, x, room.floorY + 2.1, z + 0.35, { w: 1.4, h: 0.5, size: 26, tw: 320, bg: 'rgba(10,12,18,0.7)', border: '#' + color.toString(16).padStart(6, '0') });
+  sign(w, label, x, room.floorY + 2.1, z + 0.35 * dir, { w: 1.4, h: 0.5, size, tw: 320, bg: 'rgba(10,12,18,0.7)', border: '#' + color.toString(16).padStart(6, '0') });
   w.updaters.push((dt) => {
     const on = lit();
     const target = on ? 0.26 : 0.34, k = Math.min(1, dt * 12);
@@ -207,6 +211,51 @@ export function pool(w, { x, z, wd, dp, y = -1.2, color = 0x3aa6c8, hot = false 
   const hz = w.hazard({ x, y: y - 0.9, z, w: wd, h: 1.8, d: dp, color: hot ? 0xff5a3c : 0x39b9e0 });
   hz.group.visible = false; hz.predict = () => false;
   return hz;
+}
+
+
+
+export const SCENTS = [
+  { sym: '●', hex: 0xff6f9c, css: '#ff6f9c', name: 'ROSE' },
+  { sym: '▲', hex: 0x39d7c9, css: '#39d7c9', name: 'TEAL' },
+  { sym: '■', hex: 0xffc83d, css: '#ffc83d', name: 'GOLD' },
+  { sym: '◆', hex: 0xa78bfa, css: '#a78bfa', name: 'VIOLET' },
+];
+
+/**
+ * The aromatherapy lock: a gate that opens for 16 s when the diffusers are pressed in the right order. A wrong press resets the
+ * sequence (the lock coughs). `reveal` decides whether the little panel on the gate shows the sequence (or only the progress).
+ * Presses travel through the shared store, so both machines step the same state machine in the same order.
+ */
+export function aroma(w, { key, seq, z, wd = 10, reveal }) {
+  const c = w.coop;
+  const st = { pos: 0, openT: 0, bad: 0, seq, gate: gate(w, { x: 0, z, w: wd, h: 4.5, d: 0.8, color: 0x6b8f8a, tex: 'metal', glow: 0x39d7c9 }) };
+  c.on(key, (v) => {
+    if (st.openT > 0) return;
+    const sym = v & 3;
+    if (sym === seq[st.pos]) { st.pos++; if (st.pos >= seq.length) { st.openT = 16; st.pos = 0; } }
+    else { st.pos = 0; st.bad = 1.4; }
+  });
+  st.press = (sym) => c.set(key, ((((c.get(key, 0) | 0) >> 2) + 1) << 2) | sym);
+  const panel = canvasPlane(w, { x: 0, y: 3.2, z: z + 1.2, width: 7.2, height: 1.9, px: 768, double: true, draw: () => {} });
+  let acc = 0;
+  w.updaters.push((dt) => {
+    st.openT = Math.max(0, st.openT - dt); st.bad = Math.max(0, st.bad - dt); st.gate.set(st.openT > 0);
+    acc += dt; if (acc < 0.15) return; acc = 0;
+    panel.redraw((g, cw, ch) => {
+      g.fillStyle = '#0d1a1c'; g.fillRect(0, 0, cw, ch); g.strokeStyle = st.bad > 0 ? '#ff4d5e' : '#39d7c9'; g.lineWidth = 8; g.strokeRect(4, 4, cw - 8, ch - 8);
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#9fd8d0'; g.font = '700 38px Inter, system-ui, sans-serif';
+      g.fillText(st.openT > 0 ? 'THE LOCK IS OPEN' : st.bad > 0 ? '*cough*  START OVER' : reveal ? 'AROMATHERAPY LOCK · SCENT ORDER' : 'AROMATHERAPY LOCK · ORDER ON THE CONSOLE', cw / 2, 52);
+      const n = seq.length, cell = Math.min(110, (cw - 60) / n);
+      for (let i = 0; i < n; i++) {
+        const cx = cw / 2 + (i - (n - 1) / 2) * (cell + 8), cy = 140;
+        g.fillStyle = i < st.pos || st.openT > 0 ? 'rgba(61,220,151,0.28)' : 'rgba(255,255,255,0.06)'; g.fillRect(cx - cell / 2, cy - 48, cell, 96);
+        if (reveal) { g.fillStyle = SCENTS[seq[i]].css; g.font = '800 78px Inter, system-ui, sans-serif'; g.fillText(SCENTS[seq[i]].sym, cx, cy + 4); }
+        else { g.fillStyle = i < st.pos || st.openT > 0 ? '#3ddc97' : '#40505a'; g.font = '800 64px Inter, system-ui, sans-serif'; g.fillText(i < st.pos || st.openT > 0 ? '✔' : '?', cx, cy + 4); }
+      }
+    });
+  });
+  return st;
 }
 
 export { deck, sign, gate };
