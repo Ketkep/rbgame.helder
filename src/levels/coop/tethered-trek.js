@@ -269,29 +269,27 @@ export default {
     // chimney, tier one (p2 boosts, p1 climbs) and tier two (p1 boosts, p2 climbs)
     const tier1 = {
       p2: [
-        { x: -0.4, z: zf1 + 0.5, r: 0.2, until: () => P.has && P.g && P.sy > Yl1 - 0.3 && P.sz < zf1 - 0.8 },
+        { x: 0, z: zf1 + 0.5, r: 0.2, until: () => P.has && P.g && P.sy > Yl1 - 0.3 && P.sz < zf1 - 0.8 },
         { x: 5.5, z: zf1 + 4, until: () => pl.y > Yl1 - 0.3 },
       ],
       p1: [
         { x: 1.75, z: zf1 + 1.1, r: 0.2, until: () => pl.y > Y6 + 1.1 && pl.grounded },
-        { x: 1.75, z: zf1 + 1.1, r: 0.3, until: () => P.has && P.g && Math.abs(P.sx) < 0.5 && Math.abs(P.sz - (zf1 + 0.5)) < 0.5 },
-        { x: 0.2, z: zf1 + 0.9, r: 0.12, until: () => P.has && P.g && Math.abs(P.sx + 0.4) < 0.25 && Math.abs(P.sz - (zf1 + 0.5)) < 0.4 },
-        { x: () => P.sx, z: () => P.sz, jump: 0.8, until: () => pl.y > Y6 + 1.6 && pl.grounded },
+        { x: 1.75, z: zf1 + 1.1, r: 0.1, until: () => P.has && P.g && Math.abs(P.sx) < 0.2 && Math.abs(P.sz - (zf1 + 0.5)) < 0.3 && Math.hypot(pl.x - 1.75, pl.z - (zf1 + 1.1)) < 0.2 && Math.hypot(pl.vx, pl.vz) < 0.3 },
+        { x: () => P.sx, z: () => P.sz, jump: 1.3, stop: 0.3, r: 0.05, until: () => pl.y > Y6 + 1.6 && pl.grounded },
         { x: 0, z: zf1 - 2.4, jump: 3, until: () => pl.y > Yl1 - 0.2 && pl.grounded },
         { x: 0, z: zf1 - 10, until: () => P.has && P.g && P.sy > Yl1 - 0.3 },
       ],
     };
     const tier2 = {
       p1: [
-        { x: 0.5, z: zf2 + 0.6, r: 0.2, until: () => P.has && P.g && P.sy > Yl2 - 0.3 && P.sz < zf2 - 0.8 },
+        { x: 0.75, z: zf2 + 0.6, r: 0.2, until: () => P.has && P.g && P.sy > Yl2 - 0.3 && P.sz < zf2 - 0.8 },
         { x: -5.5, z: zf2 + 4, until: () => pl.y > Yl2 - 0.3 },
       ],
       p2: [
         { x: 5, z: zf2 + 1.25, r: 0.3, until: () => pl.y > Yl1 + 1.1 && pl.grounded },
         { x: 2.5, z: zf2 + 1.1, r: 0.3, until: () => pl.y > Yl1 + 2.1 && pl.grounded },
-        { x: 2.5, z: zf2 + 0.6, r: 0.3, until: () => P.has && P.sy > Yl1 + 1.0 && P.sx < 1.4 && P.sz < zf2 + 1.6 },
-        { x: 0.95, z: zf2 + 0.9, r: 0.12, until: () => P.has && P.g && Math.abs(P.sx - 0.5) < 0.25 },
-        { x: () => P.sx, z: () => P.sz, jump: 0.8, until: () => pl.y > Yl1 + 2.8 && pl.grounded },
+        { x: 2.5, z: zf2 + 0.9, r: 0.1, until: () => P.has && P.g && P.sy > Yl1 + 1.0 && Math.abs(P.sx - 0.75) < 0.2 && Math.abs(P.sz - (zf2 + 0.6)) < 0.3 && Math.hypot(pl.x - 2.5, pl.z - (zf2 + 0.9)) < 0.2 && Math.hypot(pl.vx, pl.vz) < 0.3 },
+        { x: () => P.sx, z: () => P.sz, jump: 1.3, stop: 0.3, r: 0.05, until: () => pl.y > Yl1 + 2.8 && pl.grounded },
         { x: 0, z: zf2 - 2.4, jump: 3, until: () => pl.y > Yl2 - 0.2 && pl.grounded },
         { x: 0, z: zf2 - 10, until: () => P.has && P.g && P.sy > Yl2 - 0.3 },
       ],

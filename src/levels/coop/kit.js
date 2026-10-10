@@ -178,7 +178,7 @@ export function setDeathRule(w, rule) { w.coopRules.deathRule = rule; }
  * step: { x, z }                    walk to (x,z) (numbers or functions), done on arrival (r metres, default 1)
  *       { x, z, until: () => bool } walk there, then stand still until the condition is true
  *       { until }                   just stand still until true
- *       { jump: true|radius }       jump while moving toward the target (boosts, hops) once within `radius` metres (default 2.2)
+ *       { jump: true|radius, stop }       jump while moving toward the target (boosts, hops) once within `radius` metres (default 2.2)
  *       { follow: true, until }     walk the path:true platforms until the condition holds
  * Without a plan the bot follows `path:true` platforms in order.
  */
@@ -200,7 +200,7 @@ export function botSteps(w, byRole) {
       if (done) { i++; s.then?.(); continue; }
       const stand = s.until && (arrived || s.x === undefined);
       if (s.use && arrived) g.useFocus();
-      return { x: tx, z: tz, wait: !!stand, jump: s.jump || false };
+      return { x: tx, z: tz, wait: !!stand, jump: s.jump || false, stop: s.stop };
     }
     return null;                                        // out of steps: follow the path again
   };
