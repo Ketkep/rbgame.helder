@@ -344,7 +344,7 @@ export class Game {
     art.setAttribute('aria-hidden', 'true');
     for (let i = 0; i < 4; i++) art.appendChild(mk('i'));
     card.appendChild(art);
-    card.appendChild(mk('p', 'eyebrow', `CAMPAIGN ${c.number}`));
+    card.appendChild(mk('p', 'eyebrow', c.eyebrow || `CAMPAIGN ${c.number}`));
     card.appendChild(mk('h3', '', c.title));
     card.appendChild(mk('p', 'blurb', c.tagline));
     if (c.status !== 'playable') {
@@ -406,7 +406,7 @@ export class Game {
 
   openLevels(id) {
     const c = getCampaign(id), cs = this.cs(id), { el } = this.ui;
-    el['levels-eyebrow'].textContent = `CAMPAIGN ${c.number}`;
+    el['levels-eyebrow'].textContent = c.eyebrow || `CAMPAIGN ${c.number}`;
     el['levels-title'].textContent = c.title;
     el['levels-grid'].innerHTML = '';
     c.levels.forEach((lv, i) => {
@@ -847,7 +847,7 @@ export class Game {
     e['end-baby'].textContent = this.baby ? 'Yes 👶' : 'No';
     e['end-title'].textContent = this.totalDeaths === 0 ? 'Zero deaths?! Cheater.' : this.baby ? 'You trusted no one. (After some help.)' : 'You trusted no one. You win.';
     e['end-share'].textContent = this._shareText();
-    e['end-eyebrow'].textContent = `CAMPAIGN ${this.campaign.number} COMPLETE`;
+    e['end-eyebrow'].textContent = this.campaign.eyebrow ? '2 PLAYER MODE COMPLETE' : `CAMPAIGN ${this.campaign.number} COMPLETE`;
     e['btn-again'].classList.toggle('hidden', !!this.coop);
     e['end-next'].textContent = this.campaign.after || '';
     this.ui.hud(false);

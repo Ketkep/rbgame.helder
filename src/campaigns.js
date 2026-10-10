@@ -33,13 +33,14 @@ export const CAMPAIGNS = [
     hub: hotelLobby,            // a walkable lobby; its elevators are the level select
     tiers: TIERS,
     levels: buildHotelLevels(),
-    after: 'Campaign 3 is coming soon. The manager says it will be "fair".',
+    after: 'There is a 2 Player Mode now. The manager says it will be "fair". Bring a friend. Or an enemy.',
   },
   {
     id: 'coop',
     number: 3,
-    title: 'Couples Retreat',
-    tagline: 'Two players, online. Ten "trust exercises" at a lakeside wellness resort. The counsellor sides with nobody.',
+    eyebrow: '2 PLAYERS · ONLINE',
+    title: '2 Player Mode',
+    tagline: 'Grab a friend and a Discord call. Ten "trust exercises" at the Couples Retreat. The counsellor sides with nobody.',
     eta: '10 sessions · ~10 min each',
     status: 'playable',
     coop: true,

@@ -33,7 +33,7 @@ const stepN = (page, n) => page.evaluate((n) => { const g = window.__trust; for 
     btn: document.querySelector('.card.playable .btn.primary').textContent,
     pips: [...document.querySelector('.card.playable').querySelectorAll('.pip')].map((p) => p.className.replace('pip ', '')),
   }));
-  ok(r.cards === 3 && r.playable === 2 && r.soon === 1, `home shows 2 playable (Campaign 1 + Hotel) + 1 coming-soon campaign (${r.playable}/${r.soon})`);
+  ok(r.cards === 3 && r.playable === 3 && r.soon === 0, `home shows 3 playable cards (Campaign 1, Hotel, 2 Player Mode) (${r.playable}/${r.soon})`);
   ok(r.btn === 'Play', 'fresh player sees "Play"');
   ok(JSON.stringify(r.pips) === JSON.stringify(['open', 'locked', 'locked', 'locked', 'locked']), `fresh player: only level 1 unlocked (${r.pips})`);
   await fresh.click('.card.playable .btn.ghost');
