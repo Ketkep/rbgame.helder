@@ -207,5 +207,6 @@ export function botSteps(w, byRole) {
     return null;                                        // out of steps: follow the path again
   };
   w.botIndex = () => i;
+  w.botCur = () => steps[i];
   w.botSetIndex = (n) => { i = n; };
 }

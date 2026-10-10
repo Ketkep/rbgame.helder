@@ -28,7 +28,7 @@ export default {
     const add = (role, ...steps) => bots[role].push(...steps);
     const both = (...steps) => { add('p1', ...steps); add('p2', ...steps); };
     // bot recovery: after a fall both respawn at a checkpoint, so each bot rewinds its script to where it stood when that checkpoint was reached
-    const marks = [];
+    const marks = []; w.dbgMarks = marks;
     const mark = (yy) => marks.push({ y: yy, p1: bots.p1.length, p2: bots.p2.length });
     const cpRecs = []; let openCp = [];
     const closeCps = () => { for (const r of openCp) { r.p1 = bots.p1.length; r.p2 = bots.p2.length; } openCp = []; };
@@ -455,7 +455,7 @@ export default {
     const decorate = (F0, s0, s1, y0, y1, count) => luggageStacks(w, F0, { s0, s1, y0, y1, count });
     const tagAt = (F0, text, s, yy) => { const sd = F0.x === 0 ? -1 : 1; crateTag(w, text, F0.X(sd * 8.7), yy, F0.Z(s), sd > 0 ? -Math.PI / 2 : Math.PI / 2); };
     /** bots: walk the path until standing on the first deck of the next piece */
-    const approach = (F0, yy) => both({ follow: true, until: () => feet(yy) && F0.S(pl().z) > F0.skip + 2 && Math.abs(pl().x - F0.X(0)) < 9 });
+    const approach = (F0, yy) => both({ follow: true, until: () => feet(yy, 1.6) && F0.S(pl().z) > F0.skip + 2 && Math.abs(pl().x - F0.X(0)) < 9 });       // (some stages start straight on a stair 1.1 m up)
     /** close a stage: wide transfer deck to the next lane, then the next frame */
     const finish = (F0, r) => {
       const len = F0.transfer(w, r.s, r.y);
@@ -542,11 +542,14 @@ export default {
     cloudBank(w, 92, { cz: -30 });
     F = finish(F, r8);
     // ---- 9: a recap, fast
-    const y9 = r8.y;
+    w.dbgF9 = F;
+    const y9 = r8.y; w.dbgY9 = y9;
     beat(F, F.skip, y9, () => { tell('all', 'coop.l9.recap'); raiseKill(y8 - 3); });
     mark(y9);
     approach(F, y9);
+    const L9 = { a: [bots.p1.length, bots.p2.length] };
     const a9 = headWalls(F, y9, F.skip, 14, 1);
+    L9.b = [bots.p1.length, bots.p2.length]; w.dbgL9 = L9;
     decorate(F, 0, a9.s + 12, y9, a9.y, 12);
     F = finish(F, a9);
     approach(F, a9.y);
