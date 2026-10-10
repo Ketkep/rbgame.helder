@@ -12,7 +12,7 @@ import { controlRoom, liveScreen, consoleButton, rail, vent, mud, belt, iceTile,
 // ---- layout constants (z runs negative) ----
 const A = { rows: [-34, -42, -50], mud: [-60, -76], belt: [-76, -88], rest: [-88, -96], hall: [-96, -116], gateZ: -106, tiles: [-121, -128, -135, -142], lounge: [-147, -160] };
 const L = { chairs: [-163, -167.5, -172], deck2: [-175, -192] };
-const B = { entry: [-192, -202], gateZ: -194, rowZ0: -203.7, rowStep: 3.4, rows: 7, mistEnd: -225.8, rest1: [-225.8, -232], slip: [-232, -272], gates: [-240, -252, -264], rest2: [-272, -280], vents: [-287, -293, -299], ventDeck: [-280, -302], plaza: [-339, -360], goalZ: -352 };
+const B = { entry: [-192, -202], gateZ: -194, rowZ0: -203.7, rowStep: 3.4, rows: 7, mistEnd: -225.8, rest1: [-225.8, -232], slip: [-232, -272], gates: [-240, -252, -264], rest2: [-272, -280], vents: [-288, -296.5, -305], ventDeck: [-280, -311], plaza: [-348, -369], goalZ: -361 };
 
 const GATE_COLORS = [{ name: 'TEAL', hex: 0x39d7c9 }, { name: 'ROSE', hex: 0xff6f9c }, { name: 'GOLD', hex: 0xffc83d }];
 
@@ -156,10 +156,10 @@ export default {
     // ---- wing B control room (west) ----
     stone(w, { x: -15.5, y: 1, z: -184, w: 3, d: 4, h: 1 }); stone(w, { x: -18.5, y: 2, z: -184, w: 3, d: 4, h: 1 });
     const roomB = controlRoom(w, { side: -1, z0: -176, z1: -198, dz0: -181.5, dz1: -186.5, exitZ: -193, title: 'CONTROL ROOM · WING B' });
-    deck(w, { x: -38.5, y: 3, z: -268, w: 4, d: 158, h: 1, color: 0xd8c4a0 });          // z -189 … -347
-    rail(w, { x: -40.6, y: 3, z: -268, len: 158 }); rail(w, { x: -36.45, y: 3, z: -267, len: 142 }); rail(w, { x: -38.5, y: 3, z: -188.8, len: 4.4, axis: 'x' });
-    stone(w, { x: -34.5, y: 2, z: -343, w: 4, d: 8, h: 1 }); stone(w, { x: -23, y: 1, z: -343, w: 18, d: 8, h: 1 });
-    for (const lz of [-215, -245, -275, -305]) lantern(w, -40, 3, lz);
+    deck(w, { x: -38.5, y: 3, z: -272.5, w: 4, d: 167, h: 1, color: 0xd8c4a0 });          // z -189 … -356
+    rail(w, { x: -40.6, y: 3, z: -272.5, len: 167 }); rail(w, { x: -36.45, y: 3, z: -271.5, len: 151 }); rail(w, { x: -38.5, y: 3, z: -188.8, len: 4.4, axis: 'x' });
+    stone(w, { x: -34.5, y: 2, z: -352, w: 4, d: 8, h: 1 }); stone(w, { x: -23, y: 1, z: -352, w: 18, d: 8, h: 1 });
+    for (const lz of [-215, -245, -275, -305, -335]) lantern(w, -40, 3, lz);
 
     // ================================================================ WING B =====================================
     // B0 entry deck + gate
@@ -210,27 +210,27 @@ export default {
     stage(w, 'B2done', { x: 0, y: 1, z: -274, w: 10, h: 4, d: 3 }, () => tell('all', 'coop.l5.gatesdone'));
 
     // B3 the second steam hall, then pool tiles that sink
-    deck(w, { x: 0, y: 0, z: -291, w: 10, d: 22, path: true });                          // z -280 … -302
+    deck(w, { x: 0, y: 0, z: -295.5, w: 10, d: 31, path: true });                          // z -280 … -311
     const ventEndB = [-1, -1, -1];
     const ventsB = B.vents.map((z, k) => vent(w, { z, stuck: k === stuckB, offset: k * 1.3 + 0.6, period: 4.2, venting: (t) => Math.max(0, ventEndB[k] - t) }));
     for (let k = 0; k < 3; k++) c.on('B.v' + k, () => { ventEndB[k] = w.t + 7.5; });
     stage(w, 'B3', { x: 0, y: 1, z: -281.5, w: 10, h: 4, d: 3 }, () => { tell('p2', 'coop.l5.vents2.p2'); tell('p1', 'coop.l5.vents2.p1'); });
-    pool(w, { x: 0, z: -321, wd: 14, dp: 40, y: -1.3, color: 0xe58c4a, hot: true });
-    const sink = chain(w, { x: 0, y: 0, z: -302 }, [{ gap: 2.8, d: 4, w: 5 }, { gap: 2.8, d: 4, w: 5 }, { gap: 2.8, d: 4, w: 5 }, { gap: 2.8, d: 4, w: 5 }, { gap: 2.8, d: 4, w: 5 }]);
+    pool(w, { x: 0, z: -330, wd: 14, dp: 42, y: -1.3, color: 0xe58c4a, hot: true });
+    const sink = chain(w, { x: 0, y: 0, z: -311 }, [{ gap: 2.8, d: 4, w: 5 }, { gap: 2.8, d: 4, w: 5 }, { gap: 2.8, d: 4, w: 5 }, { gap: 2.8, d: 4, w: 5 }, { gap: 2.8, d: 4, w: 5 }]);
     sink.slice(1).forEach((p, i) => w.crumble(p, { delay: 0.9, gone: 3.2 + (i % 2) }));
     w.checkpoint({ x: 0, y: sink[0].top, z: sink[0].body.z, real: true });
-    stage(w, 'B3sink', { x: 0, y: 1, z: -303, w: 10, h: 4, d: 2 }, () => tell('all', 'coop.l5.sinks'));
+    stage(w, 'B3sink', { x: 0, y: 1, z: -312, w: 10, h: 4, d: 2 }, () => tell('all', 'coop.l5.sinks'));
     let exitB = false;
-    stage(w, 'B.exit', { x: 0, y: 1, z: -301, w: 10, h: 5, d: 2.5 }, () => { exitB = true; tell('p1', 'coop.l5.leave.p1'); tell('p2', 'coop.l5.leave.p2'); });
+    stage(w, 'B.exit', { x: 0, y: 1, z: -309, w: 10, h: 5, d: 2.5 }, () => { exitB = true; tell('p1', 'coop.l5.leave.p1'); tell('p2', 'coop.l5.leave.p2'); });
     w.updaters.push(() => roomB.exit.set(exitB));
 
     // the plaza and the real finish
-    deck(w, { x: 0, y: 0, z: -349.5, w: 28, d: 21, path: true });                          // z -339 … -360
+    deck(w, { x: 0, y: 0, z: -358.5, w: 28, d: 21, path: true });                          // z -348 … -369
     w.goal({ x: 0, y: 0, z: B.goalZ });
     sign(w, 'BOTH OF YOU. IN THE CIRCLE. THE ONE IN THE GLASS ROOM TOO.', 0, 5.4, B.goalZ - 4, { w: 11, h: 1.6, size: 30 });
     beacon(w, 0, 0, B.goalZ, 0xffe9a8, 20);
     for (const lx of [-6, 6]) lantern(w, lx, 0, B.goalZ + 3);
-    stage(w, 'plaza', { x: 0, y: 1, z: -342, w: 28, h: 4, d: 4 }, () => tell('all', 'coop.l5.circle'));
+    stage(w, 'plaza', { x: 0, y: 1, z: -351, w: 28, h: 4, d: 4 }, () => tell('all', 'coop.l5.circle'));
     w.hooks.onPartnerDeath = () => { tell('all', 'coop.l5.partnerdown'); return true; };
 
     // ================================================================ consoles ======================================
@@ -277,7 +277,7 @@ export default {
       const t = w.t, s = 1712 / 153, X = (z) => 40 + (-192 - z) * s, Y = (x) => 100 + (x + 5.5) * s;
       header(g, cw, 'SERENITY FALLS · SPA CONTROL · WING B', `${N.p2} is crossing. They cannot see this screen.`);
       const rect = (z0, z1, col, x0 = -5, x1 = 5) => { g.fillStyle = col; g.fillRect(X(z0), Y(x0), X(z1) - X(z0), Y(x1) - Y(x0)); };
-      rect(-192, -202, '#1f3a46'); rect(-202, -226, '#cfd8e0'); rect(-226, -232, '#1f3a46'); rect(-232, -272, '#2a4a60', -2, 2); rect(-272, -302, '#1f3a46'); rect(-302, -339, '#4a2a20', -2.5, 2.5);
+      rect(-192, -202, '#1f3a46'); rect(-202, -226, '#cfd8e0'); rect(-226, -232, '#1f3a46'); rect(-232, -272, '#2a4a60', -2, 2); rect(-272, -311, '#1f3a46'); rect(-311, -348, '#4a2a20', -2.5, 2.5);
       for (let i = 0; i < B.rows; i++) { g.fillStyle = '#2bbf84'; g.fillRect(X(rowZ(i) + 1.7), Y(colX(path[i]) - 1.65), X(rowZ(i) - 1.7) - X(rowZ(i) + 1.7) - 1, Y(1.65) - Y(0)); }
       B.gates.forEach((z, g2) => { g.fillStyle = gateT[g2] > 0 ? '#7ad7a0' : '#8a5a36'; g.fillRect(X(z + 0.4), Y(-2), X(z - 0.4) - X(z + 0.4), Y(2) - Y(-2)); g.fillStyle = '#fff'; font(g, 24, 800); g.textAlign = 'center'; g.fillText('G' + (g2 + 1), X(z), Y(-2) - 8); });
       ventsB.forEach((v, k) => { const z = B.vents[k]; g.fillStyle = vcol(v.s); g.fillRect(X(z + 0.8), Y(-5), X(z - 0.8) - X(z + 0.8), Y(5) - Y(-5)); g.fillStyle = '#fff'; font(g, 22, 700); g.textAlign = 'center'; g.fillText('V' + (k + 1), X(z), Y(-5) - 8); });
@@ -324,11 +324,11 @@ export default {
     const add = (role, ...s) => steps[role].push(...s);
     const mark = {};
     const at = (role, name) => { mark[role + '.' + name] = steps[role].length; };
-    const near = (px, pz) => Math.hypot(D.x - px, D.z - pz) < 0.9;
     // go to console button i of a room (approach from the north so the crosshair is on it), then keep pressing it while `need()`, until `done()`
     const press = (role, room, i, need, done) => {
       const bxi = room.bx(i), z = room.standZ;
-      add(role, { x: bxi, z: z + 2.2, r: 0.6 }, { x: bxi, z, r: 0.3, until: () => { if (done()) return true; if (near(bxi, z) && need()) game.useFocus(); return false; } });
+      // the second leg aims through the desk at the wall, so the player ends up facing the button
+      add(role, { x: bxi, z: z + 2.2, r: 0.6 }, { x: bxi, z: room.bz - 5, r: 0.1, until: () => { if (done()) return true; if (Math.abs(D.x - bxi) < 0.5 && D.z < z + 0.2 && D.z > room.bz - 1.2 && need()) game.useFocus(); return false; } });
     };
     const inZ = (hi, lo) => P.has && P.sz < hi && P.sz > lo;
     const rem = (end) => end - w.t;
@@ -362,8 +362,8 @@ export default {
     press('p1', roomB, stuckB, () => inZ(B.vents[stuckB] + 9, B.vents[stuckB] - 1) && rem(ventEndB[stuckB]) < 1.2, () => P.has && P.sz < B.vents[stuckB] - 2);
     add('p1',
       { x: roomB.bx(stuckB), z: roomB.standZ, r: 0.5, until: () => exitB },
-      { x: -34, z: -192, r: 1.0 }, { x: -34, z: -193, r: 0.8, until: () => roomB.exit.passable }, { x: -38.5, z: -193, r: 1.0 }, { x: -38.5, z: -338, r: 1.5 },
-      { x: -34.5, z: -343, r: 1.0 }, { x: -22, z: -343, r: 1.5 }, { x: 0, z: B.goalZ, r: 1.0 });
+      { x: -34, z: -192, r: 1.0 }, { x: -34, z: -193, r: 0.8, until: () => roomB.exit.passable }, { x: -38.5, z: -193, r: 1.0 }, { x: -38.5, z: -347, r: 1.5 },
+      { x: -34.5, z: -352, r: 1.0 }, { x: -22, z: -352, r: 1.5 }, { x: 0, z: B.goalZ, r: 1.0 });
     // ---- wing A controller (p2) ----
     at('p2', 'A');
     add('p2', { x: 10, z: -16, r: 1.5 }, { x: 15.5, z: -16, r: 0.8 }, { x: 18.5, z: -16, r: 0.8 }, { x: 24, z: -16, r: 1.2 });
@@ -384,7 +384,8 @@ export default {
     for (let g = 0; g < 3; g++) add('p2',
       { x: 0, z: B.gates[g] + 3.5, r: 0.8, until: () => gatesB[g].passable },
       { x: 0, z: B.gates[g] - 3, r: 1.0 });
-    add('p2', { x: 0, z: -277, r: 1.5 }, { x: 0, z: -300, r: 1.5 }, { follow: true });
+    add('p2', { x: 0, z: -277, r: 1.5 }, { x: 0, z: -309, r: 1.5 }, { follow: true });
+    w.dbg = { stuckA, stuckB, safeDoor, path, perm, ventsB, ventEndB };
     botSteps(w, steps);
     w.botMarks = mark;
   },
