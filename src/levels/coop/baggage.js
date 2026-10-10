@@ -38,8 +38,6 @@ export default {
       if (!w.botSetIndex) return;
       const pp = g.player;
       let near = null, nd = 3;
-      for (const r of cpRecs) { const d = Math.hypot(r.x - pp.x, r.z - pp.z) + Math.abs(r.y - pp.y); if (r.p1 !== undefined && d < nd) { nd = d; near = r; } }
-      if (near) { w.botSetIndex(near[me]); return; }
       let best = null;
       for (const m of marks) if (m.y <= pp.y + 0.5) best = m;
       if (best) w.botSetIndex(best[me]);
@@ -121,6 +119,7 @@ export default {
         const onCartL = () => partnerAt(P, F, -3, s + 12.2, y - 0.5, y + 1.2, 2.1);
         const pastCarts = () => P.has && P.sy > y + H - 0.4 && P.g && F.S(P.sz) > s + 14.9;
         const meUp = () => pl().y > y + H - 0.5 && pl().grounded;
+        if (k > 0) mark(y);                                                                    // a respawn on this round's start deck replays from here
         const onCartR = () => partnerAt(P, F, 3, s + 12.2, y - 0.5, y + 1.2, 2.1);
         add(rider,
           { x: F.X(-3), z: F.Z(s + 12.2), r: 0.5, until: meUp },
@@ -202,6 +201,7 @@ export default {
         sign(w, 'THE BELT RUNS FASTER THAN YOU DO.', F.X(0), y + 4.2, F.Z(bs + 4), { w: 8, h: 1, size: 32 });
         if (i === 2 || last) w.checkpoint({ x: F.X(0), y: yN, z: F.Z(bs + (last ? 14 : 10)), real: true });
         const first = (i % 2 === 1) === firstP2 ? 'p2' : 'p1', second = first === 'p2' ? 'p1' : 'p2';
+        (w.dbgBelts ||= []).push({ SP, EP, first: null, bs });
         const onN = () => feet(yN) && F.S(pl().z) > bs + 8.4;
         const partnerOnN = partnerUp(F, bs + 8.4, yN);
         add(first,
