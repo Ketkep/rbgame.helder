@@ -445,7 +445,121 @@ export default {
       S.put('potB'),
     );
     both({ x: 0, z: Z5(37.6), r: 1.2, until: () => G.g6.passable }, { x: 0, z: Z5(42), r: 1.5 });
-    const endZ = Z5(40);
+    const z6 = Z5(40);                                                                   // the main-course kitchen starts here
+    const Z6 = (d) => z6 - d;
+
+    // ============================================================ 6. main course: the ticket, the glossary, one pan ===========
+    // Two rounds. In each round ONE of you can read the ticket (ingredient NAMES in order) and the OTHER can read the glossary
+    // (which COLOUR is which name; a new glossary every round). Put the right colours into the pan in order; a wrong one burns the pan
+    // (it flares, everything goes back to its shelf, nothing worse). Round 1 reader: p1. Round 2 reader: p2.
+    planks(0, 0, Z6(16), 24, 32, { path: true });
+    w.checkpoint({ x: 0, y: 0, z: Z6(3), real: true });
+    for (const lx of [-10, 10]) { lit(lx, 0, Z6(2)); lit(lx, 0, Z6(30)); }
+    const NAMES = ['FISH', 'LEMON', 'POTATO', 'THYME'];
+    const CNAME = ['RED', 'YELLOW', 'GREEN', 'BLUE'], CHEX = [0xe04848, 0xf5d33d, 0x4caf50, 0x4a8fe0];
+    const shelfAt = [[-9.5, 6], [9.5, 6], [-9.5, 24], [9.5, 24]];                         // colour k lives here (d)
+    const colorShelf = [2, 0, 3, 1];                                                       // which shelf spot holds which colour (fixed)
+    CHEX.forEach((hex, k) => {
+      const [sx, sd] = shelfAt[colorShelf[k]];
+      counter(sx, Z6(sd), 3, 1.6);
+      K.item('ing' + k, 'crate', 'ing' + k + '_home', { name: CNAME[k].toLowerCase() + ' ingredient', color: hex });
+      K.station('ing' + k + '_home', { x: sx, y: 1, z: Z6(sd), label: CNAME[k] + ' ingredient', approach: [sx * 0.8, Z6(sd)], accept: ['crate'], color: hex });
+      sgn(CNAME[k], sx, 3.6, Z6(sd), { w: 3, h: 0.8, border: '#' + hex.toString(16).padStart(6, '0'), size: 40 });
+    });
+    const recipes = [1, 2].map((r) => {
+      const R = c.rng(7100 + r), seq = [];
+      for (let i = 0; i < 3; i++) seq.push(Math.floor(R() * 4));
+      if (seq[0] === seq[1] && seq[1] === seq[2]) seq[2] = (seq[2] + 1) % 4;
+      const perm = [0, 1, 2, 3];                                                         // perm[nameIdx] = colour index
+      for (let i = 3; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; }
+      return { seq, perm, want: seq.map((n) => perm[n]), reader: r === 1 ? 'p1' : 'p2' };
+    });
+    // pan + plating counter + tables
+    counter(0, Z6(14), 5, 2);
+    K.station('pan', {
+      x: 0, y: 1, z: Z6(14), label: 'The pan', approach: [0, Z6(12.2)], color: 0xff7a3d,
+      accept: (it) => it.id.startsWith('ing'), takeable: () => false,
+      onPut: (id) => {
+        const R = curRound(), rc = recipes[R - 1], pan = c.get('pan');
+        const step = pan && pan.round === R ? pan.step : 0, k = +id.slice(3);
+        w.after(0.45, () => K.home(id));
+        if (k === rc.want[step]) {
+          c.set('pan', { round: R, step: step + 1, n: (pan?.n || 0) + 1 });
+          if (step + 1 === 3) w.after(0.5, () => K.move('dish' + R, 'splateup', { sp: 1 }));
+        } else { c.set('pan', { round: R, step: 0, n: (pan?.n || 0) + 1, burnt: true }); c.emit('pan:burn', { n: (pan?.n || 0) + 1 }); }
+      },
+    });
+    counter(4.5, Z6(14), 2.2, 2);
+    K.station('plateup', { x: 4.5, y: 1, z: Z6(14), label: 'The pass', approach: [4.5, Z6(12.2)], accept: ['dish'], color: 0x39d7c9 });
+    [1, 2].forEach((r) => {
+      const tx = r === 1 ? -5 : 5;
+      K.item('dish' + r, 'dish', 'plateup', { name: 'Main course ' + r });
+      K.items.get('dish' + r).init = { h: 'sgone' };
+      counter(tx, Z6(28), 3.4, 1.6);
+      K.station('table' + r, { x: tx, y: 1, z: Z6(28), label: 'Table ' + r, approach: [tx, Z6(26.4)], accept: (it) => it.id === 'dish' + r, takeable: () => false, color: 0x39d7c9 });
+      sgn('TABLE ' + r, tx, 3.6, Z6(28), { w: 3.4, h: 0.8 });
+    });
+    const curRound = () => (K.at('table1') ? 2 : 1);
+    const panStep = () => { const pan = c.get('pan'), R = curRound(); return pan && pan.round === R ? pan.step : 0; };
+    G.g7 = gate(w, { x: 0, z: Z6(31.6), w: 24, h: 5 });
+    w.updaters.push(() => G.g7.set(!!K.at('table1') && !!K.at('table2')));
+    // the signs: ticket (reader), glossary (the other one), and what the wrong person sees instead
+    const RC = (who) => '#' + COL[who].toString(16).padStart(6, '0');
+    const sticket = [], sgloss = [], sblankT = [], sblankG = [];
+    recipes.forEach((rc, i) => {
+      const other = rc.reader === 'p1' ? 'p2' : 'p1';
+      sticket.push(sgn('TICKET ' + (i + 1) + ' · ' + rc.seq.map((n) => NAMES[n]).join(' · '), 0, 5.0, Z6(14), { w: 9, h: 1.2, size: 38, border: RC(rc.reader) }));
+      sblankT.push(sgn('TICKET ' + (i + 1) + ' · ONLY ' + N[rc.reader].toUpperCase() + ' CAN READ THIS', 0, 5.0, Z6(14), { w: 9, h: 1.2, size: 34, border: RC(rc.reader), color: '#9aa3b2' }));
+      sgloss.push(sgn('GLOSSARY ' + (i + 1) + ' · ' + NAMES.map((nm, n) => nm + ' = ' + CNAME[rc.perm[n]]).join(' · '), 0, 5.0, Z6(6), { w: 13, h: 1.2, size: 30, border: RC(other) }));
+      sblankG.push(sgn('GLOSSARY ' + (i + 1) + ' · ONLY ' + N[other].toUpperCase() + ' CAN READ THIS', 0, 5.0, Z6(6), { w: 13, h: 1.2, size: 34, border: RC(other), color: '#9aa3b2' }));
+    });
+    // progress dots over the pan
+    const dots = [0, 1, 2].map((i) => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 10), new THREE.MeshStandardMaterial({ color: 0x333333, emissive: 0x000000 })); m.position.set((i - 1) * 0.7, 3.2, Z6(14)); w.add(m); return m; });
+    let flash = 0;
+    c.onEvent('pan:burn', () => { flash = 1; w.burst(new THREE.Vector3(0, 1.4, Z6(14)), 0xff5a2a, 26, 4); tell('all', 'coop.l7.burnt'); });
+    let shownR = 0;
+    w.updaters.push((dt) => {
+      const R = curRound(), rc = recipes[R - 1], pan = c.get('pan'), done = K.at('table2') ? 3 : panStep();
+      for (let i = 0; i < 2; i++) {
+        const on = R === i + 1 && !K.at('table2');
+        sticket[i].visible = on && me === recipes[i].reader; sblankT[i].visible = on && me !== recipes[i].reader;
+        sgloss[i].visible = on && me !== recipes[i].reader; sblankG[i].visible = on && me === recipes[i].reader;
+      }
+      if (K.at('table2')) for (const m of [...sticket, ...sgloss, ...sblankT, ...sblankG]) m.visible = false;
+      flash = Math.max(0, flash - dt * 1.6);
+      dots.forEach((m, i) => {
+        const filled = i < done && pan && (pan.round === R || K.at('table2'));
+        const col = filled ? CHEX[rc.want[i]] : 0x333333;
+        m.material.color.setHex(col); m.material.emissive.setHex(filled ? col : flash > 0 ? 0xff3a1a : 0x000000); m.material.emissiveIntensity = filled ? 0.8 : flash * 1.5;
+      });
+      if (R !== shownR) { shownR = R; if (R === 1) { tell(rc.reader, 'coop.l7.reader'); tell(rc.reader === 'p1' ? 'p2' : 'p1', 'coop.l7.fetcher'); } else { tell(rc.reader, 'coop.l7.reader2'); tell(rc.reader === 'p1' ? 'p2' : 'p1', 'coop.l7.fetcher2'); } }
+    });
+    stage(w, 'main1', { x: 0, y: 1, z: Z6(3), w: 24, h: 4, d: 4 }, () => tell('all', 'coop.l7.main'));
+    let dishSaid = false;
+    w.updaters.push(() => { if (!dishSaid && K.at('plateup')) { dishSaid = true; tell('all', 'coop.l7.dish1'); } });
+    let mainDone = false;
+    w.updaters.push(() => { if (!mainDone && K.at('table1') && K.at('table2')) { mainDone = true; tell('all', 'coop.l7.maindone'); } });
+    // bots: the non-reader fetches (the reader bot waits); round 2 the other way round
+    mark('s6');
+    const lane = (sx) => (sx < 0 ? -5.3 : 7.0);
+    const fetch = (r) => [
+      ...recipes[r - 1].want.flatMap((col, k) => {
+        const [sx, sd] = shelfAt[colorShelf[col]], north = sd > 14, ln = lane(sx);
+        return [
+          ...(north ? [{ x: ln, z: Z6(11), r: 0.6 }, { x: ln, z: Z6(17), r: 0.7 }] : []),
+          S.take('ing' + col + '_home', 'ing' + col),
+          ...(north ? [{ x: ln, z: Z6(17), r: 0.7 }, { x: ln, z: Z6(11), r: 0.6 }] : []),
+          S.put('pan'), { x: 0, z: Z6(10.6), r: 0.6, until: () => panStep() > k },
+        ];
+      }),
+      { x: 4.5, z: Z6(12.2), r: 0.5, until: () => !!K.at('plateup') },
+      S.take('plateup', 'dish' + r), { x: 7.0, z: Z6(12), r: 0.6 }, { x: 7.0, z: Z6(18), r: 0.7 }, S.put('table' + r),
+    ];
+    bots.p2.push(...fetch(1), { x: 0, z: Z6(20), r: 1.5, until: () => !!K.at('table1') });
+    bots.p1.push({ x: 0, z: Z6(20), r: 1.5, until: () => !!K.at('table1') }, ...fetch(2));
+    bots.p2.push({ x: 0, z: Z6(20), r: 1.5, until: () => !!K.at('table2') });
+    both({ x: 0, z: Z6(29.6), r: 1.2, until: () => G.g7.passable }, { x: 0, z: Z6(34), r: 1.5 });
+    const endZ = Z6(32);
 
     // ============================================================ finish (placeholder) ============
     planks(0, 0, endZ - 7, 14, 14, { path: true });
