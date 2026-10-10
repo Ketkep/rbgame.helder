@@ -108,6 +108,7 @@ const install = () => {
     let jump = p.grounded && !wait && !hold && ((edge && edgeOk) || hop || (gm && len < 4.4 && edge));
     if (plan && plan.jump && p.grounded && len < (typeof plan.jump === 'number' ? plan.jump : 2.2)) jump = true;
     if (jump) g.jumpEdge = true;
+    if (plan && plan.stop !== undefined && !p.grounded && len < plan.stop + 0.4 && vproj > 1.2) { g.keys.delete('KeyW'); g.keys.add('KeyS'); }   // air brake for hops onto a head
     g.keys.add('Space');
     g._simulate(dt);
     w.hooks.frame?.(dt, g);
