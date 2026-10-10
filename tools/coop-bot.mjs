@@ -69,7 +69,7 @@ const install = () => {
       if (p.ground) { const gb = p.ground; for (const [pos, c, h, u] of [[p.x, gb.x, gb.hx, dx / len], [p.z, gb.z, gb.hz, dz / len]]) if (Math.abs(u) > 1e-6) edgeT = Math.min(edgeT, ((u > 0 ? c + h : c - h) - pos) / u); }
       if ((onMover || toMover) && edgeT < 1.4 && (gapTo(tgt.body) - edgeT > 1.6 || dy > 1.0 || dy < -3)) wait = true;
     }
-    if (!wait && !(plan && plan.jump && !p.grounded && len < 0.9)) g.keys.add('KeyW');       // hop-onto-a-head: stop pushing once over it
+    if (!wait && !(plan && plan.jump && !p.grounded && len < (plan.stop ?? 0.9))) g.keys.add('KeyW');       // hop-onto-a-head: stop pushing once over it
     const T0 = w.t, ux = dx / len, uz = dz / len;
     let hold = false, hop = false;
     for (const h of w.hazards) {
@@ -109,10 +109,12 @@ const install = () => {
     let jump = p.grounded && !wait && !hold && ((edge && edgeOk) || hop || (gm && len < 4.4 && edge));
     if (plan && plan.jump && p.grounded && len < (typeof plan.jump === 'number' ? plan.jump : 2.2)) jump = true;
     if (jump) g.jumpEdge = true;
+    if (plan && plan.stop !== undefined && !p.grounded && len < plan.stop + 0.4 && vproj > 1.2) { g.keys.delete('KeyW'); g.keys.add('KeyS'); }   // air brake for hops onto a head
     g.keys.add('Space');
     g._simulate(dt);
     w.hooks.frame?.(dt, g);
     bot.sim += dt;
+    if (window.__trace && Math.floor(bot.sim * 4) !== Math.floor((bot.sim - dt) * 4)) window.__trace.push(`${bot.sim.toFixed(2)} s${w.botIndex?.()} ${p.x.toFixed(2)},${p.y.toFixed(2)},${p.z.toFixed(2)} ${p.grounded ? 'G' : 'a'} P ${c.partner.sx.toFixed(2)},${c.partner.sy.toFixed(2)},${c.partner.sz.toFixed(2)}`);
   };
   const run = () => { if (!window.__botOn) return; for (let k = 0; k < window.__speed && g.state === 'playing'; k++) window.__bot.step(1 / 60); };
   setInterval(run, 16);       // a timer, not rAF: the page that isn't in front gets no animation frames
@@ -127,7 +129,7 @@ if (process.env.JUMP) {          // JUMP='{"at":[x,y,z],"p1":stepIndex,"p2":step
     return [me, J[me], w.botIndex?.()];
   }, J).then((r) => console.log('jump', r));
 }
-for (const p of [A, B]) await p.evaluate(() => { window.__botOn = true; });
+for (const p of [A, B]) await p.evaluate((tr) => { if (tr) window.__trace = []; window.__botOn = true; }, !!process.env.TRACE);
 
 let last = 0, t0 = Date.now();
 const snap = (p) => p.evaluate(() => { const g = window.__trust, b = window.__bot, pl = g.player; return { st: g.state, sim: +b.sim.toFixed(0), x: +pl.x.toFixed(1), y: +pl.y.toFixed(1), z: +pl.z.toFixed(1), d: g.deaths, wp: b.i, step: g.world.botIndex?.() }; });
@@ -141,6 +143,7 @@ while (!done) {
   if ((a.st === 'complete' || a.st === 'ended') && (b.st === 'complete' || b.st === 'ended')) { console.log(`COMPLETED in ${sim}s sim (${Math.round((Date.now() - t0) / 1000)}s wall) · deaths host ${a.d} guest ${b.d}`); done = true; }
   else if (sim > maxSim) { console.log(`TIMEOUT host ${JSON.stringify(a)} · guest ${JSON.stringify(b)}`); done = true; process.exitCode = 1; }
 }
+if (process.env.TRACE) for (const [n, p] of [['host', A], ['guest', B]]) console.log(n, 'TRACE\n' + (await p.evaluate(() => window.__trace)).join('\n'));
 if (process.env.PROBE) for (const [n, p] of [['host', A], ['guest', B]]) console.log(n, 'PROBE', JSON.stringify(await p.evaluate(process.env.PROBE)));   // e.g. PROBE='({f: window.__trust.focus && window.__trust.focus.label(window.__trust)})'
 for (const [n, p] of [['host', A], ['guest', B]]) console.log(n, 'deaths:', (await p.evaluate(() => window.__bot.log)).join(' | ') || 'none');
 const said = await Promise.all([A, B].map((p) => p.evaluate(() => window.__bot.said)));

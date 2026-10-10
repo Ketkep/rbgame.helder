@@ -857,6 +857,43 @@ Object.assign(SCRIPT, {
   'hotel.complete.first': 'Level one done! The marble is very proud of you. I\'m... fine.',
 });
 
+// ---------------------------------------------------------------- Campaign 3 · session 4: Tethered Trek -------------
+Object.assign(SCRIPT, {
+  'coop.l4.intro.p1': ['A mountain! Orange, you are tied to your partner now. Do not think of it as a leash. Think of it as a very short hug.'],
+  'coop.l4.intro.p2': ['A mountain! Teal, you are tied to your partner. Think of it as a hug. A hug you cannot leave. Wonderful for communication.'],
+  'coop.l4.rope': ['The rope is nine metres. It is very strong. It is also very, very patient. Unlike me. Go on.', 'Nine metres of rope. Go further apart and it will tell you. It goes red. It does not use words.'],
+  'coop.l4.planks': ['Loose planks. They fall if you stand on them. Keep moving. Your partner is behind you. The rope is also behind you.'],
+  'coop.l4.lodge': ['The Base Lodge. Nobody has ever stayed here. Next: a cliff. Do not worry, you will not do it alone. You will do it on a leash.'],
+  'coop.l4.wall1.p1': ['Orange: you climb. Hold jump while your partner stands on the teal plate. The rope does the lifting. Your partner does the standing. A fair split.'],
+  'coop.l4.wall1.p2': ['Teal: you stand on the plate. That is the whole job. Do not move. Do not wander off. Do not check your phone. They are on a rope. It is you.'],
+  'coop.l4.up1': ['One of you is up. Now the other. Stand on the plate and haul. That is called a belay. It is a trust exercise with consequences.', 'Up! Lovely. Now it is your turn to hold the rope. Try not to think about what you did last time.'],
+  'coop.l4.wall2.p1': ['Orange: your turn to hold the rope. Stand on the plate. Be strong. Be silent. Be a plate.'],
+  'coop.l4.wall2.p2': ['Teal: now you climb. They hold. Swapping jobs is the secret of a lasting partnership. The other secret is the rope.'],
+  'coop.l4.ice': ['Ice. Very slippery. Watch the lamp: green is calm, amber is a gust in a second and a half, red is a gust. The rails are there. I am not a monster. Only in specific ways.', 'The lamps tell you when the wind comes. Amber means brace. Red means lean. Green means I was joking.'],
+  'coop.l4.icedone': ['You survived the ice. Your relationship is a little more slippery now. Unrelated.'],
+  'coop.l4.untie': ['I have untied you for the cave. Rocks fall in here. They do not care about your rope. Or your feelings.'],
+  'coop.l4.cave': ['A cave. A gate. A plate in the alcove. The gate stays open only while somebody stands on the plate. One of you holds. One of you runs. It is called a division of labour.', 'The gate opens while someone stands on the plate. Then the runner runs. Then the roles swap. Or you go home. That is also allowed.'],
+  'coop.l4.cave.holder': ['You are the gate. Stay on the plate. Watch your partner. Wave if you like. They cannot wave back, they are being crushed.'],
+  'coop.l4.cave.runner': ['You are the runner. The rocks fall where the amber ring is. They fall about one second after the ring. I would run. Elsewhere.'],
+  'coop.l4.cave.exit.runner': ['The exit plate! Stay on it. It holds the gate open for your partner. Stand there and be useful, which you are, apparently.'],
+  'coop.l4.cave.exit.holder': ['The gate is held from the other side now. Your turn. Mind the amber rings. They really mean it.'],
+  'coop.l4.cavedone': ['Both through! Nobody was crushed. I am not at all disappointed.'],
+  'coop.l4.ledge': ['The ledge. The rope is five metres now. That is not an opinion. Move together. If it goes red, stop and wait for your partner.', 'Five metres of rope. Step when they step. Jump when they jump. Be a unit. A tidy, careful, narrow unit.'],
+  'coop.l4.ledgemid': ['Halfway! The ledges that shake will fall. They fall because you trusted them. Keep walking.'],
+  'coop.l4.chim': ['The chimney. A wall. Another wall. A person is, for these purposes, a staircase.'],
+  'coop.l4.chim1': ['Climb the crate. Stand on their head. It is a trust exercise. Also a head. Then they take the lift, which needs you on a plate.', 'Three metres. Your jump is one and a half. So be nice to your partner. They are holding the ladder.'],
+  'coop.l4.chim2': ['Taller. Four point two. Low step: stand there. High step: hop onto their head from it. You cannot do this alone. Nobody can do anything alone. It is a very sad design.', 'Same thing but harder and with more steps. We call that progress.'],
+  'coop.l4.chim3.p1': ['Third wall. Now you climb, which is a thing you have been doing all along. Metaphorically. Also literally.'],
+  'coop.l4.chim3.p2': ['Third wall. You are the ladder again. Do try to feel useful. It is not a feeling I can provide.'],
+  'coop.l4.summit': ['THE SUMMIT! I can see it from here. It is a very nice summit. It has a ring. It has a sign. You should go and stand in it.', 'You made it! That is the top. That is definitely the top. I would not lie about a top.'],
+  'coop.l4.fake': ['...Kidding! That is a ring on a plank. The summit is up there. Behind that. Over there. Up. Go up.', 'The summit is not here. The summit is where the stairs go. I am sorry. I was not sorry.'],
+  'coop.l4.fakecp': ['Checkpoint? Saved? That one is made of cardboard. I made it. Look at the pole. It leans. It has always leaned.'],
+  'coop.l4.real': ['The real stairs. Higher. No more lying. Promise. I have crossed my fingers behind my back.'],
+  'coop.l4.top': ['The summit. The actual one. Both of you in the ring. It will mean nothing if one of you is hiding behind a rock.'],
+  'coop.l4.partnerdown': ['Ooh. You fell. You both fell. Together. That is the whole point of a rope. Back to the checkpoint, the two of you.', 'And down you go. As a pair. It is very romantic from up here.'],
+});
+
+
 export const CREDITS = [
   ['TRUST ME…', ''],
   ['Written, directed & narrated by', 'The Host'],
