@@ -85,5 +85,6 @@ and respawn on death like players. **Always `npm run build` after editing source
 | 7 | Dinner Date | team | self | Carry plates between stations, kitchen conveyors, timed courses, a chef who dislikes both of you. |
 | 7 | Dinner Date | team | self | Carry plates between stations (E to pick up / put down / hand over), kitchen conveyors, timed courses, a chef who dislikes both of you. **Built** (8 stages; carry kit in `dinner-date-kit.js`). |
 | 8 | Secret Santa | betrayal | self | Gifts: one is a trap. Secret buttons that let one of you sabotage the other for a shortcut — but it can be beaten cleanly. |
+| 8 | Secret Santa | betrayal | self | Gifts: one is a trap. Secret buttons that let one of you sabotage the other for a shortcut — but it can be beaten cleanly.  **Built (coop-l8-secret-santa).** |
 | 9 | Shared Baggage | climb | both | A very tall pile of luggage: counterweights, boosts, pendulums, plates that raise the other. |
 | 10 | The Vows | finale | mix | A wedding chapel gauntlet recycling every mechanic, then the Counsellor as a boss. |
