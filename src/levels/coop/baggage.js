@@ -27,14 +27,21 @@ export default {
     const bots = { p1: [], p2: [] };
     const add = (role, ...steps) => bots[role].push(...steps);
     const both = (...steps) => { add('p1', ...steps); add('p2', ...steps); };
-    // bot recovery: after a fall both respawn at a checkpoint, so each bot rewinds its script to the start of the stage it respawned in
+    // bot recovery: after a fall both respawn at a checkpoint, so each bot rewinds its script to where it stood when that checkpoint was reached
     const marks = [];
     const mark = (yy) => marks.push({ y: yy, p1: bots.p1.length, p2: bots.p2.length });
+    const cpRecs = []; let openCp = [];
+    const closeCps = () => { for (const r of openCp) { r.p1 = bots.p1.length; r.p2 = bots.p2.length; } openCp = []; };
+    const origCp = w.checkpoint.bind(w);
+    w.checkpoint = (o) => { closeCps(); const r = origCp(o); if (o.real !== false) { const rec = { x: o.x, y: o.y, z: o.z }; cpRecs.push(rec); openCp.push(rec); } return r; };
     w.onRespawn(() => {
       if (!w.botSetIndex) return;
-      const ry = g.player.y;
+      const pp = g.player;
+      let near = null, nd = 3;
+      for (const r of cpRecs) { const d = Math.hypot(r.x - pp.x, r.z - pp.z) + Math.abs(r.y - pp.y); if (r.p1 !== undefined && d < nd) { nd = d; near = r; } }
+      if (near) { w.botSetIndex(near[me]); return; }
       let best = null;
-      for (const m of marks) if (m.y <= ry + 0.5) best = m;
+      for (const m of marks) if (m.y <= pp.y + 0.5) best = m;
       if (best) w.botSetIndex(best[me]);
     });
     const pl = () => g.player;
@@ -545,6 +552,7 @@ export default {
     w.hooks.onPartnerDeath = () => { tell('all', 'coop.l9.partnerdown'); return true; };
 
     // ===================================================================== bots =================================
+    closeCps();
     botSteps(w, { p1: [...bots.p1, { follow: true }], p2: [...bots.p2, { follow: true }] });
   },
 };
