@@ -238,7 +238,9 @@ export default {
     };
 
     // ===================================================================== 5. lifts you work for each other ==
+    let elevN = 0;                                                                    // (lever keys must be unique per call: the recap reuses this stage)
     const elevators = (F, y0, a0, rounds, H = 12, startRider = 'p1') => {
+      const eid = ++elevN;
       let cs = a0, cy = y0;
       F.plat(w, cs, cs + 6, cy, { path: true, h: 0.8, color: 0xd9c9a0 });
       for (let k = 0; k < rounds; k++) {
@@ -252,8 +254,8 @@ export default {
           const pil = new THREE.Mesh(new THREE.BoxGeometry(0.3, H + 3, 0.3), new THREE.MeshStandardMaterial({ color: 0x2b2f3a, roughness: 0.6, metalness: 0.4 }));
           pil.position.set(F.X(lx + dx), y + (H + 3) / 2 - 0.5, F.Z(s + dsz)); w.add(pil);
         }
-        const lA = lever(w, { x: F.X(-1), y, z: F.Z(s + 2.5), key: `l9e${a0}_${k}a`, label: `Send ${N[rider]} up` }, (on) => liftL.set(on));
-        const lB = lever(w, { x: F.X(1), y: y + H, z: F.Z(s + 10.4 + 7.5), key: `l9e${a0}_${k}b`, label: `Send ${N[oper]} up` }, (on) => liftR.set(on));
+        const lA = lever(w, { x: F.X(-1), y, z: F.Z(s + 2.5), key: `l9e${eid}_${k}a`, label: `Send ${N[rider]} up` }, (on) => liftL.set(on));
+        const lB = lever(w, { x: F.X(1), y: y + H, z: F.Z(s + 10.4 + 7.5), key: `l9e${eid}_${k}b`, label: `Send ${N[oper]} up` }, (on) => liftR.set(on));
         sign(w, `${N[rider]} RIDES THIS ONE`, F.X(-4.5), y + 3.2, F.Z(s + 6.2), { w: 4.4, h: 0.8, size: 30, border: '#' + COL[rider].toString(16).padStart(6, '0') });
         sign(w, `${N[oper]} RIDES THIS ONE`, F.X(4.5), y + 3.2, F.Z(s + 6.2), { w: 4.4, h: 0.8, size: 30, border: '#' + COL[oper].toString(16).padStart(6, '0') });
         w.checkpoint({ x: F.X(0), y: y + H, z: F.Z(s + 10.4 + 4.5), real: true });

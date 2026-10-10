@@ -208,5 +208,6 @@ export function botSteps(w, byRole) {
   };
   w.botIndex = () => i;
   w.botCur = () => steps[i];
+  w.botList = steps;
   w.botSetIndex = (n) => { i = n; };
 }
