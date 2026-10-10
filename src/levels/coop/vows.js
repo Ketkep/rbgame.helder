@@ -99,7 +99,7 @@ export default {
           { x: 1.8, z: zf + 4.5, r: 0.8 },
           { wait: ready },
           { x: 1.8, z: zf + 1.1, r: 0.2, until: () => gp().y > y0 + 1.1 && gp().grounded },
-          { x: () => P.sx, z: () => P.sz, jump: 1.3, stop: 0.4, until: () => gp().y > y0 + 1.6 && gp().grounded },
+          { x: () => P.sx, z: () => P.sz, jump: 1.3, stop: 0.4, r: 0.08, until: () => gp().y > y0 + 1.6 && gp().grounded },
           { x: 0, z: zf - 4, jump: 3, until: () => gp().y > y0 + 2.8 && gp().grounded },
           { x: -4, z: zf - 4, r: 0.6, until: () => P.has && P.sy > y0 + 2.7 },
         ],
