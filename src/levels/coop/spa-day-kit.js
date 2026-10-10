@@ -113,10 +113,13 @@ export function vent(w, o) {
     const ph = (((t + offset) % period) + period) % period, off = period - warn - on;
     return ph < off ? 0 : ph < off + warn ? 1 : 2;
   });
-  const hz = w.hazard({ x, y: y + h / 2, z, w: wd, h, d: dp });
-  hz.core.material = new THREE.MeshBasicMaterial({ color: 0xf4fbff, transparent: true, opacity: 0.5, depthWrite: false });
-  hz.shell.visible = false;
-  hz.predict = (t) => state(t) === 2;
+  // several narrow hazard bodies side by side (the coop bot's lookahead ignores very wide ones)
+  const coreMat = new THREE.MeshBasicMaterial({ color: 0xf4fbff, transparent: true, opacity: 0.5, depthWrite: false });
+  const nseg = Math.max(1, Math.ceil(wd / 2.6)), hzs = [];
+  for (let i = 0; i < nseg; i++) {
+    const hz = w.hazard({ x: x - wd / 2 + (i + 0.5) * (wd / nseg), y: y + h / 2, z, w: wd / nseg, h, d: dp });
+    hz.core.material = coreMat; hz.shell.visible = false; hz.predict = (t) => state(t) === 2; hzs.push(hz);
+  }
   // grate on the floor + rising puffs
   const grateMat = glowMaterial(0x5b6470, 1);
   const grate = new THREE.Mesh(new THREE.BoxGeometry(wd, 0.06, dp * 0.9), grateMat); grate.position.set(x, y + 0.03, z); w.add(grate);
@@ -126,12 +129,11 @@ export function vent(w, o) {
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex(), color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }));
     s.scale.set(2.4, 2.4, 1); w.add(s); puffs.push(s);
   }
-  const st = { hz, state, get s() { return cur; } };
+  const st = { hzs, state, get s() { return cur; } };
   let cur = 0;
   w.updaters.push((dt, t) => {
     cur = state(t);
-    hz.enabled = cur === 2;
-    hz.group.visible = cur === 2;
+    for (const hz of hzs) { hz.enabled = cur === 2; hz.group.visible = cur === 2; }
     grateMat.color.setHex(cur === 2 ? 0xff5a3c : cur === 1 ? 0xffa23c : 0x5b6470).multiplyScalar(cur === 1 ? 1.2 + Math.sin(t * 16) * 0.8 : cur === 2 ? 2 : 0.7);
     for (let i = 0; i < n; i++) {
       const u = (t * 0.85 + i * 0.37) % 1;

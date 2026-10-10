@@ -11,7 +11,7 @@ import { controlRoom, liveScreen, consoleButton, rail, vent, mud, belt, iceTile,
 
 // ---- layout constants (z runs negative) ----
 const A = { rows: [-34, -42, -50], mud: [-60, -76], belt: [-76, -88], rest: [-88, -96], hall: [-96, -116], gateZ: -106, tiles: [-121, -128, -135, -142], lounge: [-147, -160] };
-const L = { chairs: [-162, -166, -170], deck2: [-172.5, -192] };
+const L = { chairs: [-163, -167.5, -172], deck2: [-175, -192] };
 const B = { entry: [-192, -202], gateZ: -194, rowZ0: -203.7, rowStep: 3.4, rows: 7, mistEnd: -225.8, rest1: [-225.8, -232], slip: [-232, -272], gates: [-240, -252, -264], rest2: [-272, -280], vents: [-287, -293, -299], ventDeck: [-280, -302], plaza: [-339, -360], goalZ: -352 };
 
 const GATE_COLORS = [{ name: 'TEAL', hex: 0x39d7c9 }, { name: 'ROSE', hex: 0xff6f9c }, { name: 'GOLD', hex: 0xffc83d }];
@@ -132,17 +132,18 @@ export default {
 
     // ================================================================ the lounge: massage chairs + fake finish =========
     sign(w, 'THE LOUNGE · PLEASE REMAIN SEATED', 0, 4.8, -150.2, { w: 10, h: 1.1, border: '#ff8ac0' });
-    pool(w, { x: 0, z: -166, wd: 28, dp: 14, y: -1.2, color: 0xe58c4a, hot: true });
+    pool(w, { x: 0, z: -167.5, wd: 28, dp: 15, y: -1.2, color: 0xe58c4a, hot: true });
     const chairs = L.chairs.map((z, k) => {
-      const p = w.plat({ x: k === 1 ? 2 : 0, y: 0, z, w: 6, d: 3, h: 0.8, tex: 'wood', color: 0x9a4a5a, trim: 0xff8ac0, path: true });
-      w.rollaway(p, { dir: [k === 1 ? -1 : 1, 0], dist: 4, accel: 5, speed: 5, delay: 0.7, hold: 2.4, back: 1.6 });
+      const p = w.plat({ x: k === 1 ? 2 : 0, y: 0, z, w: 7, d: 3, h: 0.8, tex: 'wood', color: 0x9a4a5a, trim: 0xff8ac0, path: true });
+      w.rollaway(p, { dir: [k === 1 ? -1 : 1, 0], dist: 3.5, accel: 5, speed: 5, delay: 0.9, hold: 2.4, back: 1.6 });
       const back = new THREE.Mesh(new THREE.BoxGeometry(5.6, 1.6, 0.4), new THREE.MeshStandardMaterial({ color: 0x7a3748, roughness: 0.6 }));
       back.position.set(0, 1.0, 1.3); p.group.add(back);
       return p;
     });
+    const chairsHome = () => chairs.every((p) => Math.abs(p.body.x - p.base.x) < 0.25);
     sign(w, 'MASSAGE CHAIRS · THEY LEAVE WHEN YOU DO', 0, 3.4, -160.4, { w: 8, h: 0.9, border: '#ff8ac0', size: 28 });
     stage(w, 'chairs', { x: 0, y: 1, z: -158, w: 28, h: 4, d: 3 }, () => tell('all', 'coop.l5.chairs'));
-    deck(w, { x: 0, y: 0, z: -182.25, w: 28, d: 19.5, path: true });                     // z -172.5 … -192
+    deck(w, { x: 0, y: 0, z: -183.5, w: 28, d: 17, path: true });                     // z -175 … -192
     // the fake finish
     const fake = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.12, 12, 48), glowMaterial(0x3ddc97, 2));
     fake.position.set(0, 1.9, -178); w.add(fake);
@@ -323,7 +324,14 @@ export default {
     const add = (role, ...s) => steps[role].push(...s);
     const mark = {};
     const at = (role, name) => { mark[role + '.' + name] = steps[role].length; };
-    const rowEdge = (k) => A.rows[k];
+    const near = (px, pz) => Math.hypot(D.x - px, D.z - pz) < 0.9;
+    // go to console button i of a room (approach from the north so the crosshair is on it), then keep pressing it while `need()`, until `done()`
+    const press = (role, room, i, need, done) => {
+      const bxi = room.bx(i), z = room.standZ;
+      add(role, { x: bxi, z: z + 2.2, r: 0.6 }, { x: bxi, z, r: 0.3, until: () => { if (done()) return true; if (near(bxi, z) && need()) game.useFocus(); return false; } });
+    };
+    const inZ = (hi, lo) => P.has && P.sz < hi && P.sz > lo;
+    const rem = (end) => end - w.t;
     // ---- wing A: p1 crosses, p2 controls ----
     at('p1', 'A');
     add('p1',
@@ -341,49 +349,32 @@ export default {
       if (k < 3) add('p1', { x: 0, z: A.tiles[k] + 1.2, r: 0.4, until: () => tiles[k + 1].solid });
     }
     add('p1', { x: 0, z: -152, r: 1.5 });
-    // lounge: chairs
     at('p1', 'chairs');
-    add('p1', { x: 1, z: -159.2, r: 0.5 }, { x: 1, z: -177, r: 1.5 });
+    add('p1', { x: 1, z: -157.5, r: 0.5, until: chairsHome }, { x: 1, z: -159.2, r: 0.5 }, { x: 1, z: -179, r: 1.5 });
     at('p1', 'toB');
     add('p1', { x: 0, z: -178, r: 1.2 },
       { x: -10, z: -184, r: 1.5 }, { x: -15.5, z: -184, r: 0.8 }, { x: -18.5, z: -184, r: 0.8 }, { x: -24, z: -184, r: 1.0 });
     // ---- wing B: p1 controls ----
     at('p1', 'B');
-    const bx = (i) => roomB.bx(i), bst = roomB.standZ;
-    add('p1',
-      { x: bx(1), z: bst, r: 0.5 },
-      { x: bx(0), z: bst, r: 0.5, until: () => P.has && P.sz < B.vents[0] + 14 },
-    );
-    // gates: when the crosser nears gate g, pull the lever of its colour
     for (let g = 0; g < 3; g++) {
-      const lever = 3 + perm[g];
-      add('p1',
-        { x: bx(lever), z: bst, r: 0.5, until: () => P.has && P.sz < B.gates[g] + 11 },
-        { x: bx(lever), z: bst, r: 0.5, use: true, until: () => gateT[g] > 0 });
+      press('p1', roomB, 3 + perm[g], () => inZ(B.gates[g] + 12, B.gates[g] - 3) && gateT[g] < 1.5, () => P.has && P.sz < B.gates[g] - 3);
     }
+    press('p1', roomB, stuckB, () => inZ(B.vents[stuckB] + 9, B.vents[stuckB] - 1) && rem(ventEndB[stuckB]) < 1.2, () => P.has && P.sz < B.vents[stuckB] - 2);
     add('p1',
-      { x: bx(stuckB), z: bst, r: 0.5, until: () => P.has && P.sz < B.vents[stuckB] + 9 },
-      { x: bx(stuckB), z: bst, r: 0.5, use: true, until: () => ventEndB[stuckB] > w.t },
-      { x: bx(stuckB), z: bst, r: 0.5, until: () => exitB },
-      { x: -34, z: -196, r: 1.0 }, { x: -38.5, z: -196, r: 1.0 }, { x: -38.5, z: -338, r: 1.5 },
+      { x: roomB.bx(stuckB), z: roomB.standZ, r: 0.5, until: () => exitB },
+      { x: -34, z: -192, r: 1.0 }, { x: -34, z: -193, r: 0.8, until: () => roomB.exit.passable }, { x: -38.5, z: -193, r: 1.0 }, { x: -38.5, z: -338, r: 1.5 },
       { x: -34.5, z: -343, r: 1.0 }, { x: -22, z: -343, r: 1.5 }, { x: 0, z: B.goalZ, r: 1.0 });
-    // wing A controller (p2)
+    // ---- wing A controller (p2) ----
     at('p2', 'A');
-    const ax = (i) => roomA.bx(i), ast = roomA.standZ;
+    add('p2', { x: 10, z: -16, r: 1.5 }, { x: 15.5, z: -16, r: 0.8 }, { x: 18.5, z: -16, r: 0.8 }, { x: 24, z: -16, r: 1.2 });
+    press('p2', roomA, stuckA, () => inZ(A.rows[stuckA] + 9, A.rows[stuckA] - 1) && rem(ventEndA[stuckA]) < 1.2, () => P.has && P.sz < A.rows[stuckA] - 2);
+    press('p2', roomA, 3, () => inZ(-62, -90) && !beltStopped, () => beltStopped);
+    press('p2', roomA, 4 + safeDoor, () => inZ(-90, -108) && doorT[safeDoor] < 1.5, () => P.has && P.sz < -108);
+    press('p2', roomA, 8, () => inZ(-108, -119) && tp() < 0, () => exitA);
     add('p2',
-      { x: 10, z: -16, r: 1.5 }, { x: 15.5, z: -16, r: 0.8 }, { x: 18.5, z: -16, r: 0.8 }, { x: 24, z: -16, r: 1.2 },
-      { x: ax(stuckA), z: ast, r: 0.5, until: () => P.has && P.sz < A.rows[stuckA] + 9 },
-      { x: ax(stuckA), z: ast, r: 0.5, use: true, until: () => ventEndA[stuckA] > w.t },
-      { x: ax(3), z: ast, r: 0.5, until: () => P.has && P.sz < -68 },
-      { x: ax(3), z: ast, r: 0.5, use: true, until: () => beltStopped },
-      { x: ax(4 + safeDoor), z: ast, r: 0.5, until: () => P.has && P.sz < -96 && P.sz > -104 },
-      { x: ax(4 + safeDoor), z: ast, r: 0.5, use: true, until: () => doorT[safeDoor] > 0 },
-      { x: ax(8), z: ast, r: 0.5, until: () => P.has && P.sz < -108 && P.sz > -118 },
-      { x: ax(8), z: ast, r: 0.5, use: true, until: () => tp() >= 0 },
-      { x: ax(8), z: ast, r: 0.5, until: () => exitA },
-      { x: 34, z: -25, r: 1.0, until: () => roomA.exit.passable }, { x: 38.5, z: -25, r: 1.0 }, { x: 38.5, z: -150, r: 1.5 },
+      { x: 34, z: -22, r: 1.0 }, { x: 34, z: -25, r: 0.8, until: () => roomA.exit.passable }, { x: 38.5, z: -25, r: 1.0 }, { x: 38.5, z: -150, r: 1.5 },
       { x: 34.5, z: -152, r: 1.0 }, { x: 23, z: -152, r: 1.5 }, { x: 8, z: -153, r: 1.5 },
-      { x: 1, z: -159.2, r: 0.5 }, { x: 1, z: -177, r: 1.5 });
+      { x: 1, z: -157.5, r: 0.5, until: chairsHome }, { x: 1, z: -159.2, r: 0.5 }, { x: 1, z: -179, r: 1.5 });
     at('p2', 'B');
     add('p2',
       { x: 0, z: -190, r: 1.5 }, { x: 0, z: -192.8, r: 0.8, until: () => gateB.passable },
