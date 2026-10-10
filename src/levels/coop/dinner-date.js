@@ -671,11 +671,84 @@ export default {
       { x: 3, z: Z7(62.6), r: 0.5, until: () => K.holder('souffle') === 'p2' },
       S.put('dtable'),
     );
-    const endZ = Z7(71);
-
-    // ============================================================ finish (placeholder) ============
-    planks(0, 0, endZ - 7, 14, 14, { path: true });
-    w.goal({ x: 0, y: 0, z: endZ - 6 });
+    // ============================================================ 8. the bill: a finish line that is not, then the back stairs ==
+    // "Bill please" is a very convincing finish. It is not. The bill is a document: carry it down the back stairs to the cashier, then
+    // each of you pays your half (your own plate, at the same time), and the exit opens for a few seconds.
+    const fakeRing = new THREE.Mesh(new THREE.TorusGeometry(2.4, 0.14, 12, 48), glowMaterial(0x3ddc97, 2));
+    fakeRing.position.set(0, 9 + 2.4, Z7(70.1)); w.add(fakeRing);
+    const fakeSign = sgn('BILL PLEASE · FINISH', 0, 9 + 5.6, Z7(70.1), { w: 6, h: 1, border: '#3ddc97' });
+    const fakeBeacon = beacon(w, 0, 9, Z7(70.1), 0x7dffb0, 16);
+    counter(5, Z7(68), 2.4, 1.6, { y0: 9 });
+    K.item('bill', 'bill', 'billtray', { name: 'The bill' });
+    K.items.get('bill').init = { h: 'sgone' };
+    K.station('billtray', { x: 5, y: 10, z: Z7(68), label: 'The bill', approach: [5, Z7(66.4)], accept: ['bill'], color: 0xf5f0e0 });
+    const fakeZ = c.zone({ x: 0, y: 9 + 2, z: Z7(70.1), w: 7.4, h: 4, d: 3, need: 'both', shrink: 0 });
+    let faked = false;
+    const doFake = () => {
+      if (faked) return; faked = true;
+      fakeRing.visible = false; fakeBeacon.visible = false; fakeSign.visible = false;
+      K.move('bill', 'sbilltray', { sp: 1 });
+      w.burst(new THREE.Vector3(0, 11.5, Z7(70.1)), 0x3ddc97, 30, 5);
+      tell('all', 'coop.l7.fake');
+    };
+    c.onEvent('fake:go', doFake);
+    fakeZ.onChange((zn) => { if (zn.active && K.at('dtable') && !faked) c.emit('fake:go'); });
+    w.updaters.push(() => { if (!faked && K.at('dtable') && !served2) { served2 = true; tell('all', 'coop.l7.arch'); } });
+    let served2 = false;
+    // the back stairs
+    const BS = [];
+    for (let k = 0; k < 5; k++) BS.push(deck(w, { x: [0, 2.4, -2.4, 2.4, 0][k], y: 9 - 1.8 * (k + 1), z: Z7(74.1 + 5.0 * k), w: 4, d: 3.4, ...FLOOR, path: true }));
+    w.checkpoint({ x: BS[1].body.x, y: BS[1].top, z: BS[1].body.z, real: true });
+    sgn('BACK STAIRS · STAFF AND FUGITIVES', 0, 9 + 3.4, Z7(72.6), { w: 7, h: 0.9, border: '#ffb43d' });
+    for (let k = 0; k < 5; k++) lit(BS[k].body.x + 2.6, BS[k].top, BS[k].body.z + 1.2);
+    const lobbyD0 = 97.4;
+    planks(0, 0, Z7(lobbyD0 + 6.8), 16, 13.6, { path: true });                            // d 97.4 .. 111
+    w.checkpoint({ x: 0, y: 0, z: Z7(lobbyD0 + 2), real: true });
+    for (const lx of [-6.5, 6.5]) lit(lx, 0, Z7(lobbyD0 + 1));
+    counter(0, Z7(101), 4, 1.6);
+    K.station('cash', { x: 0, y: 1, z: Z7(101), label: 'The cashier', approach: [0, Z7(99.4)], accept: ['bill'], takeable: () => false, color: 0x39d7c9 });
+    counter(-6, Z7(100), 2.4, 1.6);
+    K.station('billprinter', { x: -6, y: 1, z: Z7(100), label: 'Receipt printer', approach: [-6, Z7(98.4)], accept: ['bill'], color: 0xf5f0e0 });
+    sgn('RECEIPT PRINTER · REPRINTS IF YOU DROP IT', -6, 3.6, Z7(100), { w: 5.4, h: 0.8, border: '#f5f0e0' });
+    w.updaters.push(() => { const it = K.items.get('bill'), h = K.holder('bill'), y = h === me ? game.player.y : h === c.other ? P.sy : null; if (h === 'scash' || h === 'sbillprinter' || (y !== null && y < 4)) billLow = true; it.home = billLow ? 'billprinter' : 'billtray'; });
+    let billLow = false;
+    sgn('CASHIER · THE BILL GOES HERE', 0, 3.6, Z7(101), { w: 6, h: 0.9 });
+    sgn('SPLIT THE BILL', 0, 4.6, Z7(106), { w: 6, h: 1, border: '#ffc83d' });
+    const payA = plate(w, { x: -5, y: 0, z: Z7(107), size: 2.4, need: 'p1', label: `${N.p1} PAYS HALF` });
+    const payB = plate(w, { x: 5, y: 0, z: Z7(107), size: 2.4, need: 'p2', label: `${N.p2} PAYS HALF` });
+    G.g8 = gate(w, { x: 0, z: Z7(111.4), w: 16, h: 5 });
+    const exitT = { t: 0 };
+    w.updaters.push((dt) => {
+      exitT.t = K.at('cash') && payA.pressed && payB.pressed ? 9 : Math.max(0, exitT.t - dt);
+      G.g8.set(exitT.t > 0);
+    });
+    sgn('THE EXIT · SERENITY FALLS THANKS YOU FOR YOUR BUSINESS', 0, 6.8, Z7(110.8), { w: 11, h: 1.2, border: '#3ddc97' });
+    planks(0, 0, Z7(118.8), 14, 14, { path: true });
+    const goalZ = Z7(121);
+    w.goal({ x: 0, y: 0, z: goalZ });
+    sgn('BOTH OF YOU. IN THE CIRCLE. THAT IS THE BILL PAID.', 0, 5.2, Z7(125), { w: 10, h: 1.4 });
+    beacon(w, 0, 0, goalZ, 0xffe9a8, 20);
+    for (const lx of [-5, 5]) lit(lx, 0, Z7(114.5));
+    stage(w, 'back', { x: 0, y: 10, z: Z7(72), w: 8, h: 4, d: 3 }, () => tell('all', 'coop.l7.back'));
+    stage(w, 'lobby', { x: 0, y: 1, z: Z7(lobbyD0 + 3), w: 16, h: 4, d: 4 }, () => tell('all', 'coop.l7.cashier'));
+    let paySaid = false;
+    w.updaters.push(() => { if (!paySaid && K.at('cash')) { paySaid = true; tell('p1', 'coop.l7.split.p1'); tell('p2', 'coop.l7.split.p2'); } });
+    stage(w, 'exit', { x: 0, y: 1, z: Z7(113), w: 16, h: 4, d: 3 }, () => tell('all', 'coop.l7.exit'));
+    mark('s8');
+    bots.p1.push(
+      { x: 2.5, z: Z7(70.1), r: 0.8, until: () => faked },
+      S.take('billtray', 'bill'),
+      { follow: true, until: () => game.player.z < Z7(lobbyD0 + 1) && game.player.y < 1 },
+      S.put('cash'),
+      { x: -5, z: Z7(107), r: 0.5, until: () => exitT.t > 3 },
+      { follow: true },
+    );
+    bots.p2.push(
+      { x: -2.5, z: Z7(70.1), r: 0.8, until: () => faked },
+      { follow: true, until: () => game.player.z < Z7(lobbyD0 + 1) && game.player.y < 1 },
+      { x: 5, z: Z7(107), r: 0.5, until: () => !!K.at('cash') && exitT.t > 3 },
+      { follow: true },
+    );
 
     if (window.__trace) { let acc = 0; w.updaters.push((dt) => { acc += dt; if (acc > 0.25) { acc = 0; const q = game.player; window.__bot?.log.push(`T ${w.t.toFixed(1)} ${me} ${q.x.toFixed(1)},${q.y.toFixed(1)},${q.z.toFixed(1)} ${q.grounded ? 'g' : 'a'} i=${w.botIndex?.()} ${w.botLast}`); } }); }
     dinnerBots(w, K, bots);
