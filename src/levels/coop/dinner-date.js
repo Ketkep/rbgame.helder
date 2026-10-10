@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { glowMaterial } from '../../engine/materials.js';
 import { retreatEnv, deck, plate, gate, riser, sign, lantern, lake, stage, beacon, COL } from './kit.js';
-import { carryKit, chef as makeChef, dinnerBots, stepsFor } from './dinner-date-kit.js';
+import { carryKit, chef as makeChef, dinnerBots, stepsFor, lift as makeLift, track } from './dinner-date-kit.js';
 
 // Session 7 — Dinner Date. A seven-course evening at the lakeside bistro, cooked and served by two people who can each carry exactly one
 // thing and who have to hand it to each other (E) because a plate does not survive a jump:
@@ -89,7 +89,7 @@ export default {
     w.checkpoint({ x: 0, y: 0, z: gz[1] - 3, real: true });
     stage(w, 'gaps', { x: 0, y: 1, z: -23, w: 20, h: 4, d: 3 }, () => tell('all', 'coop.l7.gaps'));
     stage(w, 'gap3', { x: 0, y: 1, z: gz[2] - 3, w: 10, h: 4, d: 4 }, () => tell('all', 'coop.l7.gap3'));
-    K.onBreak = (it, why) => { if (it.id === 'china') tell('all', 'coop.l7.chinabreak'); else if (why === 'spill') tell('all', 'coop.l7.spill'); else if (why === 'crush') tell('all', 'coop.l7.crush'); else tell('all', 'coop.l7.smash'); };
+    K.onBreak = (it, why) => { if (it.id === 'china') tell('all', 'coop.l7.chinabreak'); else if (it.id === 'souffle') tell('all', why === 'crush' ? 'coop.l7.hatchcrush' : 'coop.l7.soufflebreak'); else if (why === 'spill') tell('all', 'coop.l7.spill'); else if (why === 'crush') tell('all', 'coop.l7.crush'); else tell('all', 'coop.l7.smash'); };
 
     // bots, stage 1. Gap 1: p1 gives (K0 edge) p2 receives; gap 2: p2 gives, p1 receives; gap 3: p1 gives, p2 receives and serves.
     const e0 = -24.6, e1 = gz[0] - 6, e2 = gz[1] - 6;                                  // far edges of the islands 0..2
@@ -559,12 +559,125 @@ export default {
     bots.p1.push({ x: 0, z: Z6(20), r: 1.5, until: () => !!K.at('table1') }, ...fetch(2));
     bots.p2.push({ x: 0, z: Z6(20), r: 1.5, until: () => !!K.at('table2') });
     both({ x: 0, z: Z6(29.6), r: 1.2, until: () => G.g7.passable }, { x: 0, z: Z6(34), r: 1.5 });
-    const endZ = Z6(32);
+    const z7 = Z6(32);                                                                   // the dessert tower starts here
+    const Z7 = (d) => z7 - d;
+
+    // ============================================================ 7. dessert tower: lift, hoist, the last gap ===================
+    // F0 (y 0): the oven. The lift to F1 (y 4) is called from the TOP (a plate on F1). On F1 the souffle goes into the hoist, whose hatch only
+    // stays open while someone holds a plate; the hoist climbs to F2 (y 8) while you take the stairs. The last gap is 2.8 m: hand it over.
+    planks(0, 0, Z7(6), 24, 12, { path: true });
+    w.checkpoint({ x: 0, y: 0, z: Z7(3), real: true });
+    for (const lx of [-10, 10]) lit(lx, 0, Z7(2));
+    sgn('DESSERT · A SOUFFLE · IT HAS NEVER BEEN JUMPED WITH', 0, 5.4, Z7(1), { w: 12, h: 1.2, border: '#f2c46b' });
+    counter(-9, Z7(6), 3, 2);
+    K.item('souffle', 'dessert', 'oven', { name: 'Souffle' });
+    K.station('oven', { x: -9, y: 1, z: Z7(6), label: 'The oven', approach: [-7.2, Z7(6)], accept: ['dessert'], color: 0xf2c46b });
+    sgn('THE OVEN', -9, 3.6, Z7(6), { w: 3, h: 0.8, border: '#f2c46b' });
+    // the stairs (nobody carries anything up these)
+    [1, 2, 3].forEach((k) => planks(10, k, Z7(3 + 2.2 * (k - 1)), 3, 2.2));
+    planks(10, 4, Z7(12.25), 3, 7.5);
+    sgn('STAIRS · FOR PEOPLE WITH FREE HANDS', 10, 5.6, Z7(2), { w: 5.4, h: 0.9, border: '#39d7c9' });
+    // the lift (called from the top)
+    const L1 = makeLift(w, { x: -6, z: Z7(14), w: 4, d: 4, y0: 0, y1: 4 });
+    for (const [px, pz] of [[-8.3, 12.0], [-3.7, 12.0], [-8.3, 16.0], [-3.7, 16.0]]) w.box({ x: px, y: 3, z: Z7(pz), w: 0.25, h: 6.4, d: 0.25, color: 0x6b717f });
+    sgn('SERVICE LIFT · CALLED FROM THE TOP', -6, 6.8, Z7(14), { w: 6, h: 1, border: '#3ddc97' });
+    planks(0, 4, Z7(26), 24, 20, { path: true });                                        // F1, d 16 .. 36
+    w.checkpoint({ x: 0, y: 4, z: Z7(18.5), real: true });
+    for (const lx of [-10, 10]) lit(lx, 4, Z7(20));
+    const callP = plate(w, { x: -6, y: 4, z: Z7(19.5), size: 2.4, need: 'any', label: 'CALL THE LIFT · HOLD' });
+    w.updaters.push(() => L1.set(callP.pressed));
+    counter(-9, Z7(27), 3, 2, { y0: 4 });
+    counter(-9, Z7(32), 3, 2, { y0: 4 });
+    K.station('oven1', { x: -9, y: 5, z: Z7(32), label: 'Spare oven', approach: [-7.2, Z7(32)], accept: ['dessert'], color: 0xf2c46b });
+    sgn('SPARE OVEN', -9, 7.6, Z7(32), { w: 3, h: 0.8, border: '#f2c46b' });
+    K.station('hoist_in', { x: -9, y: 5, z: Z7(27), label: 'The hoist', belt: 'hoist', approach: [-9, Z7(25.2)], accept: ['dessert'], color: 0x39d7c9 });
+    sgn('HOIST · MIND THE HATCH', -9, 7.6, Z7(27), { w: 4, h: 0.8, border: '#39d7c9' });
+    const HA = [-9, 5, Z7(27)], HB = [-9, 9, Z7(50)], hlen = Math.hypot(HB[1] - HA[1], HB[2] - HA[2]), hsp = 2.2, hdoor = 5.5;
+    track(w, HA, HB, { speed: hsp });
+    for (let i = 1; i <= 6; i++) { const u = i / 7; w.box({ x: -9, y: HA[1] + (HB[1] - HA[1]) * u - 2.6, z: HA[2] + (HB[2] - HA[2]) * u, w: 0.25, h: 5, d: 0.25, color: 0x3a3f4b }); }
+    const doorP = plate(w, { x: -5, y: 4, z: Z7(30), size: 2.4, need: 'any', label: 'HOLD THE HATCH OPEN' });
+    K.belt('hoist', { a: HA, b: HB, speed: hsp, end: 'hoist_out', doors: [{ d: hdoor, open: () => doorP.pressed }] });
+    const hu = hdoor / hlen, hx = -9, hy = HA[1] + (HB[1] - HA[1]) * hu, hz = HA[2] + (HB[2] - HA[2]) * hu;
+    for (const sx of [-1, 1]) w.box({ x: hx + sx * 1.0, y: hy + 0.7, z: hz, w: 0.22, h: 1.9, d: 0.4, color: 0x6b717f });
+    w.box({ x: hx, y: hy + 1.7, z: hz, w: 2.2, h: 0.25, d: 0.4, color: 0x6b717f });
+    const hatch = w.box({ x: hx, y: hy + 1.3, z: hz, w: 1.8, h: 0.9, d: 0.15, glow: 0x7fd4ff, glowIntensity: 0.8, static: false });
+    const hatchLamp = w.box({ x: hx + 1.0, y: hy + 2.0, z: hz + 0.4, w: 0.35, h: 0.35, d: 0.2, glow: 0x3ddc97, static: false });
+    w.updaters.push((dt) => {
+      const open = doorP.pressed, ty = open ? hy + 1.3 : hy + 0.55;
+      hatch.position.y += (ty - hatch.position.y) * Math.min(1, dt * 8);
+      hatchLamp.material.color.setHex(open ? 0x3ddc97 : 0xff4d5e).multiplyScalar(2);
+    });
+    // up to F2: stairs on the east side
+    [1, 2, 3].forEach((k) => planks(10, 4 + k, Z7(36 + 1.1 + 2.2 * (k - 1)), 3, 2.2));
+    planks(10, 8, Z7(44.8), 3, 4.4);
+    for (const lx of [-10, 10]) lit(lx, 4, Z7(34));
+    planks(0, 8, Z7(53), 24, 12, { path: true });                                        // F2, d 47 .. 59
+    w.checkpoint({ x: 0, y: 8, z: Z7(49), real: true });
+    for (const lx of [-10, 10]) lit(lx, 8, Z7(49));
+    counter(-9, Z7(51), 3, 2, { y0: 8 });
+    K.station('hoist_out', { x: -9, y: 9, z: Z7(51), label: 'The hoist', approach: [-7.2, Z7(51)], accept: ['dessert'], color: 0x39d7c9 });
+    counter(-9, Z7(55), 3, 2, { y0: 8 });
+    K.station('oven2', { x: -9, y: 9, z: Z7(55), label: 'Spare oven', approach: [-7.2, Z7(55)], accept: ['dessert'], color: 0xf2c46b });
+    sgn('SPARE OVEN', -9, 11.6, Z7(55), { w: 3, h: 0.8, border: '#f2c46b' });
+    // the spare ovens: if the souffle breaks, it comes back at the highest oven it has reached
+    let reached = 0;
+    w.updaters.push(() => {
+      const it = K.items.get('souffle'), h = K.holder('souffle');
+      const y = h === me ? game.player.y : h === c.other ? P.sy : null;
+      if (h === 'shoist_out' || (y !== null && y > 7.5)) reached = Math.max(reached, 2);
+      else if (h === 'shoist_in' || h === 'bhoist' || (y !== null && y > 3.5)) reached = Math.max(reached, 1);
+      it.home = ['oven', 'oven1', 'oven2'][reached];
+    });
+    // the last gap
+    const T = planks(0, 9, Z7(66.3), 14, 9, { path: true });                              // d 61.8 .. 70.8
+    sgn('THE PASS · THE TABLE IS NOT FAR · THE GAP IS 2.8 M', 0, 14.0, Z7(60), { w: 12, h: 1.3, border: '#ffb43d' });
+    w.checkpoint({ x: 0, y: 9, z: Z7(63.3), real: true });
+    counter(0, Z7(68), 4, 1.6, { y0: 9 });
+    K.station('dtable', { x: 0, y: 10, z: Z7(68), label: 'The dessert table', approach: [0, Z7(66.4)], accept: ['dessert'], takeable: () => false, color: 0x39d7c9 });
+    stage(w, 'dessert', { x: 0, y: 1, z: Z7(4), w: 24, h: 4, d: 6 }, () => tell('all', 'coop.l7.dessert'));
+    stage(w, 'lift', { x: -6, y: 1, z: Z7(10), w: 6, h: 4, d: 4 }, () => tell('all', 'coop.l7.lift'));
+    stage(w, 'f1', { x: 0, y: 5, z: Z7(21), w: 24, h: 4, d: 4 }, () => tell('all', 'coop.l7.f1'));
+    stage(w, 'f2', { x: 0, y: 9, z: Z7(50), w: 24, h: 4, d: 4 }, () => tell('all', 'coop.l7.f2'));
+    stage(w, 'gap', { x: 0, y: 9, z: Z7(57), w: 14, h: 4, d: 3 }, () => tell('all', 'coop.l7.lastgap'));
+    let served = false;
+    w.updaters.push(() => { if (!served && K.at('dtable')) { served = true; tell('all', 'coop.l7.served'); } });
+    mark('s7');
+    const beltDist = () => { const s = c.get('it:souffle'); return s && s.h === 'bhoist' ? hsp * (w.t - s.a.t0) : 0; };
+    bots.p1.push(
+      S.take('oven', 'souffle'),
+      { x: -6, z: Z7(10.6), r: 0.6 },
+      { x: -6, z: Z7(14), r: 0.7, until: () => L1.atTop },
+      { x: -6, z: Z7(17.5), r: 0.6 },
+      { x: -5.5, z: Z7(25.2), r: 0.6 }, { x: -9, z: Z7(25.2), r: 0.5 },
+      { x: -9, z: Z7(25.2), r: 0.5, until: () => doorP.pressed },
+      S.put('hoist_in'),
+      { x: 10, z: Z7(35), r: 0.8 }, { x: 10, z: Z7(37.1), r: 0.6 }, { x: 10, z: Z7(39.3), r: 0.6 }, { x: 10, z: Z7(41.5), r: 0.6 }, { x: 10, z: Z7(44.8), r: 0.6 }, { x: 10, z: Z7(48.5), r: 0.8 },
+      { x: -7.2, z: Z7(51), r: 0.6 },
+      S.take('hoist_out', 'souffle'),
+      { x: 3, z: Z7(58.4), r: 0.4 },
+      { x: 3, z: Z7(58.4), r: 0.4, until: () => P.has && P.sy > 8.5 && P.sz < Z7(61.5) },
+      { x: 3, z: Z7(58.4), r: 0.4, face: [() => P.sx, () => P.sz], use: true, until: () => !K.held() },
+      { x: 3, z: Z7(63.3), jump: 5.0, r: 0.8 },
+    );
+    bots.p2.push(
+      { x: 10, z: Z7(3), r: 0.8 }, { x: 10, z: Z7(5.2), r: 0.6 }, { x: 10, z: Z7(7.4), r: 0.6 }, { x: 10, z: Z7(12.25), r: 0.6 }, { x: 10, z: Z7(17), r: 0.8 },
+      { x: -6, z: Z7(19.5), r: 0.5 },
+      { x: -6, z: Z7(19.5), r: 0.5, until: () => P.has && P.sy > 3.5 && P.sz < Z7(17) },
+      { x: -5, z: Z7(30), r: 0.5 },
+      { x: -5, z: Z7(30), r: 0.5, until: () => beltDist() > hdoor + 1.2 },
+      { x: 10, z: Z7(35), r: 0.8 }, { x: 10, z: Z7(37.1), r: 0.6 }, { x: 10, z: Z7(39.3), r: 0.6 }, { x: 10, z: Z7(41.5), r: 0.6 }, { x: 10, z: Z7(44.8), r: 0.6 }, { x: 10, z: Z7(48.5), r: 0.8 },
+      { x: 3, z: Z7(55), r: 0.6 },
+      { x: 3, z: Z7(63.3), jump: 5.0, r: 0.6 },
+      { x: 3, z: Z7(62.6), r: 0.5, until: () => K.holder('souffle') === 'p2' },
+      S.put('dtable'),
+    );
+    const endZ = Z7(71);
 
     // ============================================================ finish (placeholder) ============
     planks(0, 0, endZ - 7, 14, 14, { path: true });
     w.goal({ x: 0, y: 0, z: endZ - 6 });
 
+    if (window.__trace) { let acc = 0; w.updaters.push((dt) => { acc += dt; if (acc > 0.25) { acc = 0; const q = game.player; window.__bot?.log.push(`T ${w.t.toFixed(1)} ${me} ${q.x.toFixed(1)},${q.y.toFixed(1)},${q.z.toFixed(1)} ${q.grounded ? 'g' : 'a'} i=${w.botIndex?.()} ${w.botLast}`); } }); }
     dinnerBots(w, K, bots);
   },
 };

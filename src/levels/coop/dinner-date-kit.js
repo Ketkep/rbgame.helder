@@ -512,6 +512,7 @@ export function dinnerBots(w, K, byRole) {
       if (arrived && s.use) g.useFocus();
       if (arrived && s.face) { const fx = val(s.face[0], 0), fz = val(s.face[1], 0); return { x: fx, z: fz, wait: true }; }
       const stand = s.until && (arrived || s.x === undefined);
+      w.botLast = `${i}:${tx.toFixed(1)},${tz.toFixed(1)}${stand ? ' stand' : ''}`;
       return { x: tx, z: tz, wait: !!stand, jump: s.jump || false };
     }
     return null;
@@ -535,4 +536,41 @@ export function stepsFor(w, K) {
     // wait for a station to hold an item
     waitAt: (id) => ({ until: () => !!K.at(id) }),
   };
+}
+
+// =================================================================================================================================
+//  Lifts and hoists
+// =================================================================================================================================
+/**
+ * A service lift between two heights. `set(true)` sends it up, `set(false)` down; it eases in and out (no jolt). Solid platform that
+ * carries whoever stands on it. o: { x, z, w, d, y0, y1, speed, accel, color }
+ */
+export function lift(w, o) {
+  const { x, z, w: ww = 4, d = 4, y0 = 0, y1 = 4, speed = 2.6, accel = 2.4 } = o;
+  const p = w.plat({ x, y: y0, z, w: ww, d, h: 0.6, tex: 'wood', color: o.color ?? 0xe9d9b0, trim: 0x3ddc97, moving: true, path: !!o.path });
+  const st = { plat: p, y: y0, v: 0, up: false, y0, y1 };
+  w.updaters.push((dt) => {
+    const tgt = st.up ? y1 : y0, dist = tgt - st.y;
+    const vmax = Math.min(speed, Math.sqrt(2 * accel * Math.abs(dist))) * Math.sign(dist);
+    const dv = vmax - st.v; st.v += Math.sign(dv) * Math.min(Math.abs(dv), accel * dt);
+    st.y += st.v * dt;
+    if ((tgt - st.y) * Math.sign(dist || 1) <= 0.001 && Math.abs(st.v) < 0.3) { st.y = tgt; st.v = 0; }
+    p.setPos(p.base.x, p.base.y + (st.y - y0), p.base.z);
+  });
+  st.set = (v) => { st.up = !!v; };
+  Object.defineProperty(st, 'atTop', { get: () => st.y > y1 - 0.05 });
+  Object.defineProperty(st, 'atBottom', { get: () => st.y < y0 + 0.05 });
+  return st;
+}
+
+/** A sloped steel runner with ribs crawling along it (the look of a belt/hoist that goes from A to B). */
+export function track(w, a, b, { width = 1.1, speed = 2, color = 0x4a4f5c } = {}) {
+  const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), len = A.distanceTo(B);
+  const g = new THREE.Group(); g.position.copy(A).lerp(B, 0.5); g.lookAt(B); w.add(g);
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(width, 0.14, len), new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.5 })); rail.position.y = -0.1; g.add(rail);
+  const ribs = [];
+  const n = Math.round(len / 1.2);
+  for (let i = 0; i < n; i++) { const r = new THREE.Mesh(new THREE.BoxGeometry(width - 0.1, 0.04, 0.12), new THREE.MeshStandardMaterial({ color: 0xd8a94a, roughness: 0.5 })); r.position.y = -0.01; g.add(r); ribs.push(r); }
+  w.updaters.push(() => { for (let i = 0; i < n; i++) ribs[i].position.z = -len / 2 + (((i / n) * len + w.t * speed) % len); });
+  return g;
 }
