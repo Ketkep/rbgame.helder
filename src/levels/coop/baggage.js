@@ -65,7 +65,7 @@ export default {
         w.updaters.push(() => lift.set(pz.pressed));
         sign(w, k ? 'THIS ONE IS ALSO 3 M. YOU ARE NOW EACH OTHER\'S STAIRS.' : 'THIS WALL IS 3 M. YOUR JUMP IS 1.4 M.', F.X(0), y + 6.4, F.Z(Ws - 0.4), { w: 11, h: 1.2 });
         sign(w, 'STAND ON THE LIFT. THE OTHER ONE STANDS ON THE PLATE.', F.X(5.5), y + 6.0, F.Z(Ws - 3.2), { w: 6.4, h: 1.6, size: 34 });
-        w.checkpoint({ x: F.X(-4), y: y + 3, z: F.Z(Ws + 5), real: true });
+        w.checkpoint({ x: F.X(0), y: y + 3, z: F.Z(Ws + 5), real: true });
         const inPlace = () => P.has && Math.abs(P.sz - F.Z(Ws - 0.5)) < 0.8 && Math.abs(P.sx - F.X(0)) < 0.9;
         add(boost,
           { x: F.X(-1.2), z: F.Z(Ws - 4), r: 1 },
@@ -216,7 +216,7 @@ export default {
         const lB = lever(w, { x: F.X(1), y: y + H, z: F.Z(s + 10.4 + 7.5), key: `l9e${a0}_${k}b`, label: `Send ${N[oper]} up` }, (on) => liftR.set(on));
         sign(w, `${N[rider]} RIDES THIS ONE`, F.X(-4.5), y + 3.2, F.Z(s + 6.2), { w: 4.4, h: 0.8, size: 30, border: '#' + COL[rider].toString(16).padStart(6, '0') });
         sign(w, `${N[oper]} RIDES THIS ONE`, F.X(4.5), y + 3.2, F.Z(s + 6.2), { w: 4.4, h: 0.8, size: 30, border: '#' + COL[oper].toString(16).padStart(6, '0') });
-        w.checkpoint({ x: F.X(-3), y: y + H, z: F.Z(s + 10.4 + 4.5), real: true });
+        w.checkpoint({ x: F.X(0), y: y + H, z: F.Z(s + 10.4 + 4.5), real: true });
         const onL = () => partnerAt(P, F, -4.5, s + 8.2, y - 0.5, y + 1.3, 2.2);
         const onR = () => partnerAt(P, F, 4.5, s + 8.2, y - 0.5, y + 1.3, 2.2);
         const up = () => pl().y > y + H - 0.6;

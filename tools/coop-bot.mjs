@@ -32,6 +32,7 @@ for (const p of [A, B]) await p.waitForFunction(() => window.__trust.state === '
 const install = () => {
   const g = window.__trust;
   g.manual = true;
+  if (!window.__shove) g.world.coopRules.shove = 0;      // bots lean on each other constantly; shoving is for humans
   const bot = (window.__bot = { i: 0, sim: 0, said: [], log: [] });
   const origSay = g.narrator.say.bind(g.narrator);
   g.narrator.say = (k, o) => { bot.said.push(String(k).slice(0, 48)); return origSay(k, o); };
