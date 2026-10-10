@@ -33,6 +33,12 @@ export const SCRIPT = {
   'coop.l7.spill': ['Spilled. Ten out of ten for enthusiasm. The soup is back in the pot. The soup is more composed than you are.'],
   'coop.l7.crush': ['The chiller door ate it. It had warnings. Lights. A sign. It does not read.'],
 
+  'coop.l7.belt': ['Canapés! Load the tray on the belt. The other one catches. Across the chasm. The chasm is a design choice.'],
+  'coop.l7.chiller': ['The blast chiller. Green lamp: it is open. Amber: it is thinking about it. Red: it is a door. Time your tray, not your feelings.'],
+  'coop.l7.catcher': ['Catchers: a tray arrives, you pick it up, you put it on a table. One at a time. A second tray on a full catch counter falls off. Gently. Into the lake.'],
+  'coop.l7.firsttray': ['One canapé served! Two to go. I am so proud of the tray.'],
+  'coop.l7.bridged': ['The bridge! Three tables, three trays. Staff may now cross. Staff may now also regret it.'],
+
   // ---------------------------------------------------------------- global ---------------
   'death.first': [
     'And that\'s a death! Don\'t worry, that one was free. The rest are billed monthly.',

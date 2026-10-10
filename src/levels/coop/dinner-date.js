@@ -120,13 +120,111 @@ export default {
       S.put('pass1'),
     );
 
-    // ---- the end of stage 1 (temporary: stage 2 follows below)
-    let zc = lastD - 0.8;                                                                // the gate sits here
-    void zc;
+    // ============================================================ 2. appetisers: load, chill, catch ===========================
+    const z0 = lastD - 0.8;                                                              // F0 starts here (the gate sits at lastD - 0.4)
+    planks(0, 0, z0 - 7.7, 24, 15.4, { path: true });                                    // the loading dock
+    for (const lx of [-10, 10]) lit(lx, 0, z0 - 2);
+    const trayAt = [[-9, z0 - 4.5], [9, z0 - 8], [-9, z0 - 11.5]];
+    ['a', 'b', 'c'].forEach((n, i) => {
+      counter(trayAt[i][0], trayAt[i][1], 3, 1.4);
+      K.item('tray_' + n, 'tray', 'tray_' + n, { name: 'Canapé tray ' + n.toUpperCase() });
+      K.station('tray_' + n, { x: trayAt[i][0], y: 1, z: trayAt[i][1], label: 'Canapé tray', accept: ['tray'] });
+    });
+    sgn('CANAPÉS · TRAYS ONLY', 0, 4.6, z0 - 1.5, { w: 6, h: 1 });
+    const zH = z0 - 14.8, zE = z0 - 33.6;                                                // belt head and end
+    counter(0, zH, 4, 1.2);
+    K.station('belt_head', { x: 0, y: 1, z: zH, label: 'The belt', belt: 'main', approach: [0, zH + 1.7], accept: ['tray'], color: 0x39d7c9 });
+    K.belt('main', { a: [0, 1, zH], b: [0, 1, zE], speed: 2.4, end: 'belt_end', doors: [{ d: 9.0, open: (t) => (t % 7) < 3.2 }] });
+    K.beltBusy = () => ['a', 'b', 'c'].some((n) => String(K.holder('tray_' + n))[0] === 'b');
+    // the belt: a steel runner over the chasm with ribs that crawl along it
+    w.box({ x: 0, y: 0.82, z: (zH + zE) / 2, w: 1.1, h: 0.14, d: Math.abs(zH - zE), tex: 'metal', color: 0x4a4f5c });
+    const ribs = [];
+    for (let i = 0; i < 20; i++) { const r = w.box({ x: 0, y: 0.91, z: 0, w: 1.0, h: 0.04, d: 0.12, color: 0xd8a94a, static: false }); ribs.push(r); }
+    w.updaters.push(() => { const L = Math.abs(zH - zE), sp = 2.4; for (let i = 0; i < ribs.length; i++) { const u = (((i / ribs.length) * L + w.t * sp) % L); ribs[i].position.z = zH - u; } });
+    for (let i = 0; i <= 6; i++) w.box({ x: 0, y: -4, z: zH - 3 * i - 1, w: 0.25, h: 9, d: 0.25, color: 0x3a3f4b });
+    // the chiller door: a blade that comes down over the belt. Lamp: green = go, amber = closing, red = shut.
+    const zD = zH - 9.0;
+    for (const sx of [-1, 1]) w.box({ x: sx * 1.35, y: 2.2, z: zD, w: 0.3, h: 3.4, d: 0.5, color: 0x6b717f });
+    w.box({ x: 0, y: 3.95, z: zD, w: 3.0, h: 0.35, d: 0.5, color: 0x6b717f });
+    const blade = w.box({ x: 0, y: 3.0, z: zD, w: 2.4, h: 1.5, d: 0.2, glow: 0x7fd4ff, glowIntensity: 0.8, static: false });
+    const lampD = w.box({ x: 1.35, y: 3.8, z: zD + 0.4, w: 0.4, h: 0.4, d: 0.2, glow: 0x3ddc97, static: false });
+    const phase = (t) => ((t % 7) + 7) % 7;
+    sgn('BLAST CHILLER · KEEP CLEAR WHEN RED', 0, 5.2, zD, { w: 6.4, h: 0.9, border: '#7fd4ff' });
+    const headLamp = w.box({ x: 2.1, y: 2.9, z: zH, w: 0.6, h: 0.6, d: 0.3, glow: 0x3ddc97, static: false });
+    sgn('LOAD ON GREEN', 2.1, 3.6, zH, { w: 3.0, h: 0.6, size: 40, border: '#3ddc97' });
+    w.updaters.push(() => {
+      const ph = phase(w.t);
+      const k = ph < 2.9 ? 0 : ph < 3.2 ? (ph - 2.9) / 0.3 : ph < 6.7 ? 1 : 1 - (ph - 6.7) / 0.3;     // 0 open … 1 closed
+      blade.position.y = 3.1 - k * 1.75;
+      lampD.material.color.setHex(ph < 2.2 ? 0x3ddc97 : ph < 3.2 ? 0xffb43d : 0xff4d5e).multiplyScalar(2);
+      const pa = phase(w.t + 9.0 / 2.4);
+      headLamp.material.color.setHex(pa > 0.3 && pa < 2.5 ? 0x3ddc97 : 0xff4d5e).multiplyScalar(2);
+    });
+    const goodNow = () => { const pa = phase(w.t + 9.0 / 2.4); return pa > 0.5 && pa < 2.2; };
+    // the catch side
+    const F1z = z0 - 33;
+    planks(0, 0, F1z - 7, 24, 14, { path: true });
+    counter(0, zE, 4, 1.2);
+    K.station('belt_end', { x: 0, y: 1, z: zE, label: 'The belt', approach: [0, zE - 1.7], accept: ['tray'], color: 0x39d7c9 });
+    sgn('CATCH', 0, 3.4, zE, { w: 3, h: 0.7 });
+    ['1', '2', '3'].forEach((n, i) => {
+      const tx = (i - 1) * 7;
+      counter(tx, F1z - 10, 3, 1.4);
+      K.station('tbl' + n, { x: tx, y: 1, z: F1z - 10, label: 'Table ' + n, approach: [tx, F1z - 8.4], accept: ['tray'], takeable: () => false, color: 0x39d7c9 });
+    });
+    sgn('THREE TABLES · THREE TRAYS', 0, 4.4, F1z - 10, { w: 7, h: 1 });
+    for (const lx of [-10, 10]) lit(lx, 0, F1z - 3);
+    // the bridge comes up when all three tables have their canapés
+    const bridge = riser(w, { x: 0, y: 0, z: (zH - 0.6 + F1z) / 2, w: 6, d: Math.abs(zH - 0.6 - F1z), h: 1, drop: 8, speed: 7, tex: 'wood', path: true });
+    let tabled = 0;
+    w.updaters.push(() => { tabled = ['1', '2', '3'].filter((n) => K.at('tbl' + n)).length; bridge.set(tabled >= 3); });
+    // stepping stones along the east side: the catcher's way across
+    const stones = [];
+    for (let i = 0; i < 4; i++) stones.push(planks(9.5, 0, z0 - 18.5 - 4.2 * i, 2.8, 2.6, { path: 'stones' }));
+    w.crumble(stones[1], { delay: 1.2, gone: 3 }); w.crumble(stones[3], { delay: 1.2, gone: 3 });
+    sgn('THE LONG WAY ROUND (NO TRAYS)', 9.5, 3.2, z0 - 15.6, { w: 5.6, h: 0.8 });
+    w.checkpoint({ x: 0, y: 0, z: z0 - 8, real: true });
+    w.checkpoint({ x: 0, y: 0, z: F1z - 4, real: true });
+    stage(w, 'belt', { x: 0, y: 1, z: z0 - 5, w: 24, h: 4, d: 4 }, () => tell('all', 'coop.l7.belt'));
+    stage(w, 'chiller', { x: 0, y: 1, z: zH + 2, w: 12, h: 4, d: 4 }, () => tell('all', 'coop.l7.chiller'));
+    stage(w, 'catcher', { x: 0, y: 1, z: F1z - 3, w: 24, h: 4, d: 4 }, () => { tell('all', 'coop.l7.catcher'); });
+    let bridgedSaid = false;
+    w.updaters.push(() => { if (!bridgedSaid && bridge.k > 0.95) { bridgedSaid = true; tell('all', 'coop.l7.bridged'); } });
+    let said1 = false;
+    w.updaters.push(() => { if (!said1 && tabled >= 1) { said1 = true; tell('all', 'coop.l7.firsttray'); } });
+    G.g3 = gate(w, { x: 0, z: F1z - 14.4, w: 24, h: 5 });
+    w.updaters.push(() => G.g3.set(bridge.k > 0.95));
+    sgn('KITCHEN · STAFF ONLY · (THAT IS YOU)', 0, 6.2, F1z - 13.8, { w: 11, h: 1.2 });
+
+    bots.p1.push(
+      { follow: true, until: () => G.g2.passable && game.player.z < z0 - 2 },
+      ...['a', 'b', 'c'].flatMap((n, i) => [
+        S.take('tray_' + n),
+        { x: 0, z: zH + 1.7, r: 0.5, until: () => goodNow() && !K.at('belt_end') && !K.beltBusy() && (i === 0 || !!K.at('tbl' + i)) },
+        S.put('belt_head'),
+        { x: 0, z: zH + 3.0, r: 0.8 },
+      ]),
+      { x: 0, z: zH + 1.7, r: 0.5, until: () => bridge.k > 0.97 },
+      { x: 0, z: F1z - 4, r: 1.5 },
+    );
+    bots.p2.push(
+      { follow: true, until: () => G.g2.passable && game.player.z < z0 - 2 },
+      { x: 9.5, z: z0 - 12, r: 0.8 },
+      ...stones.map((st) => ({ x: 9.5, z: st.body.z, jump: 3.4, r: 0.7 })),
+      { x: 9.5, z: F1z - 2.5, jump: 3.4, r: 0.8 },
+      ...['1', '2', '3'].flatMap((n) => [
+        { x: 0, z: zE - 1.7, r: 0.5, until: () => !!K.at('belt_end') },
+        S.take('belt_end'),
+        S.put('tbl' + n),
+      ]),
+      { x: 0, z: F1z - 4, r: 1.5 },
+    );
+    const goalZ = F1z - 14.8;
+    both({ x: 0, z: F1z - 12.5, r: 1.2, until: () => G.g3.passable }, { x: 0, z: goalZ - 6, r: 1.5 });
 
     // ============================================================ finish (placeholder) ============
-    const fz = lastD - 6;
-    planks(0, 0, fz - 4, 14, 14, { path: true });
+    const fz = goalZ;
+    planks(0, 0, fz - 7, 14, 14, { path: true });
     w.goal({ x: 0, y: 0, z: fz - 6 });
 
     dinnerBots(w, K, bots);
