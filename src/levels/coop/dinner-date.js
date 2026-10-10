@@ -219,13 +219,80 @@ export default {
       ]),
       { x: 0, z: F1z - 4, r: 1.5 },
     );
-    const goalZ = F1z - 14.8;
-    both({ x: 0, z: F1z - 12.5, r: 1.2, until: () => G.g3.passable }, { x: 0, z: goalZ - 6, r: 1.5 });
+    const z3a = F1z - 14.8;
+    both({ x: 0, z: F1z - 12.5, r: 1.2, until: () => G.g3.passable }, { x: 0, z: z3a - 3, r: 1.5 });
+
+    // ============================================================ 3. the walk-in freezer: hold the door, fetch the ice =========
+    planks(0, 0, z3a - 11, 24, 22, { path: true });                                      // the cold hall
+    w.checkpoint({ x: 0, y: 0, z: z3a - 3, real: true });
+    for (const lx of [-10, 10]) { lit(lx, 0, z3a - 2); lit(lx, 0, z3a - 20); }
+    const ICE = { tex: 'metal', color: 0xcfe8ff };
+    const walls = [];
+    const wall = (x, z, ww, d) => walls.push(w.plat({ x, y: 5, z, w: ww, d, h: 5, ...ICE }));
+    const freezer = (side, depth, plateAt, who, id, itemName) => {
+      const sx = side, x1 = sx * 12, x2 = sx * (12 + depth), cx = (x1 + x2) / 2;
+      planks(cx, 0, z3a - 10, depth, 12, { color: 0xcfe8ff, tex: 'metal' });
+      wall(x2 + sx * 0.4, z3a - 10, 0.8, 13.6);
+      wall(cx, z3a - 3.6, depth + 0.8, 0.8);
+      wall(cx, z3a - 16.4, depth + 0.8, 0.8);
+      wall(x1, z3a - 5.5, 0.8, 3.0); wall(x1, z3a - 14.5, 0.8, 3.0);
+      const door = gate(w, { x: x1, z: z3a - 10, w: 0.8, d: 6, h: 5, color: 0xdfeefc, tex: 'metal', glow: 0x7fd4ff });
+      const pl = plate(w, { x: sx * 8, y: 0, z: plateAt, need: who, hold: 1.0, label: `${N[who]}: HOLD THE DOOR` });
+      counter(sx * (12 + depth - 2), z3a - 10, 2.6, 2.6, { plat: { color: 0xcfe8ff } });
+      K.item(id, 'crate', id + '_home', { name: itemName, color: 0x9fd8ff });
+      K.station(id + '_home', { x: sx * (12 + depth - 2), y: 1, z: z3a - 10, label: itemName, approach: [sx * (12 + depth - 4.2), z3a - 10], accept: ['crate'], color: 0x7fd4ff });
+      sgn('WALK-IN FREEZER · -18°C', sx * 12, 6.8, z3a - 10, { w: 6.5, h: 1.0, border: '#7fd4ff', rotY: Math.PI / 2 * -sx });
+      w.light(0x9fd8ff, 6, 14, cx, 3.6, z3a - 10);
+      w.updaters.push(() => door.set(pl.pressed));
+      return { door, pl, x1, x2, sx };
+    };
+    const FA = freezer(-1, 14, z3a - 4.6, 'p2', 'iceA', 'Block of ice (A)');
+    const FB = freezer(1, 18, z3a - 15.4, 'p1', 'iceB', 'Block of ice (B)');
+    counter(-3, z3a - 19.4, 3, 1.4); counter(3, z3a - 19.4, 3, 1.4);
+    K.station('svcA', { x: -3, y: 1, z: z3a - 19.4, label: 'Service counter', approach: [-3, z3a - 17.8], accept: (it) => it.id === 'iceA', takeable: () => false, color: 0x7fd4ff });
+    K.station('svcB', { x: 3, y: 1, z: z3a - 19.4, label: 'Service counter', approach: [3, z3a - 17.8], accept: (it) => it.id === 'iceB', takeable: () => false, color: 0x7fd4ff });
+    sgn('A + B · ICE FOR THE TABLE', 0, 4.4, z3a - 19.4, { w: 7, h: 1 });
+    G.g4 = gate(w, { x: 0, z: z3a - 21.6, w: 24, h: 5 });
+    w.updaters.push(() => G.g4.set(!!K.at('svcA') && !!K.at('svcB')));
+    // the cold: a bar that fills while you are inside; it drains fast outside. Full = frozen stiff.
+    const coldBar = K.bar('cold', { label: 'COLD', color: '#7fd4ff' });
+    let cold = 0;
+    const inside = (F) => { const p = game.player; return p.z < z3a - 3.4 && p.z > z3a - 16.6 && ((F.sx < 0 && p.x < F.x1 - 0.5 && p.x > F.x2 - 1) || (F.sx > 0 && p.x > F.x1 + 0.5 && p.x < F.x2 + 1)); };
+    w.updaters.push((dt) => {
+      if (game.state !== 'playing') { cold = 0; return; }
+      const ins = inside(FA) || inside(FB);
+      cold = Math.max(0, Math.min(1.2, cold + (ins ? dt / 13 : -dt / 2.2)));
+      coldBar.show(cold > 0.02); coldBar.set(1 - cold, cold > 0.7 ? 'FREEZING!' : 'COLD', cold > 0.7 ? '#ff4d5e' : '#7fd4ff');
+      if (cold >= 1) { cold = 0; game.kill('freeze'); }
+    });
+    stage(w, 'freezers', { x: 0, y: 1, z: z3a - 4, w: 24, h: 4, d: 4 }, () => { tell('p1', 'coop.l7.freezer.p1'); tell('p2', 'coop.l7.freezer.p2'); });
+    stage(w, 'freezer2', { x: 0, y: 1, z: z3a - 12, w: 6, h: 4, d: 20 }, () => {});
+    let ice1 = false, ice2 = false;
+    w.updaters.push(() => {
+      if (!ice1 && K.at('svcA')) { ice1 = true; tell('all', 'coop.l7.ice1'); }
+      if (!ice2 && K.at('svcB')) { ice2 = true; tell('all', 'coop.l7.ice2'); }
+    });
+    bots.p2.push(
+      { x: -8, z: z3a - 4.6, r: 0.4, until: () => !!K.at('svcA') },
+      { x: FB.x1 + 4, z: z3a - 10, r: 1.0, until: () => FB.door.passable },
+      S.take('iceB_home', 'iceB'),
+      { x: 8, z: z3a - 10, r: 1.0 },
+      S.put('svcB'),
+    );
+    bots.p1.push(
+      { x: -6, z: z3a - 10, r: 1.0, until: () => FA.door.passable },
+      S.take('iceA_home', 'iceA'),
+      { x: -6, z: z3a - 10, r: 1.0 },
+      S.put('svcA'),
+      { x: 8, z: z3a - 15.4, r: 0.4, until: () => !!K.at('svcB') },
+    );
+    both({ x: 0, z: z3a - 19.4 + 2.5, r: 1.2, until: () => G.g4.passable });
+    const endZ = z3a - 22;
 
     // ============================================================ finish (placeholder) ============
-    const fz = goalZ;
-    planks(0, 0, fz - 7, 14, 14, { path: true });
-    w.goal({ x: 0, y: 0, z: fz - 6 });
+    planks(0, 0, endZ - 7, 14, 14, { path: true });
+    both({ x: 0, z: endZ - 4, r: 1.2 });
+    w.goal({ x: 0, y: 0, z: endZ - 6 });
 
     dinnerBots(w, K, bots);
   },

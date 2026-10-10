@@ -39,6 +39,11 @@ export const SCRIPT = {
   'coop.l7.firsttray': ['One canapé served! Two to go. I am so proud of the tray.'],
   'coop.l7.bridged': ['The bridge! Three tables, three trays. Staff may now cross. Staff may now also regret it.'],
 
+  'coop.l7.freezer.p1': ['Two walk-in freezers. Orange: you fetch the ice from the left one while Teal holds its door, and you hold the right door when it is Teal\'s turn. The plates are coloured. So is my opinion of you both.'],
+  'coop.l7.freezer.p2': ['Two walk-in freezers. Teal: you hold the left door while Orange fetches the ice, then you fetch from the right one while Orange holds. The door closes if you step off. Doors are very literal.'],
+  'coop.l7.ice1': ['One block of ice. Now swap. It is only fair. It is only cold.'],
+  'coop.l7.ice2': ['Both blocks! Nobody froze. I will update the paperwork. I will put "mostly".'],
+
   // ---------------------------------------------------------------- global ---------------
   'death.first': [
     'And that\'s a death! Don\'t worry, that one was free. The rest are billed monthly.',
