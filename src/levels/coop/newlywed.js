@@ -106,12 +106,12 @@ export default {
     const bypassUp = riser(w, { x: -23, y: 0, z: zN - 12, w: 4, d: 6, h: 0.6, drop: 6, color: 0xe8b0b0, trim: 0xff4d5e, speed: 6 });
     deck(w, { x: -28, y: 0, z: zN - 12, w: 6, d: 6, trim: 0xff4d5e });
     flat('MAKE-UP COURSE', -28, 0.05, zN - 12, { w: 5, h: 1.4, tw: 512, border: '#ff4d5e' });
-    const BY = strip(-28, 0, zN - 15, [{ gap: 2.8, d: 4, w: 5 }, { gap: 3.0, d: 4, w: 4, dy: 0.6 }, { gap: 3.2, d: 4, w: 4, dy: 0 }, { gap: 3.0, d: 4, w: 3.8, dy: -0.6 }]);
-    w.crumble(BY[1], { delay: 1.2, gone: 3.5 });
+    const BY = strip(-28, 0, zN - 15, [{ gap: 3.0, d: 4, w: 4 }, { gap: 3.4, d: 4, w: 3.4, dy: 0.6 }, { gap: 3.6, d: 4, w: 3.4, dy: 0.4 }, { gap: 3.2, d: 4, w: 3.8, dy: -1.0 }]);
     deck(w, { x: -23, y: 0, z: BY[3].body.z, w: 4, d: 4 });                                   // connector onto the backstage deck
     dsign('THE MAKE-UP COURSE\n(YOU KNOW WHAT YOU DID)', -28, 4.4, zN - 12, { w: 6, h: 1.6, border: '#ff4d5e' });
+    w.checkpoint({ x: 0, y: 0, z: zN - 4, real: true });
     stage(w, 'r1', { x: 0, y: 1, z: zN - 3, w: 42, h: 4, d: 5 }, () => tell('all', 'coop.l6.r1.intro'));
-    let r1Done = false;
+    let r1Done = false, r1Failed = false;
     w.updaters.push(() => {
       const st = qState(), qi = Math.min(st.qi, Q.length - 1), q = Q[qi];
       for (const r of ROLES2) {
@@ -138,7 +138,7 @@ export default {
       if (st.phase === 'done') { lines.push(''); lines.push(matches >= NEED ? `${matches}/${Q.length * 2} RIGHT · THE GATE OPENS` : `${matches}/${Q.length * 2} RIGHT · NEED ${NEED} · THE GATE STAYS SHUT`); }
       board1.set(lines.join('\n'), { border: st.phase === 'done' ? (matches >= NEED ? '#3ddc97' : '#ff4d5e') : '#ff4d5e' });
       if (st.phase === 'done') {
-        gate1.set(matches >= NEED); bypassUp.set(matches < NEED);
+        gate1.set(matches >= NEED); bypassUp.set(matches < NEED); r1Failed = matches < NEED;
         if (!r1Done) {
           r1Done = true;
           tell('all', matches >= Q.length * 2 ? 'coop.l6.r1.perfect' : matches >= NEED ? 'coop.l6.r1.pass' : 'coop.l6.r1.fail', { priority: 2 });
@@ -359,7 +359,7 @@ export default {
     ];
     const LT = 45;
     const ltN = () => c.get('lt:n', 0);
-    let ltStart = null, ltDone = false;
+    let ltStart = null, ltDone = false, ltResets = 0;
     const clock = liveSign(w, { x: 0, y: 7, z: zG0 - 8, w: 11, h: 4, tw: 768, border: '#ffc83d' });
     BZ.forEach((b, i) => {
       deck(w, { x: b.x, y: 1.0, z: b.z + 4.0, w: 3, d: 3, trim: COL[b.r] });
@@ -369,7 +369,8 @@ export default {
     const lit = [];
     BZ.forEach((b, i) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.05, 20), glowMaterial(COL[b.r], 1.2)); m.position.set(b.x, 2.06, b.z); w.add(m); lit.push(m); });
     const gate3 = gate(w, { x: 0, y: 0, z: zG0 - 43.6, w: 44, h: 6, glow: 0xffc83d });
-    c.on('lt:n', (v) => { if (v === 1) { ltStart = w.t; tell('all', 'coop.l6.light.go'); } if (v === 0) ltStart = null; });
+    let lastN = 0;
+    c.on('lt:n', (v) => { if (v === 0 && lastN > 0 && lastN < 6) ltResets++; lastN = v; if (v === 1) { ltStart = w.t; tell('all', 'coop.l6.light.go'); } if (v === 0) ltStart = null; });
     stage(w, 'light', { x: 0, y: 1, z: zG0 - 3, w: 44, h: 4, d: 4 }, () => tell('all', 'coop.l6.light.intro'));
     w.updaters.push((dt) => {
       const n = ltN();
@@ -425,19 +426,37 @@ export default {
     w.hooks.onPartnerDeath = () => { tell('all', 'coop.l6.partnerdown'); return true; };
 
     // ============================================================ scripted bots (tools/coop-bot.mjs) ==========
+    const NW = (typeof window !== 'undefined' && window.__nw) || {};            // test hooks for the bot harness only
     const pedX = (r, i, n = 4, sp = 2.4) => bx[r] + (i - (n - 1) / 2) * sp;
     const useP = (x, z, until) => ({ x, z, r: 1.1, use: true, until });
-    const r1Steps = Q.flatMap((_, qi) => [useP(pedX(me, 0), bz, () => getv(qKey('s', me, qi)) >= 0), useP(pedX(me, 0), bz, () => getv(qKey('g', me, qi)) >= 0)]);
+    const near = (x, z, r = 1.0) => Math.hypot(game.player.x - x, game.player.z - z) < r;
+    // a step that is skipped when `cond()` is false, otherwise walks to (x,z), then waits for ok()
+    const guard = (cond, x, z, r = 1.0, ok = () => true) => ({ x, z, r, until: () => !cond() || (near(x, z, r + 0.3) && ok()) });
+    const pick = (kind) => (NW.r1 === 'fail' ? (kind === 's' ? (me === 'p1' ? 0 : 1) : 3) : 0);
+    const r1Steps = Q.flatMap((_, qi) => ['s', 'g'].map((kind) => useP(pedX(me, pick(kind)), bz, () => getv(qKey(kind, me, qi)) >= 0)));
+    const failed = () => r1Failed;
+    const bypassSteps = [
+      { until: () => r1Done },
+      guard(failed, -18.5, zN - 12, 1.0, () => bypassUp.k > 0.97),
+      guard(failed, -23, zN - 12), guard(failed, -28, zN - 12),
+      ...BY.map((p) => guard(failed, p.body.x, p.body.z)),
+      guard(failed, -23, BY[3].body.z), guard(failed, -16, BY[3].body.z), guard(failed, 0, zB0 - 12, 1.5),
+    ];
     const wSteps = WH.map((_, ri) => useP(pedX(me, 0, 2, 3.4), wz, () => getv(wKey(me, ri)) >= 0));
     const s = sideOf(me);
-    const lane = laneC[me][0], jz1 = lane[2].z;
+    const ex = () => exits()?.[me] ?? -1;
+    const laneSteps = [];
+    if (NW.sos === 'central') laneSteps.push({ x: 0, z: ZH1 + 3, r: 1.5 }, ...CL.steps(me), { x: 0, z: ZM + 4, r: 1.5 });
+    else {
+      laneSteps.push(guard(() => ex() === 0, s * XC, ZH1 + 2.5, 1.0, () => RX[me][0].k > 0.97), guard(() => ex() === 0, s * XC, ZH1 - 3.1), guard(() => ex() === 0, s * XC, ZM + 3, 1.5));
+      laneC[me].forEach((row, b) => {
+        row.forEach((p, j) => laneSteps.push(guard(() => ex() > b, p.x, p.z, 1.0, j === 2 ? () => (ex() === b + 1 && b < 3 ? RX[me][b + 1].k > 0.97 : true) : undefined)));
+        if (b < 3) laneSteps.push(guard(() => ex() === b + 1, s * XR, row[2].z), guard(() => ex() === b + 1, s * XC, row[2].z - 2), guard(() => ex() === b + 1, s * XC, ZM + 3, 1.5));
+      });
+    }
     const sosSteps = [
-      useP(pedX(me, 0, 2, 3.4), hz, () => !!c.get(sosKey(me), null)),
-      { x: 0, z: ZH1 + 3, r: 1.5, until: () => !!exits() },
-      ...lane.map((p, j) => (j === 2 ? { x: p.x, z: p.z, r: 1.0, until: () => RX[me][1].k > 0.97 } : { x: p.x, z: p.z, r: 1.0 })),
-      { x: s * XR, z: jz1, r: 1.0 },
-      { x: s * XC, z: jz1 - 2, r: 1.0 },
-      { x: s * XC, z: ZM + 3, r: 1.5 },
+      ...(NW.sos === 'central' ? [] : [useP(pedX(me, 0, 2, 3.4) + (NW.sos?.[me] === 'steal' ? 3.4 : 0), hz, () => !!c.get(sosKey(me), null)), { x: 0, z: ZH1 + 3, r: 1.5, until: () => !!exits() }]),
+      ...laneSteps,
       { x: 0, z: ZM - 8, r: 2 },
     ];
     const rowSteps = (fld) => fld.safe.map((sf, k) => ({ x: XC4[sf], z: zRow(fld === FA ? zF : zSw, k), r: 0.7 }));
@@ -456,9 +475,16 @@ export default {
       mk('p2', FB, zSw, -1);
       return out;
     };
-    const lt = (role) => BZ.flatMap((b, i) => (b.r !== role ? [] : [
-      { x: b.x, z: b.z + 5.5, r: 1.2 }, { x: b.x, z: b.z + 4.0, r: 0.8 }, useP(b.x, b.z, () => ltN() > i),
-    ]));
+    const lt = (role) => {
+      const out = [];
+      for (let pass = 0; pass < 2; pass++) BZ.forEach((b, i) => {
+        if (b.r !== role) return;
+        const ok = () => ltDone || ltResets > pass || ltN() > i;
+        if (pass === 0 && NW.light && role === 'p1' && i === 2) out.push({ until: () => ltResets > 0 || ltDone });
+        out.push({ x: b.x, z: b.z + 5.5, r: 1.2, until: () => ok() || near(b.x, b.z + 5.5, 1.5) }, { x: b.x, z: b.z + 4.0, r: 0.8, until: () => ok() || near(b.x, b.z + 4.0, 1.0) }, useP(b.x, b.z, ok));
+      });
+      return out;
+    };
     const finale = {
       p1: [
         { x: 0, z: fz, r: 1.0, until: () => fakeDone }, { x: 0, z: zCur + 3, r: 1.5, until: () => curtain.passable },
@@ -475,7 +501,7 @@ export default {
     const nearZ = (z) => () => game.player.z < z;
     const plan = [
       { follow: true, until: nearZ(zN - 3) },                                                           // course 1 -> studio
-      ...r1Steps, { follow: true, until: nearZ(zB0 - 8) },                                              // gate -> backstage
+      ...r1Steps, ...bypassSteps, { follow: true, until: nearZ(zB0 - 8) },                                              // gate -> backstage
       ...LF.steps(me), { follow: true, until: nearZ(zD - 4) },
       ...wSteps, { follow: true, until: nearZ(zH0 - 3) },
       ...sosSteps, { follow: true, until: nearZ(zF - 3) },

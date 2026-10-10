@@ -101,6 +101,7 @@ export function leapfrog(w, { ox = 0, ys = 0, islands, first = 'p1', iw = 8, id 
         out.push({ x: ox, z: islands[k], r: 1.5 });
       } else {
         out.push({ x: ox, z: islands[k - 1] - id / 2 - 0.4, r: 1.2, until: () => R[k].up });
+        out.push({ x: ox, z: islands[k] + id / 2 - 0.8, r: 0.9 });                                  // straight over the bridge first
         out.push({ x: ox - 2.5, z: islands[k] + id / 2 - 1.8, until: () => { const P = c.partner; return P.has && P.sz < islands[k] + id / 2 - 0.6; } });
       }
     }
