@@ -115,7 +115,6 @@ export default {
     sign(w, `DOOR ${signDoor + 1} IS THE SAFE ONE.   — MANAGEMENT`, 0, 5.6, A.gateZ + 1.2, { w: 8, h: 1.1, size: 30, border: '#ff4d5e' });
     w.checkpoint({ x: 0, y: 0, z: -112, real: true });
     stage(w, 'A3', { x: 0, y: 1, z: -97, w: 10, h: 4, d: 3 }, () => { tell('p1', 'coop.l5.door.p1'); tell('p2', 'coop.l5.door.p2'); w.after(7, () => { tell('p1', 'coop.l5.lie' + (lieDoor + 1)); }); });
-    c.onEvent('stage:alarmed', () => {});
     stage(w, 'A3b', { x: 0, y: 1, z: -108, w: 10, h: 4, d: 3 }, () => tell('all', 'coop.l5.doordone'));
 
     // A4 the cold plunge (the controller starts the pump; four tiles surface one after another)
@@ -292,13 +291,14 @@ export default {
       const row = 262;
       g.textAlign = 'left'; g.fillStyle = '#e8eef4'; font(g, 30, 700); g.fillText('SOUTH DESK, LEFT TO RIGHT', 40, row);
       g.fillStyle = '#9fb0c0'; font(g, 25, 500);
-      g.fillText('1-3 STEAM VALVES (vent that row for 7 s)   4 BELT (stop / start)   5-8 SAUNA DOORS 1-4   9 COLD PLUNGE PUMP', 40, row + 36);
+      g.fillText('1-3 STEAM VALVES (vent that row for 7 s)   4 BELT (stop / start)', 40, row + 34);
+      g.fillText('5-8 SAUNA DOORS 1-4   9 COLD PLUNGE PUMP', 40, row + 62);
       g.fillStyle = '#e8eef4'; font(g, 28, 600);
-      g.fillText(ventsA.map((v, k) => `V${k + 1} ${v.s === 2 ? 'SCALDING' : v.s === 1 ? 'hissing' : 'off'}`).join('    '), 40, row + 86);
-      g.fillText(`BELT: ${beltStopped ? 'STOPPED' : 'RUNNING 7 m/s'}        PUMP: ${tp() < 0 ? 'READY' : 'RUNNING ' + tp().toFixed(1) + ' s'}`, 40, row + 128);
+      g.fillText(ventsA.map((v, k) => `V${k + 1} ${v.s === 2 ? 'SCALDING' : v.s === 1 ? 'hissing' : 'off'}`).join('    '), 40, row + 112);
+      g.fillText(`BELT: ${beltStopped ? 'STOPPED' : 'RUNNING 7 m/s'}        PUMP: ${tp() < 0 ? 'READY' : 'RUNNING ' + tp().toFixed(1) + ' s'}`, 40, row + 154);
       g.fillStyle = '#ffb02e'; font(g, 26, 500);
-      g.fillText('The sign in the hall is not on the system. Neither is the counsellor.', 40, row + 176);
-      g.fillStyle = '#9fb0c0'; g.fillText('A wrong sauna door floods the hall with steam. Your partner will be standing in it.', 40, row + 212);
+      g.fillText('The sign in the hall is not on the system. Neither is the counsellor.', 40, row + 204);
+      g.fillStyle = '#9fb0c0'; g.fillText('A wrong sauna door floods the hall with steam. Your partner will be standing in it.', 40, row + 240);
       // the scent lock, on the right
       const lx = 1120;
       g.fillStyle = '#e8eef4'; font(g, 30, 700); g.textAlign = 'left'; g.fillText('NORTH DESK · SCENT DIFFUSERS', lx, row);
@@ -322,7 +322,7 @@ export default {
       crosserDot(g, X, Y, 'p2');
       // the mist grid, big: green = real tile
       const gx = 40, gy = 262, cs = 64;
-      g.textAlign = 'left'; g.fillStyle = '#e8eef4'; font(g, 28, 700); g.fillText('MIST FIELD · green = a real tile, dark = nothing (they fall)', gx, gy - 12);
+      g.textAlign = 'left'; g.fillStyle = '#e8eef4'; font(g, 28, 700); g.fillText('MIST FIELD · green = real tile', gx, gy - 12);
       let cr = -1, cc2 = -1;
       if (P.has && P.sz < B.rowZ0 + 1.7 && P.sz > B.mistEnd) { cr = Math.max(0, Math.min(B.rows - 1, Math.floor((B.rowZ0 + 1.7 - P.sz) / B.rowStep))); cc2 = Math.max(0, Math.min(2, Math.round(P.sx / 3.4 + 1))); }
       for (let i = 0; i < B.rows; i++) for (let cc = 0; cc < 3; cc++) {
@@ -330,17 +330,17 @@ export default {
         g.fillStyle = real ? '#2bbf84' : '#2a1d22'; g.fillRect(gx + i * (cs + 6), gy + cc * (cs + 6), cs, cs);
         if (i === cr && cc === cc2) { g.strokeStyle = hexs(COL.p2); g.lineWidth = 6; g.strokeRect(gx + i * (cs + 6) + 3, gy + cc * (cs + 6) + 3, cs - 6, cs - 6); }
       }
-      g.fillStyle = '#9fb0c0'; font(g, 23, 500); g.fillText('← they enter here (row 1). LEFT / RIGHT = THEIR left / right, walking away from the gate.', gx, gy + 3 * (cs + 6) + 30);
+      g.fillStyle = '#9fb0c0'; font(g, 23, 500); g.fillText('dark = nothing there (they fall). Row 1 is at the gate.', gx, gy + 3 * (cs + 6) + 26); g.fillText('LEFT / RIGHT = THEIR left / right, walking away from the gate.', gx, gy + 3 * (cs + 6) + 54);
       // lever legend + status
-      const lx = 560;
+      const lx = 600;
       g.fillStyle = '#e8eef4'; font(g, 28, 700); g.fillText('DESK, LEFT TO RIGHT', lx, gy - 12);
-      g.fillStyle = '#9fb0c0'; font(g, 24, 500);
-      g.fillText('1-3 STEAM VALVES (7 s)   4-6 SLIDING GATES BY COLOUR (10 s)', lx, gy + 24);
-      GATE_COLORS.forEach((gc, k) => { g.fillStyle = hexs(gc.hex); g.fillRect(lx + k * 200, gy + 44, 32, 32); g.fillStyle = '#e8eef4'; font(g, 24, 700); g.fillText(gc.name, lx + k * 200 + 42, gy + 70); });
-      g.fillStyle = '#e8eef4'; font(g, 27, 600);
-      g.fillText(ventsB.map((v, k) => `V${k + 1} ${v.s === 2 ? 'SCALDING' : v.s === 1 ? 'hissing' : 'off'}`).join('   '), lx, gy + 118);
-      g.fillText(gatesB.map((_, k) => `G${k + 1} ${gateT[k] > 0 ? 'OPEN' : 'shut'}`).join('   '), lx, gy + 156);
-      g.fillStyle = '#ffb02e'; font(g, 24, 500); g.fillText('The gates are numbered. Your levers are coloured. Your partner can see both.', lx, gy + 196);
+      g.fillStyle = '#9fb0c0'; font(g, 23, 500);
+      g.fillText('1-3 STEAM VALVES (7 s)', lx, gy + 18); g.fillText('4-6 SLIDING GATES BY COLOUR (10 s)', lx, gy + 44);
+      GATE_COLORS.forEach((gc, k) => { g.fillStyle = hexs(gc.hex); g.fillRect(lx + k * 170, gy + 60, 30, 30); g.fillStyle = '#e8eef4'; font(g, 23, 700); g.fillText(gc.name, lx + k * 170 + 38, gy + 84); });
+      g.fillStyle = '#e8eef4'; font(g, 26, 600);
+      g.fillText(ventsB.map((v, k) => `V${k + 1} ${v.s === 2 ? 'SCALDING' : v.s === 1 ? 'hissing' : 'off'}`).join('  '), lx, gy + 128);
+      g.fillText(gatesB.map((_, k) => `G${k + 1} ${gateT[k] > 0 ? 'OPEN' : 'shut'}`).join('  '), lx, gy + 164);
+      g.fillStyle = '#ffb02e'; font(g, 22, 500); g.fillText('The gates are numbered. Your levers are coloured.', lx, gy + 200); g.fillText('Your partner can see both.', lx, gy + 226);
       // the scent lock: you hold the order, they hold the diffusers
       const sx = 1180;
       g.fillStyle = '#e8eef4'; font(g, 28, 700); g.textAlign = 'left'; g.fillText('SCENT LOCK · THE ORDER', sx, gy - 12);
