@@ -1,5 +1,6 @@
 // Campaign 3 — Couples Retreat: ten two-player "sessions". Levels that are not built yet are placeholders.
 import icebreakers from './icebreakers.js';
+import baggage from './baggage.js';
 
 // [name, kind, tagline, deathRule]
 const ROSTER = [
@@ -21,5 +22,6 @@ const planned = ([name, kind, tagline], i) => ({ id: `coop-${i + 1}`, name, kind
 
 export function buildCoopLevels() {
   const BUILT = [icebreakers];
+  BUILT[8] = baggage;
   return ROSTER.map((r, i) => (BUILT[i] ? Object.assign(BUILT[i], { kind: r[1], tagline: r[2], index: i }) : planned(r, i)));
 }
