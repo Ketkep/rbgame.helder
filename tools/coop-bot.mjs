@@ -57,7 +57,7 @@ const install = () => {
     let wait = !!(plan && plan.wait);
     // on a rope: don't run ahead of your partner
     const T = c._tether;
-    if (!plan && T && T.on && c.partner.has) { const d = Math.hypot(c.partner.sx - p.x, c.partner.sz - p.z); if (d > T.max - 2.2 && Math.hypot(tx - c.partner.sx, tz - c.partner.sz) < len) wait = true; }
+    if (!plan && T && T.on && c.partner.has) { const d = Math.hypot(c.partner.sx - p.x, c.partner.sz - p.z); if (d > T.max - 2.2 && Math.hypot(tx - c.partner.sx, tz - c.partner.sz) > len) wait = true; }   // the one in front waits
     // ferries and lifts: board when it is at the edge, get off when the far side is at the edge
     if (!plan && p.grounded && !wait) {
       const gapTo = (b) => Math.hypot(Math.max(0, Math.abs(p.x - b.x) - b.hx), Math.max(0, Math.abs(p.z - b.z) - b.hz));

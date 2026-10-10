@@ -154,7 +154,7 @@ export default {
       { gap: 2.4, d: 4, w: 3, x: 0, dy: 1 },
       { gap: 2.2, d: 6, w: 5, x: 0 },
     ]);
-    for (const k of [2, 6, 9]) w.crumble(s5[k], { delay: 1.8, gone: 3.5 });
+    for (const k of [2, 6, 9]) w.crumble(s5[k], { delay: 2.6, gone: 3.5 });
     w.checkpoint({ x: 0, y: s5[4].top, z: s5[4].body.z, real: true });
     w.checkpoint({ x: 0, y: s5[11].top, z: s5[11].body.z, real: true });
     sign(w, 'THE ROPE IS 5 METRES. IT IS RED WHEN IT IS ANGRY.', 0, Y3 + 3.4, pocketEnd - 6, { w: 7.5, h: 1.4, size: 32 });
@@ -292,9 +292,9 @@ export default {
         { x: 5.5, z: zf1 + 4, until: () => pl.y > Yl1 - 0.3 },
       ],
       p1: [
-        { x: 1.75, z: zf1 + 1.1, r: 0.2, until: () => pl.y > Y6 + 1.1 && pl.grounded },
-        { x: 1.85, z: zf1 + 1.1, r: 0.1, until: () => P.has && P.g && Math.abs(P.sx) < 0.2 && Math.abs(P.sz - (zf1 + 0.5)) < 0.3 && Math.hypot(pl.x - 1.85, pl.z - (zf1 + 1.1)) < 0.2 && Math.hypot(pl.vx, pl.vz) < 0.3 },
-        { x: () => P.sx, z: () => P.sz, jump: 1.3, stop: 0.5, r: 0.05, until: () => pl.y > Y6 + 1.6 && pl.grounded },
+        { x: 1.75, z: zf1 + 1.1, r: 0.2, id: 'c1', until: () => pl.y > Y6 + 1.1 && pl.grounded },
+        { x: 1.85, z: zf1 + 1.1, r: 0.1, id: 'w1', until: () => P.has && P.g && Math.abs(P.sx) < 0.2 && Math.abs(P.sz - (zf1 + 0.5)) < 0.3 && Math.hypot(pl.x - 1.85, pl.z - (zf1 + 1.1)) < 0.2 && Math.hypot(pl.vx, pl.vz) < 0.3 },
+        { x: () => P.sx, z: () => P.sz, jump: 1.3, stop: 0.5, r: 0.05, retry: { when: () => pl.grounded && pl.y < Y6 + 1.1, to: 'c1' }, until: () => pl.y > Y6 + 1.6 && pl.grounded },
         { x: 0, z: zf1 - 2.4, jump: 3, until: () => pl.y > Yl1 - 0.2 && pl.grounded },
         { x: 0, z: zf1 - 10, until: () => P.has && P.g && P.sy > Yl1 - 0.3 },
       ],
@@ -305,10 +305,10 @@ export default {
         { x: -5.5, z: zf2 + 4, until: () => pl.y > Yl2 - 0.3 },
       ],
       p2: [
-        { x: 5, z: zf2 + 1.25, r: 0.3, until: () => pl.y > Yl1 + 1.1 && pl.grounded },
+        { x: 5, z: zf2 + 1.25, r: 0.3, id: 'c2', until: () => pl.y > Yl1 + 1.1 && pl.grounded },
         { x: 2.5, z: zf2 + 1.1, r: 0.3, until: () => pl.y > Yl1 + 2.1 && pl.grounded },
         { x: 2.5, z: zf2 + 0.9, r: 0.1, until: () => P.has && P.g && P.sy > Yl1 + 1.0 && Math.abs(P.sx - 0.75) < 0.2 && Math.abs(P.sz - (zf2 + 0.6)) < 0.3 && Math.hypot(pl.x - 2.5, pl.z - (zf2 + 0.9)) < 0.2 && Math.hypot(pl.vx, pl.vz) < 0.3 },
-        { x: () => P.sx, z: () => P.sz, jump: 1.3, stop: 0.5, r: 0.05, until: () => pl.y > Yl1 + 2.8 && pl.grounded },
+        { x: () => P.sx, z: () => P.sz, jump: 1.3, stop: 0.5, r: 0.05, retry: { when: () => pl.grounded && pl.y < Yl1 + 2.0, to: 'c2' }, until: () => pl.y > Yl1 + 2.8 && pl.grounded },
         { x: 0, z: zf2 - 2.4, jump: 3, until: () => pl.y > Yl2 - 0.2 && pl.grounded },
         { x: 0, z: zf2 - 10, until: () => P.has && P.g && P.sy > Yl2 - 0.3 },
       ],
@@ -319,12 +319,13 @@ export default {
         { x: -2.5, z: zf3 + 1.1, r: 0.3, until: () => pl.y > Yl2 + 2.2 && pl.grounded },
         { x: -0.75, z: zf3 + 0.6, r: 0.2, until: () => P.has && P.g && P.sy > Yl3 - 0.3 && P.sz < zf3 - 0.8 },
         { x: 5.5, z: zf3 + 4, until: () => pl.y > Yl3 - 0.3 },
+        { x: 0, z: zf3 - 8, r: 1.0, until: () => pl.z < zf3 - 3 && pl.grounded },
       ],
       p1: [
-        { x: -5, z: zf3 + 1.25, r: 0.3, until: () => pl.y > Yl2 + 1.1 && pl.grounded },
+        { x: -5, z: zf3 + 1.25, r: 0.3, id: 'c3', until: () => pl.y > Yl2 + 1.1 && pl.grounded },
         { x: -2.5, z: zf3 + 1.1, r: 0.3, until: () => pl.y > Yl2 + 2.2 && pl.grounded },
         { x: -2.5, z: zf3 + 0.9, r: 0.1, until: () => P.has && P.g && P.sy > Yl2 + 1.0 && Math.abs(P.sx + 0.75) < 0.2 && Math.abs(P.sz - (zf3 + 0.6)) < 0.3 && Math.hypot(pl.x + 2.5, pl.z - (zf3 + 0.9)) < 0.2 && Math.hypot(pl.vx, pl.vz) < 0.3 },
-        { x: () => P.sx, z: () => P.sz, jump: 1.3, stop: 0.5, r: 0.05, until: () => pl.y > Yl2 + 3.0 && pl.grounded },
+        { x: () => P.sx, z: () => P.sz, jump: 1.3, stop: 0.5, r: 0.05, retry: { when: () => pl.grounded && pl.y < Yl2 + 2.0, to: 'c3' }, until: () => pl.y > Yl2 + 3.0 && pl.grounded },
         { x: 0, z: zf3 - 2.4, jump: 3, until: () => pl.y > Yl3 - 0.2 && pl.grounded },
         { x: 0, z: zf3 - 10, until: () => P.has && P.g && P.sy > Yl3 - 0.3 },
       ],
@@ -337,6 +338,8 @@ export default {
       { x: 0, z: slab.near + 1.5, r: 0.6, until: () => { const u = (w.t + slab.ph) % GUST.period; return u > GUST.on + 0.2 && u < GUST.on + 1.2; } },   // wait for a calm spell before the long slab
       { follow: true, until: () => pl.z < mz + 3 && pl.y > Y3 - 0.2 && pl.grounded },
       ...(role === 'p1' ? caveRunner : caveHolder),
+      { follow: true, until: () => pl.z < exitZ - 8 && pl.grounded },
+      { x: 0, z: exitZ - 9, r: 0.6, until: () => P.has && P.sz < exitZ - 5 },                  // regroup before the ledge
       { follow: true, until: onDeck(base6) },
       ...tier1[role], ...tier2[role], ...tier3[role],
       { follow: true },
