@@ -12,7 +12,7 @@ const browser = await chromium.launch({
   args: ['--use-angle=swiftshader', '--use-gl=angle', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--no-sandbox', '--autoplay-policy=no-user-gesture-required', '--disable-renderer-backgrounding', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows'],
 });
 const ctx = await browser.newContext({ viewport: { width: 160, height: 90 } });
-await ctx.addInitScript((o) => { window.__noRender = true; window.__trace = !!o.trace; window.__near = true; window.__speed = o.speed; }, { speed, trace: !!process.env.TRACE });
+await ctx.addInitScript((o) => { window.__noRender = true; window.__near = true; window.__speed = o.speed; }, { speed });
 const code = 'B' + Math.random().toString(36).slice(2, 6).toUpperCase();
 const errs = [];
 const open = async (mode, name) => {

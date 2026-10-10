@@ -750,7 +750,6 @@ export default {
       { follow: true },
     );
 
-    if (window.__trace) { let acc = 0; w.updaters.push((dt) => { acc += dt; if (acc > 0.25) { acc = 0; const q = game.player; window.__bot?.log.push(`T ${w.t.toFixed(1)} ${me} ${q.x.toFixed(1)},${q.y.toFixed(1)},${q.z.toFixed(1)} ${q.grounded ? 'g' : 'a'} i=${w.botIndex?.()} ${w.botLast}`); } }); }
     dinnerBots(w, K, bots);
   },
 };

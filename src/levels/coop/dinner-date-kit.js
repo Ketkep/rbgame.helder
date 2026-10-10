@@ -430,10 +430,10 @@ export function chef(w, o) {
   }
   const stache = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.07, 0.07), M(0x3a2a20)); stache.position.set(0, 1.68, -0.28); grp.add(stache);
   const ladle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.9, 6), M(0x9aa0a8, { metalness: 0.7 })); ladle.position.set(0.5, 1.1, -0.35); ladle.rotation.x = -0.5; grp.add(ladle);
-  const coneMat = new THREE.MeshBasicMaterial({ color: 0xffb43d, transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -5, toneMapped: false });
+  const coneMat = new THREE.MeshBasicMaterial({ color: 0xff8a1f, transparent: true, opacity: 0.34, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -5, toneMapped: false });
   const cone = new THREE.Mesh(new THREE.CircleGeometry(len, 28, Math.PI / 2 - half, half * 2), coneMat);
   cone.rotation.x = -Math.PI / 2; cone.position.y = 0.04; grp.add(cone);
-  const coneEdge = new THREE.Mesh(new THREE.RingGeometry(len - 0.12, len, 28, 1, Math.PI / 2 - half, half * 2), new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
+  const coneEdge = new THREE.Mesh(new THREE.RingGeometry(len - 0.12, len, 28, 1, Math.PI / 2 - half, half * 2), new THREE.MeshBasicMaterial({ color: 0xff9a2a, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
   coneEdge.rotation.x = -Math.PI / 2; coneEdge.position.y = 0.05; grp.add(coneEdge);
   // --- state
   const S = { x: o.path[0].x, z: o.path[0].z, h: 0, mode: 'patrol', walk: false, see: 0, exposure: 0, seeing: false };
@@ -473,7 +473,7 @@ export function chef(w, o) {
     grp.position.set(S.x, y, S.z); grp.rotation.y = S.h;
     const bob = S.walk ? Math.sin(w.t * 9) * 0.05 : 0; bodyM.position.y = 0.95 + bob; head.position.y = 1.78 + bob; hat.position.y = 2.2 + bob; hatTop.position.y = 2.5 + bob;
     const ex = S.exposure;
-    coneMat.color.setRGB(1, 0.71 - ex * 0.5, 0.24 - ex * 0.2); coneMat.opacity = 0.17 + ex * 0.4 + (S.mode === 'at' ? -0.08 : 0);
+    coneMat.color.setRGB(1, 0.5 - ex * 0.4, 0.08); coneMat.opacity = 0.34 + ex * 0.35 + (S.mode === 'at' ? -0.14 : 0);
     if (bar) { bar.show(ex > 0.02); bar.set(ex, 'SPOTTED!', '#ff4d5e'); }
   })(w.hooks.frame);
   // my own lure flag (call every frame with whether I'm standing on a lure plate); emits on change
@@ -512,7 +512,6 @@ export function dinnerBots(w, K, byRole) {
       if (arrived && s.use) g.useFocus();
       if (arrived && s.face) { const fx = val(s.face[0], 0), fz = val(s.face[1], 0); return { x: fx, z: fz, wait: true }; }
       const stand = s.until && (arrived || s.x === undefined);
-      w.botLast = `${i}:${tx.toFixed(1)},${tz.toFixed(1)}${stand ? ' stand' : ''}`;
       return { x: tx, z: tz, wait: !!stand, jump: s.jump || false };
     }
     return null;
