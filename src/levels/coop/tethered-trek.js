@@ -84,17 +84,23 @@ export default {
     // ============================================================ 3. the ice ridge: slippery, with gusts ===========
     const Y3 = 13;
     let rz = F2 - 24;                                                                             // -130
-    rope.push({ z: rz, max: 7.5, k: 8 });
+    rope.push({ z: rz, max: 9.5, k: 3 });
     const ridge = [{ d: 7 }, { d: 7 }, { d: 7 }, { d: 12, w: 4.8 }, { d: 7 }, { d: 7 }, { d: 7 }];
     const GUST = { period: 6, on: 1.8, warn: 1.5 };
+    let slab = null;
     ridge.forEach((s, i) => {
       const wd = s.w ?? 6.4, gap = 2.8, near = rz;
       rz -= gap;
       const zc2 = rz - s.d / 2;
       w.plat({ x: 0, y: Y3, z: zc2, w: wd, d: s.d, h: 1, tex: 'metal', color: 0xbfd9f2, slippery: true, path: true });
-      for (const sx of [-1, 1]) w.plat({ x: sx * (wd / 2 - 0.15), y: Y3 + 2.4, z: zc2, w: 0.3, d: s.d, h: 2.4, tex: 'metal', color: 0xdff0ff, trim: null });   // ice rails
+      const sd = i % 2 ? 1 : -1;                                                                 // downwind side
+      for (const sx of [-1, 1]) {                                                                // ice rails, inset 1.2 m from each end so a landing or a take-off is never blocked
+        if (sx === sd && i === 3) continue;                                                      // (the long narrow slab has no downwind rail: that is the real shove)
+        w.plat({ x: sx * (wd / 2 - 0.15), y: Y3 + 2.4, z: zc2, w: 0.3, d: s.d - 2.4, h: 2.4, tex: 'metal', color: 0xdff0ff, trim: null });
+      }
       const ph = i * 2.1;
-      w.wind({ x: 0, y: Y3 + 1.6, z: near - (gap + s.d) / 2, w: wd + 6, h: 4, d: gap + s.d, dx: i % 2 ? 1 : -1, dz: 0, strength: 6, period: GUST.period, on: GUST.on, phase: ph });
+      if (i === 3) slab = { near, far: near - gap - s.d, ph };
+      w.wind({ x: 0, y: Y3 + 1.6, z: near - (gap + s.d) / 2, w: wd + 6, h: 4, d: gap + s.d, dx: i % 2 ? 1 : -1, dz: 0, strength: 3.6, period: GUST.period, on: GUST.on, phase: ph });
       gustLamp(w, -(wd / 2 - 0.15), Y3 + 2.4, zc2 + s.d / 2 - 0.8, { period: GUST.period, on: GUST.on, phase: ph, warn: GUST.warn });
       rz -= s.d;
       if (i === 2) w.checkpoint({ x: 0, y: Y3, z: zc2, real: true });
@@ -327,6 +333,8 @@ export default {
       { follow: true, until: onDeck(lodge) },
       ...(role === 'p1' ? climbSteps(W1) : beleaySteps(W1)),
       ...(role === 'p1' ? beleaySteps(W2) : climbSteps(W2)),
+      { follow: true, until: () => pl.z < slab.near + 3 && pl.y > Y3 - 0.2 && pl.grounded },
+      { x: 0, z: slab.near + 1.5, r: 0.6, until: () => { const u = (w.t + slab.ph) % GUST.period; return u > GUST.on + 0.2 && u < GUST.on + 1.2; } },   // wait for a calm spell before the long slab
       { follow: true, until: () => pl.z < mz + 3 && pl.y > Y3 - 0.2 && pl.grounded },
       ...(role === 'p1' ? caveRunner : caveHolder),
       { follow: true, until: onDeck(base6) },
