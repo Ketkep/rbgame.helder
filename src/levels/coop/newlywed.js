@@ -414,7 +414,7 @@ export default {
     const plA = plate(w, { x: -12, y: 0, z: zU0 + 2.6, need: 'p2', label: `${N.p2}: LIFT A` });
     const plU = plate(w, { x: 0, y: 3.0, z: zU0 - 3, need: 'p1', label: `${N.p1}: LIFT B` });
     w.updaters.push(() => { liftA.set(plA.pressed); liftB.set(plU.pressed); });
-    dsign(`${N.p1} RIDES THE LEFT LIFT · ${N.p2} HOLDS ITS PLATE\nTHEN SWAP`, 0, 7.5, zU0 + 5, { w: 12, h: 1.8, size: 30, border: '#3ddc97' });
+    dsign(`${N.p1} RIDES THE LEFT LIFT · ${N.p2} HOLDS ITS PLATE\nTHEN ${N.p2} STANDS ON THE RIGHT LIFT · ${N.p1} HOLDS ITS PLATE`, 0, 7.5, zU0 + 5, { w: 14, h: 2, size: 28, border: '#3ddc97' });
     const gz = zU0 - 8;
     w.goal({ x: 0, y: 3.0, z: gz });
     dsign('THE REAL GRAND PRIZE · BOTH OF YOU · IN THE CIRCLE', 0, 8.2, gz - 1, { w: 11, h: 1.5, border: '#3ddc97' });
@@ -463,6 +463,7 @@ export default {
       p1: [
         { x: 0, z: fz, r: 1.0, until: () => fakeDone }, { x: 0, z: zCur + 3, r: 1.5, until: () => curtain.passable },
         { x: -6, z: zU0 + 2.6, r: 0.8, until: () => game.player.y > 2.7 },
+        { x: 0, z: zU0 - 0.5, r: 0.8, until: () => P.has && Math.abs(P.sx - 6) < 1.4 && Math.abs(P.sz - (zU0 + 2.6)) < 1.6 && P.sy < 1 },   // wait until they stand on the right lift
         { x: 0, z: zU0 - 3, r: 0.8, until: () => P.has && P.sy > 2.7 },
       ],
       p2: [
