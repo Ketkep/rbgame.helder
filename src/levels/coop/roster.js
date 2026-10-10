@@ -3,6 +3,7 @@ import icebreakers from './icebreakers.js';
 import trustFalls from './trust-falls.js';
 import communication from './communication.js';
 import tetheredTrek from './tethered-trek.js';
+import spaDay from './spa-day.js';
 
 // [name, kind, tagline, deathRule]
 const ROSTER = [
@@ -23,7 +24,7 @@ export const KIND_ICON = { tutorial: '🤝', trust: '🪂', split: '🗝', rope:
 const planned = ([name, kind, tagline], i) => ({ id: `coop-${i + 1}`, name, kind, tagline, index: i, placeholder: true });
 
 export function buildCoopLevels() {
-  const BUILT = [icebreakers, trustFalls, communication, tetheredTrek, undefined, undefined, undefined, undefined, undefined, undefined];
+  const BUILT = [icebreakers, trustFalls, communication, tetheredTrek, spaDay, undefined, undefined, undefined, undefined, undefined];
   BUILT[0] = icebreakers;
   BUILT[3] = tetheredTrek;
   return ROSTER.map((r, i) => (BUILT[i] ? Object.assign(BUILT[i], { kind: r[1], tagline: r[2], index: i }) : planned(r, i)));
