@@ -21,6 +21,18 @@ export const SCRIPT = {
   'coop.l1.circle': ['Both of you. In the circle. At the same time. Yes, this includes the one who "just wants to get it over with".'],
   'coop.l1.partnerdown': ['Ooh. Your partner fell. Ask them how they feel.', 'And down goes your partner. Don\'t worry, they\'re not hurt. Their pride is.'],
 
+  // ---------------------------------------------------------------- Campaign 3, session 7: Dinner Date ----------
+  'coop.l7.intro.p1': ['Welcome to the Lakeside Bistro. I\'m your counsellor, and tonight your waiter. Orange: you made the reservation. Try to look like you did.'],
+  'coop.l7.intro.p2': ['Welcome to the Lakeside Bistro. I\'m your counsellor, and tonight your waiter. Teal: you are the plus-one. Your partner will explain. Slowly.'],
+  'coop.l7.carry': ['Press E to pick things up. Press E to put them down. You can carry exactly one thing. Same as in your relationship.'],
+  'coop.l7.booked': ['A table for two! Through the swing door. The kitchen is not part of the experience. You are part of the kitchen.'],
+  'coop.l7.gaps': ['Fine china. It does not enjoy jumping. Nobody asked it. Stand at the edge, face your partner, press E. They take it. You jump. Repeat until dinner.'],
+  'coop.l7.gap3': ['And the pass. Put the plate down and the gate goes up. I would say "teamwork", but I am not allowed to lie before the main course.'],
+  'coop.l7.chinabreak': ['Smash. The plate went back to the shelf. The plate is fine. The plate is the only one in this room who is.', 'That was the good china. It is now the other kind.'],
+  'coop.l7.smash': ['It broke. Telegraphed, I think you will find. The bar was red. Red means something.'],
+  'coop.l7.spill': ['Spilled. Ten out of ten for enthusiasm. The soup is back in the pot. The soup is more composed than you are.'],
+  'coop.l7.crush': ['The chiller door ate it. It had warnings. Lights. A sign. It does not read.'],
+
   // ---------------------------------------------------------------- global ---------------
   'death.first': [
     'And that\'s a death! Don\'t worry, that one was free. The rest are billed monthly.',
