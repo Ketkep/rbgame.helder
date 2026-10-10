@@ -363,18 +363,19 @@ export default {
           }
         }
       });
+      w.dbgFrag = { ledges, F, stones };
       const onLedge = (i) => () => feet(ledges[i].y) && F.S(pl().z) > ledges[i].s0 + 0.2 && F.S(pl().z) < ledges[i].s1;
       const partnerOnLedge = (i) => () => P.has && P.g && Math.abs(P.sy - ledges[i].y) < 0.4 && F.S(P.sz) > ledges[i].s0 && F.S(P.sz) < ledges[i].s1;
       const noStone = () => !stones.some((q) => c.partnerOn(q.plat.body));
       for (let k = 0; k < segs; k++) {
         const lead = (k % 2 === 0) === (lead0 === 'p1') ? 'p1' : 'p2', follow = lead === 'p1' ? 'p2' : 'p1';
-        const spot = { x: F.X(0), z: F.Z(ledges[k].s0 + 2.5), r: 0.8 }, spot2 = { x: F.X(0), z: F.Z(ledges[k + 1].s0 + 2.5), r: 0.8 };
+        const spotL = { x: F.X(-2.5), z: F.Z(ledges[k].s0 + 2.5), r: 0.8 }, spotF = { x: F.X(3.2), z: F.Z(ledges[k].s0 + 2.5), r: 0.8 }, spot2 = { x: F.X(3.2), z: F.Z(ledges[k + 1].s0 + 2.5), r: 0.8 };       // wait on opposite sides of the ledge so nobody blocks the path
         add(lead,
-          { ...spot, until: () => noStone() && (k === 0 || partnerOnLedge(k)()) },
+          { ...spotL, until: () => noStone() && (k === 0 || partnerOnLedge(k)()) },
           { follow: true, until: onLedge(k + 1) },
           { ...spot2, until: partnerOnLedge(k + 1) });
         add(follow,
-          { ...spot, until: partnerOnLedge(k + 1) },
+          { ...spotF, until: partnerOnLedge(k + 1) },
           { follow: true, until: onLedge(k + 1) });
       }
       return { s: s, y, len: 5, ledges };
