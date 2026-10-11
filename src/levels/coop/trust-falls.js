@@ -63,6 +63,7 @@ export default {
     const blindSteps = (cr) => [{ x: 0, z: cr.z0 + 5, r: 1.2, until: () => cr.live() }, ...stoneWalk(cr), { x: 0, z: cr.farZ0 + 7, r: 3.5 }];
     const spotSteps = (cr) => [...lookoutUp(cr.z0), { x: -10, z: cr.z0 - 2.2, r: 0.5, until: () => cr.done }, ...lookoutDown(cr.z0), ...stoneWalk(cr), { x: 0, z: cr.farZ0 + 7, r: 3.5 }];
     botP1.push(...blindSteps(A)); botP2.push(...spotSteps(A));
+    w.checkpoint({ x: 0, y: 0, z: A.farZ0 + 7, real: true });                          // across the first chasm
 
     // ============================================================ 3. swap (P2 blind, P1 spots) ==========================
     const B = crossing(w, { key: 'B', z0: A.farZ0, blind: 'p2', moves: [['N', 2], ['W', 3], ['N', 2], ['E', 5], ['N', 2], ['W', 2], ['N', 3]] });
@@ -72,6 +73,7 @@ export default {
     stage(w, 'B', { x: 0, y: 1, z: A.farZ0 + 7, w: 16, h: 4, d: 10 }, () => { tell('p2', 'coop.l2.blindB', { priority: 2 }); tell('p1', 'coop.l2.guideB', { priority: 2 }); });
     c.onEvent('tf:B:done', () => tell('all', 'coop.l2.crossedB'));
     botP1.push(...spotSteps(B)); botP2.push(...blindSteps(B));
+    w.checkpoint({ x: 0, y: 0, z: B.farZ0 + 7, real: true });                          // across the second chasm
 
     // ============================================================ 4. the half-and-half bridge ===========================
     const z0C = B.farZ0;
@@ -213,6 +215,7 @@ export default {
     fakeZ.onChange((zn) => { if (zn.active && !fakeDone) { fakeDone = true; c.emit('tf:fake'); } });
     const s2 = chain(w, { x: 29, y: 0, z: FH0 - 14 }, [{ gap: 2.4, d: 4, w: 6 }, { gap: 2.7, d: 4, w: 6 }, { gap: 2.7, d: 4, w: 6 }]);
     w.checkpoint({ x: 29, y: 0, z: s2[1].body.z, real: true });
+    w.checkpoint({ x: 29, y: 0, z: s2[0].body.z, real: true });
 
     // ============================================================ 8. the last exercise: a lift only one of you can see ==
     const fa0 = s2.endZ - 2.2, faZ1 = fa0 - 18;
@@ -232,6 +235,7 @@ export default {
     roleSign(w, 'p2', 'THEY CAN\'T SEE THE LIFT. TELL THEM WHERE TO STAND.', 24, 4.4, lz + 6, { w: 8, h: 1.5, size: 32 });
     sign(w, 'THE OTHER LIFT IS FOR THE ONE LEFT BEHIND. IT RUNS WHILE YOUR PARTNER STANDS ON THE TOP PLATE.', 34, 4.4, lz + 6, { w: 9, h: 2, size: 28 });
     w._tf2 = { L1, L2, lp, tp, faZ1, lz };
+    w.checkpoint({ x: 29, y: 4.2, z: faZ1 - 7, real: true });                        // on top, before the goal
     const gy = 4.2, gz = faZ1 - 10;
     w.goal({ x: 29, y: gy, z: gz });
     sign(w, 'BOTH OF YOU. IN THE CIRCLE. EYES OPEN IS OPTIONAL.', 29, gy + 5.2, gz - 5, { w: 10, h: 1.6 });
