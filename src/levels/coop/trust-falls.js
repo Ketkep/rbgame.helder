@@ -31,8 +31,7 @@ export default {
 
     // ============================================================ 1. the welcome deck + a safe taster ==================
     deck(w, { x: 0, y: 0, z: -12, w: 22, d: 36, path: true });                       // z +6 … -30
-    sign(w, 'SERENITY FALLS · COUPLES RETREAT', 0, 5.2, 4, { w: 12, h: 1.6 });
-    sign(w, 'SESSION 2: TRUST FALLS', 0, 3.6, 4, { w: 8, h: 1, border: '#39d7c9' });
+    sign(w, 'SESSION 2 · TRUST FALLS', 0, 10.8, -16, { w: 14, h: 1.9 });
     for (const lx of [-9, 9]) { lantern(w, lx, 0, 2); lantern(w, lx, 0, -22); }
     const g1 = gate(w, { x: 0, z: -26, w: 22, h: 5 });
     const pl1 = plate(w, { x: 0, y: 0, z: -18, size: 3, need: 'both', hold: 6, label: 'STAND HERE · BOTH OF YOU' });
@@ -106,7 +105,7 @@ export default {
     // P2's side: a connector from the hub, then a long deck that runs along the net
     deck(w, { x: 22, y: 0, z: z0D + 7, w: 28, d: 10, path: true });
     const zEnd = zF - 18;
-    const deckTop = z0D + 12;
+    const deckTop = z0D + 2;
     deck(w, { x: 29, y: 0, z: (deckTop + zEnd) / 2, w: 8, d: deckTop - zEnd, path: true });
     const PL = [zF - 3, zF - 8, zF - 13];
     const plates = PL.map((z, i) => plate(w, { x: 29, y: 0, z, size: 2.4, need: 'p2', label: ['NET LEFT', 'NET MIDDLE', 'NET RIGHT'][i] }));

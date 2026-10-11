@@ -51,8 +51,7 @@ export default {
 
     // ============================================================ 1. reservations + kitchen tutorial =====================
     planks(0, 0, -1, 24, 18, { path: true });                                           // z 8 … -10
-    sgn('SERENITY FALLS · THE LAKESIDE BISTRO', 0, 6.4, 6, { w: 13, h: 1.6 });
-    sgn('SESSION 7: DINNER DATE', 0, 4.7, 6, { w: 8.5, h: 1, border: '#39d7c9' });
+    sgn('SESSION 7 · DINNER DATE', 0, 10.8, -16, { w: 14, h: 1.9 });
     for (const lx of [-10, 10]) { lit(lx, 0, 4); lit(lx, 0, -8); }
     counter(0, -6.2, 8, 1.8);
     sgn('RESERVATIONS', 0, 3.4, -6.2, { w: 5, h: 0.9 });
@@ -750,6 +749,6 @@ export default {
       { follow: true },
     );
 
-    dinnerBots(w, K, bots);
+    dinnerBots(w, K, bots); w.botList = bots[me];
   },
 };

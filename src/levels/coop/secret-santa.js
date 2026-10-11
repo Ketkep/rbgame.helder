@@ -42,8 +42,7 @@ export default {
 
     // ============================================================ 1. the lodge: friendly mode, the mole =======
     snowdeck(w, { x: 0, y: 0, z: -14, w: 24, d: 40, path: true });                      // z +6 … -34
-    sign(w, 'SERENITY FALLS · WINTER LODGE', 0, 5.2, 4, { w: 12, h: 1.6 });
-    sign(w, 'SESSION 8: SECRET SANTA', 0, 3.6, 4, { w: 8, h: 1, border: '#ff4d5e' });
+    sign(w, 'SESSION 8 · SECRET SANTA', 0, 10.8, -16, { w: 14, h: 1.9 });
     for (const lx of [-9, 9]) { lantern(w, lx, 0, 2); lantern(w, lx, 0, -22); }
     const frSign = liveSign(w, 0, 4.4, -12, { w: 9, h: 2.4, tw: 768, border: '#3ddc97' });
     const frText = () => {

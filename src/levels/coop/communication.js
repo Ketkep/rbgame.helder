@@ -43,8 +43,7 @@ export default {
 
     // ================================================================== 1. the warm-up: which door? ==================
     const R1 = room(w, { z0: 8, z1: -12, y: 0, doorsN: [{ c: -5, w: 4, gate: true }, { c: 5, w: 4, gate: true }], doorsS: [] });
-    sign(w, 'SERENITY FALLS · COUPLES RETREAT', 0, 5.6, 5.5, { w: 12, h: 1.6 });
-    sign(w, 'SESSION 3: COMMUNICATION EXERCISE', 0, 4.0, 5.5, { w: 10, h: 1, border: '#39d7c9' });
+    sign(w, 'SESSION 3 · COMMUNICATION', 0, 10.8, -16, { w: 14, h: 1.9 });
     lanternPair(R1, 0, 2); lanternPair(R1, 0, 14);
     const r1 = c.rng(1)();
     const truth1 = r1 < 0.5 ? 0 : 1;                                     // 0 = left, 1 = right

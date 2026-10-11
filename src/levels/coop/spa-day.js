@@ -52,8 +52,7 @@ export default {
 
     // ================================================================ 0. reception ===========================
     deck(w, { x: 0, y: 0, z: -9, w: 28, d: 30, path: true });                            // z 6 … -24
-    sign(w, 'SERENITY FALLS · SPA DAY', 0, 5.4, 4, { w: 12, h: 1.6 });
-    sign(w, 'SESSION 5: ONE OF YOU RUNS THE CONTROL ROOM', 0, 3.7, 4, { w: 11, h: 1, border: '#39d7c9', size: 30 });
+    sign(w, 'SESSION 5 · SPA DAY', 0, 10.8, -16, { w: 14, h: 1.9 });
     for (const lx of [-12, 12]) { lantern(w, lx, 0, 2); lantern(w, lx, 0, -20); }
     roleSign(w, 'p1', `${N.p1}: YOU CROSS FIRST ↓`, -5, 3.0, -16, { w: 6.4, h: 1.0, size: 32 });
     roleSign(w, 'p2', `${N.p2}: YOU RUN THE CONTROL ROOM → STAIRS`, 9, 3.0, -16, { w: 7.8, h: 1.0, size: 28 });

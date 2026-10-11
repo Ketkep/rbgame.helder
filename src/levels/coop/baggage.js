@@ -449,8 +449,7 @@ export default {
     let F = frame({ x: 0, z: 0, y: 0, dz: 1, skip: 0 });
     w.spawn = { x: F.X(me === 'p1' ? -1.8 : 1.8), y: 0, z: F.Z(-3), yaw: 0 };
     w.respawn = { ...w.spawn };
-    sign(w, 'SERENITY FALLS · LEFT LUGGAGE', F.X(0), 6.2, F.Z(-6), { w: 12, h: 1.6 });
-    sign(w, 'SESSION 9: SHARED BAGGAGE', F.X(0), 4.4, F.Z(-6), { w: 8, h: 1, border: '#39d7c9' });
+    sign(w, 'SESSION 9 · SHARED BAGGAGE', F.X(0), 10.8, F.Z(20), { w: 14, h: 1.9 });
     for (const lx of [-9, 9]) lantern(w, F.X(lx), 0, F.Z(-5));
     stage(w, 'welcome', { x: F.X(0), y: 1, z: F.Z(-2), w: 18, h: 4, d: 8 }, () => { tell('p1', 'coop.l9.intro.p1', { priority: 2 }); tell('p2', 'coop.l9.intro.p2', { priority: 2 }); });
     const Y = [0];                                                             // stage start heights (for the kill plane)

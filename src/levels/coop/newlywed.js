@@ -57,8 +57,7 @@ export default {
 
     // ============================================================ 1. reception + the first course ==========
     deck(w, { x: 0, y: 0, z: -4, w: 22, d: 20, path: true, trim: 0xffc83d });              // z 6 … -14
-    dsign('THE NEWLYWED GAME', 0, 5.4, 4, { w: 12, h: 1.8, border: '#ff4d5e' });
-    dsign('SESSION 6 · LIVE FROM SERENITY FALLS', 0, 3.7, 4, { w: 10, h: 0.9, border: '#39d7c9' });
+    dsign('SESSION 6 · THE NEWLYWED GAME', 0, 10.8, -16, { w: 14, h: 1.9, border: '#ff4d5e' });
     for (const lx of [-9, 9]) { lantern(w, lx, 0, 2); lantern(w, lx, 0, -12); }
     spot(w, { x: -8, y: 12, z: 0, tx: -2, ty: 0, tz: -6, color: 0xffe0b0, r: 3.6, opacity: 0.07 });
     spot(w, { x: 8, y: 12, z: 0, tx: 2, ty: 0, tz: -6, color: 0xb0e0ff, r: 3.6, opacity: 0.07 });
@@ -101,7 +100,7 @@ export default {
       spot(w, { x: bx[r], y: 12, z: bz + 3, tx: bx[r], ty: 0, tz: bz, color: r === 'p1' ? 0xffc890 : 0x90f0e8, r: 4, opacity: 0.08 });
     }
     const board1 = liveSign(w, { x: 0, y: 5.8, z: zN - 21, w: 19, h: 8, tw: 1024, border: '#ff4d5e', align: 'left' });
-    dsign('ANSWER ABOUT YOURSELF · THEN GUESS THEIR ANSWER · NO PEEKING', 0, 8.8, zN - 21, { w: 14, h: 1.1, size: 30 });
+    dsign('ANSWER ABOUT YOURSELF · THEN GUESS THEIR ANSWER · NO PEEKING', 0, 10.6, zN - 21, { w: 14, h: 1.1, size: 30 });
     const gate1 = gate(w, { x: 0, y: 0, z: zN - 29.6, w: 42, h: 6, glow: 0xff4d5e });
     const bypassUp = riser(w, { x: -23, y: 0, z: zN - 12, w: 4, d: 6, h: 0.6, drop: 6, color: 0xe8b0b0, trim: 0xff4d5e, speed: 6 });
     deck(w, { x: -28, y: 0, z: zN - 12, w: 6, d: 6, trim: 0xff4d5e });
@@ -173,7 +172,7 @@ export default {
       flat(`${N[r]}'S BOOTH`.toUpperCase(), bx[r], 0.05, wz + 2.4, { w: 6, h: 1.2, tw: 512, border: roleCss(r) });
     }
     const board2 = liveSign(w, { x: 0, y: 5.6, z: zD - 19, w: 19, h: 7, tw: 1024, border: '#8b6cff', align: 'left' });
-    dsign('THE COUNSELLOR WHISPERS. THE COUNSELLOR IS NOT A PRIMARY SOURCE.', 0, 9.5, zD - 19, { w: 15, h: 1.1, size: 28, border: '#8b6cff' });
+    dsign('THE COUNSELLOR WHISPERS. THE COUNSELLOR IS NOT A PRIMARY SOURCE.', 0, 9.9, zD - 19, { w: 15, h: 1.1, size: 28, border: '#8b6cff' });
     const gate2 = gate(w, { x: 0, y: 0, z: zD - 25.6, w: 42, h: 6, glow: 0x8b6cff });
     const whispered = [false, false, false], revealAt = [Infinity, Infinity, Infinity];
     const told = (r, ri) => { const d = getv(wKey(OTHER[r], ri)); return LIE[r][ri] ? 1 - d : d; };      // what the counsellor says the partner said

@@ -39,8 +39,7 @@ export default {
 
     // ============================================================ 1. the processional ================================
     deck(w, { x: 0, y: 0, z: -12, w: 22, d: 36, path: true });                       // z +6 … -30
-    sign(w, 'SERENITY FALLS · THE CHAPEL', 0, 5.2, 4, { w: 12, h: 1.6 });
-    sign(w, 'SESSION 10: THE VOWS', 0, 3.6, 4, { w: 8, h: 1, border: '#ff9fb8' });
+    sign(w, 'SESSION 10 · THE VOWS', 0, 10.8, -16, { w: 14, h: 1.9 });
     for (const lx of [-9, 9]) { lantern(w, lx, 0, 2); lantern(w, lx, 0, -22); }
     pews(w, { x: -8.5, y: 0, z: -2, count: 3, gap: 3, len: 4 }); pews(w, { x: 8.5, y: 0, z: -2, count: 3, gap: 3, len: 4 });
     const g1 = gate(w, { x: 0, z: -26, w: 22, h: 5 });

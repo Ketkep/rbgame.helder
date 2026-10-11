@@ -25,8 +25,7 @@ export default {
 
     // ============================================================ 1. the pavilion: your plate, their plate =====
     deck(w, { x: 0, y: 0, z: -12, w: 22, d: 36, path: true });                       // z +6 … -30
-    sign(w, 'SERENITY FALLS · COUPLES RETREAT', 0, 5.2, 4, { w: 12, h: 1.6 });
-    sign(w, 'SESSION 1: ICEBREAKERS', 0, 3.6, 4, { w: 8, h: 1, border: '#39d7c9' });
+    sign(w, 'SESSION 1 · ICEBREAKERS', 0, 10.8, -16, { w: 14, h: 1.9 });
     for (const lx of [-9, 9]) { lantern(w, lx, 0, 2); lantern(w, lx, 0, -22); }
     const g1 = gate(w, { x: 0, z: -26, w: 22, h: 5 });
     sign(w, 'STAND ON YOUR OWN COLOUR · TOGETHER', 0, 6.4, -25.5, { w: 11, h: 1.2 });
@@ -109,7 +108,7 @@ export default {
     // ============================================================ 5. the lever and the five-second gate =============
     const Y = y3;
     const H0 = zE1;                                                                   // hall starts where deck E ends
-    deck(w, { x: 0, y: Y, z: H0 - 29, w: 12, d: 58, path: true });                    // hall z H0 … H0-58
+    deck(w, { x: 0, y: Y, z: H0 - 27.5, w: 12, d: 55, path: true });                    // hall z H0 … H0-55
     const GZ = H0 - 54;
     const g2 = gate(w, { x: 0, y: Y, z: GZ, w: 12, h: 5 });
     const open2 = { t: 0 };

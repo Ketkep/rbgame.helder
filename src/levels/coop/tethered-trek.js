@@ -33,8 +33,7 @@ export default {
 
     // ============================================================ 1. the forest: rope bridges =====================
     deck(w, { x: 0, y: 0, z: 0, w: 16, d: 16, path: true });                                    // z +8 … -8
-    sign(w, 'SERENITY FALLS · COUPLES RETREAT', 0, 5.4, 4, { w: 12, h: 1.6 });
-    sign(w, 'SESSION 4: TETHERED TREK', 0, 3.8, 4, { w: 8, h: 1, border: '#39d7c9' });
+    sign(w, 'SESSION 4 · TETHERED TREK', 0, 10.8, -16, { w: 14, h: 1.9 });
     for (const lx of [-7, 7]) lantern(w, lx, 0, 3);
     w.checkpoint({ x: 0, y: 0, z: -4, real: true });
     stage(w, 'welcome', { x: 0, y: 1, z: 3, w: 18, h: 4, d: 8 }, () => { tell('p1', 'coop.l4.intro.p1', { priority: 2 }); tell('p2', 'coop.l4.intro.p2', { priority: 2 }); });
