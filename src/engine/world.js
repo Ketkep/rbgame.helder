@@ -45,6 +45,13 @@ export class Plat {
     this.group.position.set(x, y, z);
   }
   setEnabled(on) { this.body.enabled = on; this.group.visible = on; }
+  /** Stretch a thin wall along its long axis (`axis` 'x' or 'z') so it spans lo..hi. */
+  stretch(axis, lo, hi) {
+    const b = this.body, half = axis === 'x' ? b.hx : b.hz, k = (hi - lo) / (2 * half), c = (lo + hi) / 2;
+    if (axis === 'x') { b.hx = (hi - lo) / 2; b.x = c; this.base.x = c; this.group.scale.x *= k; this.group.position.x = c; }
+    else { b.hz = (hi - lo) / 2; b.z = c; this.base.z = c; this.group.scale.z *= k; this.group.position.z = c; }
+    this.group.updateMatrix();
+  }
   /** Re-parent a scenery mesh (made with world.box etc.) so it travels with this platform. */
   attach(mesh) {
     this.world.scene.remove(mesh);
@@ -261,6 +268,50 @@ export class World {
     this.bodies.push(body);
     this.plats.push(plat);
     return plat;
+  }
+
+  /**
+   * Walls and gates that stop short of the floor they stand on can be walked or jumped around. Gates (o.gate) are stretched over all the
+   * static floor they stand on; every thin wall that ends over a void is carried out another few metres so nobody can leap round the end.
+   * Walls beside a doorway, or that end where the floor carries on, are left alone: that opening is part of the level.
+   */
+  sealWalls() {
+    const REACH = 6;
+    const ok = (o) => o.body.enabled && o.body.solid !== false;
+    const ground = this.plats.filter((q) => ok(q) && !q.o.moving && q.body.hy * 2 < 2.2);
+    const talls = this.plats.filter((q) => ok(q) && q.body.hy * 2 >= 2.2);
+    const walls = talls.filter((q) => { const b = q.body; return Math.min(b.hx, b.hz) * 2 <= 1.6 && Math.max(b.hx, b.hz) * 2 >= 3; });
+    let n = 0;
+    for (const q of walls) {
+      const b = q.body, axis = b.hx > b.hz ? 'x' : 'z', cross = axis === 'x' ? 'z' : 'x', half = (o, k) => (k === 'x' ? o.hx : o.hz);
+      const bottom = b.y - b.hy, c0 = b[axis] - half(b, axis), c1 = b[axis] + half(b, axis);
+      const t0 = b[cross] - half(b, cross) - 0.2, t1 = b[cross] + half(b, cross) + 0.2;
+      const inBand = (o) => o.body[cross] + half(o.body, cross) > t0 && o.body[cross] - half(o.body, cross) < t1;
+      const over = (o, a, z) => o.body[axis] + half(o.body, axis) > Math.min(a, z) && o.body[axis] - half(o.body, axis) < Math.max(a, z);
+      const flush = (g) => g.body.top >= bottom - 0.5 && g.body.top <= b.top - 2.0;           // floor you could stand on beside this wall
+      const near = ground.filter((g) => flush(g) && inBand(g));
+      const hit = (a, z) => talls.some((o) => o !== q && inBand(o) && over(o, a, z));             // another wall in the way
+      let lo = c0, hi = c1;
+      if (q.o.gate) {                                                                             // gates: cover every bit of floor they stand on
+        for (let grew = true; grew;) {
+          grew = false;
+          for (const g of near) {
+            const g0 = g.body[axis] - half(g.body, axis), g1 = g.body[axis] + half(g.body, axis);
+            if (g1 >= lo - 0.05 && g0 <= hi + 0.05 && (g0 < lo - 0.01 || g1 > hi + 0.01)) {
+              const nl = Math.min(lo, g0), nh = Math.max(hi, g1);
+              if ((nl < lo && hit(nl, lo - 0.01)) || (nh > hi && hit(hi + 0.01, nh))) continue;       // stop at the next wall
+              lo = nl; hi = nh; grew = true;
+            }
+          }
+        }
+      }
+      const room = (a, z) => !hit(a, z) && (q.o.gate || !near.some((g) => over(g, a, z)));          // nothing in the way, and (for plain walls) no floor to walk on
+      let nlo = lo, nhi = hi;
+      if (room(lo - REACH, lo - 0.01)) nlo = lo - REACH;
+      if (room(hi + 0.01, hi + REACH)) nhi = hi + REACH;
+      if (nhi - nlo > c1 - c0 + 0.1) { (this._sealLog ||= []).push(`${axis} ${c0.toFixed(1)}..${c1.toFixed(1)} -> ${nlo.toFixed(1)}..${nhi.toFixed(1)} @${b[cross].toFixed(1)} y${bottom.toFixed(1)}${q.o.gate ? ' gate' : ''}`); q.stretch(axis, nlo, nhi); n++; }
+    }
+    return n;
   }
 
   _lineMat(color, opacity) {

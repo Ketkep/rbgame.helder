@@ -15,10 +15,10 @@ const ctx = await browser.newContext({ viewport: { width: 160, height: 90 } });
 await ctx.addInitScript((o) => { window.__noRender = true; window.__near = true; window.__speed = o.speed; }, { speed });
 const code = 'B' + Math.random().toString(36).slice(2, 6).toUpperCase();
 const errs = [];
-const open = async (mode, name) => {
+const EXTRA = process.env.EXTRA || ""; const open = async (mode, name) => {
   const p = await ctx.newPage();
   p.on('pageerror', (e) => errs.push(name + ': ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 3).join('\n')));
-  await p.goto(`${base}?debug&loop&coop=${mode}&code=${code}&name=${name}`, { waitUntil: 'load' });
+  await p.goto(`${base}?debug&loop&coop=${mode}&code=${code}&name=${name}${EXTRA}`, { waitUntil: 'load' });
   return p;
 };
 const A = await open('host', 'Ann');

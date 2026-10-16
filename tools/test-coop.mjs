@@ -52,12 +52,12 @@ b = await info(B);
 ok(b.y > 1.6 && b.y < 2.1, `you can stand on the partner's head (y=${b.y.toFixed(2)})`);
 
 // both-plate: gate opens only when both stand on it, and goal needs both
-const gateOpen = (p) => p.evaluate(() => { const bd = window.__trust.world.bodies.filter((x) => x.hx === 11 && x.hy === 2.5); return bd.length ? bd[0].enabled : null; });
+const gateOpen = (p) => p.evaluate(() => { const bd = window.__trust.world.bodies.filter((x) => x.hy === 2.5 && x.hz < 0.5 && x.hx >= 11); return bd.length ? bd[0].enabled : null; });
 await A.evaluate(() => window.__trust.player.teleport(-6, 0.01, -12));
 await sleep(1000);
 ok((await gateOpen(A)) === true, 'gate stays shut with one player on the plate');
 await B.evaluate(() => window.__trust.player.teleport(6, 0.01, -12));
-for (const p of [A, B]) await p.waitForFunction(() => { const bd = window.__trust.world.bodies.filter((x) => x.hx === 11 && x.hy === 2.5); return bd.length && !bd[0].enabled; }, null, { timeout: T });
+for (const p of [A, B]) await p.waitForFunction(() => { const bd = window.__trust.world.bodies.filter((x) => x.hy === 2.5 && x.hz < 0.5 && x.hx >= 11); return bd.length && !bd[0].enabled; }, null, { timeout: T });
 ok(true, 'gate opens on both machines when both stand on the plate');
 
 // death rule 'self'

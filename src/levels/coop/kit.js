@@ -18,16 +18,18 @@ export function retreatEnv(w, { mood = 'dusk' } = {}) {
   }[mood];
   w.env({
     top: M.top, horizon: M.horizon, bottom: M.bottom,
-    fog: { color: M.fogc, near: 40, far: 300 },
+    fog: { color: M.fogc, near: 55, far: 340 },
     sun: { color: M.sun, intensity: mood === 'night' ? 0.6 : 2.0, dir: mood === 'dawn' ? [0.6, 0.45, 0.5] : [-0.5, 0.55, 0.55] },
     hemi: { sky: M.hemi[0], ground: M.hemi[1], intensity: 0.75 },
-    exposure: M.exp, stars: mood === 'night' ? 0.9 : 0,
-    bloom: { strength: 0.4, radius: 0.65, threshold: 1.0 },
+    exposure: M.exp, stars: mood === 'night' ? 0.9 : 0.3,
+    bloom: { strength: 0.5, radius: 0.7, threshold: 0.95 },
+    envMap: { top: M.hemi[0], mid: M.fogc, bottom: M.bottom, intensity: 0.55, lights: [{ pos: [-6, 8, 6], w: 12, h: 12, color: M.sun, intensity: 2.2 }, { pos: [8, 4, -8], w: 6, h: 8, color: M.top, intensity: 1.2 }] },
     clouds: mood === 'night' ? null : { count: 16, color: 0xffe0c8, y: [-30, -10], radius: [40, 260], opacity: 0.4, size: [60, 140] },
     motes: { color: 0xffe9b8, count: 160, size: 0.08, opacity: 0.5 },
   });
   w.setTheme({ tex: 'wood', color: 0xffffff, trim: null, edge: 0x6b4a2e, edgeOpacity: 0.22, accent: 0xffc83d, danger: COL.danger, roughness: 0.7 });
   w.killY = -40;
+  w.coopMood = mood;                                       // read by scenery.js
 }
 
 /** A solid deck. Same as w.plat, but wooden by default. Pass `path:true` for platforms on the intended route (hints, bots). */
@@ -85,7 +87,7 @@ export function plate(w, o, onChange) {
 /** A wall/door that slides up when `open(true)` is called. Solid for both players while closed. */
 export function gate(w, o) {
   const { x, y = 0, z, w: ww = 6, h = 5, d = 0.8, color = 0x6b4a2e, tex = 'wood', speed = 7, glow = null } = o;
-  const p = w.plat({ x, y: y + h, z, w: ww, d, h, tex, color, trim: glow, moving: true });
+  const p = w.plat({ x, y: y + h, z, w: ww, d, h, tex, color, trim: glow, moving: true, gate: true });
   const st = { plat: p, open: false, k: 0 };
   w.updaters.push((dt) => {
     const target = st.open ? 1 : 0;
@@ -146,7 +148,7 @@ export function lantern(w, x, y, z, color = 0xffc880) {
 /** Lake plane far below (set dressing – the kill plane is w.killY). */
 export function lake(w, y = -28, size = 600, color = 0x2a6f8f) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshStandardMaterial({ color, roughness: 0.15, metalness: 0.5, transparent: true, opacity: 0.92 }));
-  m.rotation.x = -Math.PI / 2; m.position.y = y; w.add(m);
+  m.rotation.x = -Math.PI / 2; m.position.y = y; w.add(m); w._lake = true;
   w.updaters.push(() => { const p = w.game.player; m.position.x = p.x; m.position.z = p.z; });
   return m;
 }

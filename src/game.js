@@ -3,6 +3,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { coopScenery } from './levels/coop/scenery.js';
 
 import { Mover, stepPlayer, MOVE, rayAABB } from './engine/physics.js';
 import { World } from './engine/world.js';
@@ -550,6 +551,7 @@ export class Game {
     if (old) { try { old.dispose(); } catch { /* best effort */ } this.renderer.renderLists.dispose(); }
     if (this.coop) this.coop.attachWorld(w, opts.coopSeed || 0);
     level.build(w, this);
+    if (this.coop) { if (!location.search.includes("noseal")) w.sealWalls(); if (!location.search.includes("noscen")) coopScenery(w, this); }                                    // 2 Player Mode: no walking or jumping around the end of a wall
     this.renderPass.scene = w.scene;
     if (this.lowGfx) this._applyShadowQuality(w);
     this.focus = null;
