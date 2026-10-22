@@ -197,7 +197,7 @@ export default {
     });
     const boardRead = sign(w, `ORDER:  1 ${FF[seq[0]].name}  →  2 ${FF[seq[1]].name}  →  3 ${FF[seq[2]].name}`, 0, H.y + 3.6, H.z0 - 1.2, { w: 11.5, h: 1.3, size: 30, border: '#ffd24d' });
     const boardHide = sign(w, 'THE ORDER IS ONLY SHOWN TO WHOEVER IS NOT HOLDING THE LANTERN', 0, H.y + 3.6, H.z0 - 1.2, { w: 11.5, h: 1.3, size: 26, border: '#ff4d5e' });
-    sign(w, 'LIGHT THE FIREFLIES IN ORDER · WRONG ONE AND THEY START AGAIN', 0, H.y + 6.0, gz + 1.0, { w: 12.5, h: 0.95, size: 26, border: '#ffd24d' });
+    sign(w, 'LIGHT THE FIREFLIES IN ORDER · WRONG ONE AND THEY START AGAIN', 0, H.y + 7.4, gz + 1.0, { w: 12.5, h: 0.95, size: 26, border: '#ffd24d' });
     stage(w, 'ff', { x: 0, y: H.y + 1, z: H.z0 - 2, w: 14, h: 4, d: 3 }, () => tell('all', 'coop.l14.ff.intro'));
 
     // ================================================================ 6. the relay and the toss =================
