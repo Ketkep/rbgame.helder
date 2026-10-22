@@ -13,9 +13,9 @@ import { TILE_W, TILE_D, tileZ, tileAt, CARDS, planRound, planTraps, floorLabel,
 
 const SEGS = [
   { key: 'a', title: 'BOARD 1 · WARM-UP', n: 6, R: 2, cards: ['none'], trap: 0.5 },
-  { key: 'b', title: 'BOARD 2 · CHANCE', n: 10, R: 3, cards: ['f1', 'b1', 'none', 'f2'], trap: 0.4 },
+  { key: 'b', title: 'BOARD 2 · CHANCE', n: 11, R: 4, cards: ['f1', 'b1', 'none', 'f2'], trap: 0.4 },
   { key: 'c', title: 'BOARD 3 · SWAP SPACE', n: 10, R: 3, cards: ['f1', 'b1', 'none'], trap: 0.4, fixed: [4], swap: 4 },
-  { key: 'd', title: 'BOARD 4 · THE SHORTCUT', n: 10, R: 3, cards: ['dbl', 'b1', 'f1', 'none'], trap: 0.45, loop: true },
+  { key: 'd', title: 'BOARD 4 · THE SHORTCUT', n: 11, R: 4, cards: ['dbl', 'b1', 'f1', 'none'], trap: 0.45, loop: true },
   { key: 'e', title: 'BOARD 5 · FAIR DICE', n: 8, R: 3, cards: ['none'], trap: 0.5, rigged: true, minD: 2 },
 ];
 const HUB = 10;                                  // depth of the hub deck before each board
