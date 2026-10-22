@@ -1288,6 +1288,7 @@ Object.assign(SCRIPT, {
   'coop.l13.held2': ['Eight beats. Together. If this were a couples retreat I would suggest you hold hands. It is not. It is just very sweaty.'],
   'coop.l13.bow': ['Both of you, in the circle. Take a bow. Not too deep. The lake is right there.'],
   'coop.l13.partnerdown': ['Your partner fell. That was off beat. I am not saying it was their fault. The tiles are saying it.', 'And down they go. The song continues. Do not wait for them. Wait for them.'],
+});
 // ---------------------------------------------------------------------------------------------------------------------------------
 // Campaign 3 · Session 15 — Anniversary Gala (coop.l15.*)
 Object.assign(SCRIPT, {
