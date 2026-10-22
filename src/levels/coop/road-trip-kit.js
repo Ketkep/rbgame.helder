@@ -245,16 +245,16 @@ export function dashboard(w, R, driverRole, { width = 15, height = 2.7 } = {}) {
     const W = 1024, H = 190;
     ctx.fillStyle = '#10131c'; ctx.fillRect(0, 0, W, H);
     ctx.strokeStyle = '#ffc83d'; ctx.lineWidth = 6; ctx.strokeRect(6, 6, W - 12, H - 12);
-    ctx.fillStyle = '#ffe9a8'; ctx.font = '700 34px Inter, system-ui, sans-serif'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
-    ctx.fillText('DASHBOARD · THE ROAD AHEAD IS NOT YOUR DEPARTMENT', W / 2, 40);
-    const cell = (cx, label, on, colr) => {
-      ctx.fillStyle = on ? colr : '#1f2433'; ctx.fillRect(cx - 120, 76, 240, 62);
-      ctx.fillStyle = on ? '#10131c' : '#6b738a'; ctx.font = '700 34px Inter, system-ui, sans-serif'; ctx.fillText(label, cx, 108);
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+    const fit = (txt, y, px, colr, maxW) => { let f = px; ctx.fillStyle = colr; do { ctx.font = `700 ${f}px Inter, system-ui, sans-serif`; f -= 2; } while (ctx.measureText(txt).width > maxW && f > 12); ctx.fillText(txt, W / 2, y); };
+    fit('DASHBOARD · THE ROAD AHEAD IS NOT YOUR DEPARTMENT', 36, 34, '#ffe9a8', W - 60);
+    const cell = (cx, cw, label, on, colr) => {
+      ctx.fillStyle = on ? colr : '#1f2433'; ctx.fillRect(cx - cw / 2, 68, cw, 62);
+      ctx.fillStyle = on ? '#10131c' : '#6b738a'; ctx.font = '700 34px Inter, system-ui, sans-serif'; ctx.fillText(label, cx, 100);
     };
-    cell(210, 'LEFT', R.lane === -1, '#39d7c9'); cell(470, 'CENTRE', R.lane === 0, '#39d7c9'); cell(730, 'RIGHT', R.lane === 1, '#39d7c9');
-    cell(910, 'BRAKE', R.brake, '#ff6a78');
-    ctx.fillStyle = '#9aa3b8'; ctx.font = '600 24px Inter, system-ui, sans-serif';
-    ctx.fillText('STAND ON A LANE PEDAL TO CHOOSE · STAND ON BRAKE TO STOP · LISTEN TO YOUR NAVIGATOR', W / 2, 166);
+    cell(150, 200, 'LEFT', R.lane === -1, '#39d7c9'); cell(380, 200, 'CENTRE', R.lane === 0, '#39d7c9'); cell(610, 200, 'RIGHT', R.lane === 1, '#39d7c9');
+    cell(860, 240, 'BRAKE', R.brake, '#ff6a78');
+    fit('STAND ON A LANE PEDAL TO STEER · STAND ON BRAKE TO STOP · LISTEN TO YOUR NAVIGATOR', 160, 24, '#9aa3b8', W - 60);
     tex.needsUpdate = true;
   };
   return { mesh, draw };

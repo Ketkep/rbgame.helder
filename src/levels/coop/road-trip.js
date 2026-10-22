@@ -95,9 +95,9 @@ export default {
     // the fork road (two forks; each one has a dead branch that is closed off)
     D(-13, 13, -376, -424); roadMarks(w, -376, -424);
     D(3.2, 13, -424, -462); D(-3.2, 3.2, -424, -462); D(-13, -3.2, -424, -438);
-    D(-13, 13, -462, -484); roadMarks(w, -462, -484);
-    D(-13, -3.2, -484, -516); D(-3.2, 3.2, -484, -516); D(3.2, 13, -484, -492);
-    D(-13, 13, -516, -528); roadMarks(w, -516, -528);
+    D(-13, 13, -462, -492); roadMarks(w, -462, -492);
+    D(-13, -3.2, -492, -524); D(-3.2, 3.2, -492, -524); D(3.2, 13, -492, -500);
+    D(-13, 13, -524, -528);
     bay(-540, 'STOP 3');
     D(-13, 13, -552, Z_B4 + 12); roadMarks(w, -552, Z_B4 + 12);
     bay(Z_B4, 'REST STOP');
@@ -155,7 +155,7 @@ export default {
     mount(bar, 0, 0.0, 4.0);
     // dashboard (driver) and map (navigator): both ride on the car
     const dash = dashboard(w, R, me);
-    mount(dash.mesh, 0, 1.85, -3.4);
+    mount(dash.mesh, 0, 1.85, -4.7);
     const map = mapBoard(w, R, items, { width: 4.4, height: 2.75 });
     mount(map.mesh, 0, 3.85, -3.1);
     function applyViews() {
@@ -233,8 +233,8 @@ export default {
       aboard.body.setCenter(R.x, 2.6, R.z);
       // pedals light up
       const drvCol = R.driver === 'p1' ? COL.p1 : COL.p2;
-      PEDS.forEach((pd, i) => { const on = R.lane === pd.lane; lanePedMat[i].color.setHex(drvCol).multiplyScalar(on ? 2.4 : 0.55); });
-      brakeMat.color.setHex(0xff5a68).multiplyScalar(R.brake ? 2.6 : 0.6);
+      PEDS.forEach((pd, i) => { const on = R.lane === pd.lane; lanePedMat[i].color.setHex(drvCol).multiplyScalar(on ? 1.5 : 0.5); });
+      brakeMat.color.setHex(0xff5a68).multiplyScalar(R.brake ? 1.7 : 0.6);
       if (R.driver === me && game.state === 'playing') {                 // the driver's feet are the controls
         const k = lz.findIndex((z) => z.mine);
         if (k >= 0 && R.lane !== PEDS[k].lane) c.set('lane', PEDS[k].lane);
@@ -249,7 +249,7 @@ export default {
         R.gap = R.chZ - 2.25 - R.z - 3.25;
         if (R.gap < -0.2 && game.state === 'playing' && Math.hypot(pl.x - R.x, pl.z - R.z) < 9) game.kill('hazard');
       }
-      R.noSignal = (R.z < -468 && R.z > -524 && R.sec === 2);
+      R.noSignal = (R.z < -476 && R.z > -532 && R.sec === 2);
       dash.mesh.visible && dash.draw(false);
       map.tick(dt);
     });
@@ -324,14 +324,14 @@ export default {
     cones(w, R, items, [0], -404);
     block(w, R, items, { x: 0, z: -443, width: 6.4, depth: 38, h: 3.0, color: 0x6a7488, flash: false, label: '' });
     block(w, R, items, { x: -8.1, z: -436, width: 9.6, depth: 1.2, label: 'BRIDGE OUT', sign: 'BRIDGE OUT' });
-    block(w, R, items, { x: 0, z: -500, width: 6.4, depth: 32, h: 3.0, color: 0x6a7488, flash: false, label: '' });
-    block(w, R, items, { x: 8.1, z: -490, width: 9.6, depth: 1.2, label: 'CLOSED', sign: 'ROAD CLOSED' });
+    block(w, R, items, { x: 0, z: -508, width: 6.4, depth: 32, h: 3.0, color: 0x6a7488, flash: false, label: '' });
+    block(w, R, items, { x: 8.1, z: -498, width: 9.6, depth: 1.2, label: 'CLOSED', sign: 'ROAD CLOSED' });
     sign(w, '← LAKE VIEW  (BRIDGE WORKS)        TOWN  →', 0, 7.2, -412, { w: 16, h: 2.2, size: 46, border: '#9fe8ff' });
-    sign(w, '← SERENITY FALLS        ROAD CLOSED  →', 0, 7.2, -472, { w: 16, h: 2.2, size: 48, border: '#ff4d5e' });
+    sign(w, '← SERENITY FALLS        ROAD CLOSED  →', 0, 7.2, -480, { w: 16, h: 2.2, size: 48, border: '#ff4d5e' });
     at('fork1', -392, () => { once('coop.l12.fork1', 'all'); });
     at('fork1b', -412, () => { tell(other(R.driver), 'coop.l12.fork1.nav'); });
     at('fork1done', -468, () => { tell('all', 'coop.l12.fork1done'); });
-    at('fork2', -476, () => { once('coop.l12.fork2', 'all'); }, 3);
+    at('fork2', -482, () => { once('coop.l12.fork2', 'all'); }, 3);
     at('s3done', -534, () => tell('all', 'coop.l12.s3done'));
 
     // ------------------------------------------------------------------------------------------------------------
@@ -462,7 +462,7 @@ export default {
       if (it.kind !== 'arm') return true;
       const [dIn, dOut] = arrival(it, S.v);
       const t0 = Math.max(0, dIn) / S.v + 0.7, t1 = Math.max(0, dOut) / S.v + 0.7;
-      for (let t = t0 - 0.4; t <= t1 + 0.4; t += 0.3) if (it.f(w.t + t) < 0.9) return true;
+      for (let t = t0 - 0.7; t <= t1 + 0.7; t += 0.3) if (it.f(w.t + t) < 0.9) return true;
       return false;
     };
     const oracle = () => {
@@ -470,8 +470,8 @@ export default {
       if (!S) return { lane, brake };
       // forced lanes at the forks (the sign + the map tell a human)
       if (R.sec === 2) {
-        if (R.z < -396 && R.z > -460) return { lane: 1, brake: false };
-        if (R.z <= -460 && R.z > -520) return { lane: -1, brake: false };
+        if (R.z < -396 && R.z > -466) return { lane: 1, brake: false };
+        if (R.z <= -466 && R.z > -530) return { lane: -1, brake: false };
       }
       const rel = items.filter((it) => { const [dIn, dOut] = arrival(it, S.v); return it.kind !== 'kerb' && dOut > 0 && dIn < 34; });
       if (rel.length) {
@@ -521,6 +521,6 @@ export default {
       return { x: t.x, z: t.z, r: 0.5, wait: Math.hypot(pl.x - t.x, pl.z - t.z) < 0.8 };
     };
     w.botIndex = () => R.sec * 10 + (R.mode === 'drive' ? 1 : 0);
-    w.rt = R;                                                            // debug handle
+    w.rt = R; R.SEC = SEC; R.tun = tunnelPieces; R.Z = { B4: Z_B4, B6: Z_B6, B7: Z_B7, TUN0: Z_TUN0, TUN1: Z_TUN1 };      // debug handles
   },
 };
