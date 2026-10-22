@@ -11,6 +11,7 @@ import baggage from './baggage.js';
 import vows from './vows.js';
 import gameNight from './game-night.js';
 import roadTrip from './road-trip.js';
+import karaokeNight from './karaoke-night.js';
 
 // [name, kind, tagline, deathRule]
 const ROSTER = [
