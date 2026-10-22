@@ -9,6 +9,7 @@ import dinnerDate from './dinner-date.js';
 import secretSanta from './secret-santa.js';
 import baggage from './baggage.js';
 import vows from './vows.js';
+import campsite from './campsite.js';
 
 // [name, kind, tagline, deathRule]
 const ROSTER = [
@@ -34,7 +35,7 @@ export const KIND_ICON = { tutorial: '🤝', trust: '🪂', split: '🗝', rope:
 const planned = ([name, kind, tagline], i) => ({ id: `coop-${i + 1}`, name, kind, tagline, index: i, placeholder: true });
 
 export function buildCoopLevels() {
-  const BUILT = [icebreakers, trustFalls, communication, tetheredTrek, spaDay, newlywed, dinnerDate, secretSanta, baggage, vows, undefined, undefined, undefined, undefined, undefined];      // 11-15: Game Night, Road Trip, Karaoke Night, The Campsite, Anniversary Gala
+  const BUILT = [icebreakers, trustFalls, communication, tetheredTrek, spaDay, newlywed, dinnerDate, secretSanta, baggage, vows, undefined, undefined, undefined, campsite, undefined];      // 11-15: Game Night, Road Trip, Karaoke Night, The Campsite, Anniversary Gala
   BUILT[0] = icebreakers;
   BUILT[3] = tetheredTrek;
   return ROSTER.map((r, i) => (BUILT[i] ? Object.assign(BUILT[i], { kind: r[1], tagline: r[2], index: i }) : planned(r, i)));
