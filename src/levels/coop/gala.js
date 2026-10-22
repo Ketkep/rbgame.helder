@@ -65,8 +65,8 @@ export default {
     // glass divider between the lanes (the reflection happens in it)
     w.plat({ x: 0, y: 9, z: (Hz1 + zLast - 3) / 2, w: 0.3, d: Math.abs(zLast - 3 - Hz1), h: 9, tex: 'metal', color: 0xcfe6ff, trim: null, edge: null });
     sign(w, 'THE MIRROR. YOUR PARTNER IS BACKWARDS. THE FLOOR IS NOT.', 0, 7.2, -37, { w: 10, h: 1.6, size: 32 });
-    sign(w, 'STAND ON A TILE · THE SAME TILE IN THE OTHER LANE RISES', 0, 5.4, -43.6, { w: 10, h: 1.2, size: 30, border: '#' + COL.p1.toString(16).padStart(6, '0') });
-    sign(w, 'PINK ROWS ARE THE FUNHOUSE: THE OTHER COLUMN RISES', 0, 5.4, L.zRow(3) + 2.4, { w: 10, h: 1.2, size: 30, border: '#ff6ec7' });
+    sign(w, 'STAND ON A TILE · THE SAME TILE IN THE OTHER LANE RISES', 0, 11.2, -43.6, { w: 10, h: 1.2, size: 30, border: '#' + COL.p1.toString(16).padStart(6, '0') });
+    sign(w, 'PINK ROWS ARE THE FUNHOUSE: THE OTHER COLUMN RISES', 0, 11.2, L.zRow(3) + 2.4, { w: 10, h: 1.2, size: 30, border: '#ff6ec7' });
         dressing(-30, -92); gallery(-32, -90, 0, 14, 5);
     chandelier(w, 0, 13, -44); chandelier(w, 0, 13, -62); chandelier(w, 0, 13, -80);
     w.checkpoint({ x: -8.6, y: 0, z: -36.5, real: true });                              // beside the lanes, on the deck
@@ -79,7 +79,7 @@ export default {
     stage(w, 'mirrordone', { x: 0, y: 1, z: toastZ0 - 2, w: 22, h: 4, d: 3 }, () => tell('all', 'coop.l15.mirrordone'));
     deck(w, { x: 0, y: 0, z: L.rest.zc, w: 22, d: L.rest.d, path: true });
     w.checkpoint({ x: 0, y: 0, z: L.rest.zc, real: true });
-    sign(w, 'HALFWAY. THE MIRRORS ARE STILL WATCHING.', 0, 5.4, L.rest.near - 1.2, { w: 9, h: 1.2, size: 32 });
+    sign(w, 'HALFWAY. THE MIRRORS ARE STILL WATCHING.', 0, 11.2, L.rest.near - 1.2, { w: 9, h: 1.2, size: 32 });
     {
       const steps = L.botSteps(me, near);
       steps.push({ x: 0, z: toastZ0 - 6, r: 2 });
