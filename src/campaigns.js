@@ -41,7 +41,7 @@ export const CAMPAIGNS = [
     eyebrow: '2 PLAYERS · ONLINE',
     title: '2 Player Mode',
     tagline: 'Grab a friend and a Discord call. Ten "trust exercises" at the Couples Retreat. The counsellor sides with nobody.',
-    eta: '10 sessions · ~10 min each',
+    eta: '15 sessions · ~10 min each',
     status: 'playable',
     coop: true,
     levels: buildCoopLevels(),

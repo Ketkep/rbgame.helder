@@ -1,4 +1,4 @@
-// Campaign 3 — Couples Retreat: ten two-player "sessions". Levels that are not built yet are placeholders.
+// Campaign 3 — Couples Retreat: fifteen two-player "sessions". Levels that are not built yet are placeholders.
 import icebreakers from './icebreakers.js';
 import trustFalls from './trust-falls.js';
 import communication from './communication.js';
@@ -22,14 +22,19 @@ const ROSTER = [
   ['Secret Santa', 'betrayal', 'Everyone gets a gift. One of them is a trap.'],
   ['Shared Baggage', 'climb', 'A very tall pile of each other\'s problems.'],
   ['The Vows', 'finale', 'Everything you learned. Together. Or not.'],
+  ['Game Night', 'board', 'A board game. One of you rolls. The other one moves. It is rigged.'],
+  ['Road Trip', 'drive', 'One drives. One navigates. Nobody is allowed to say "I told you so".'],
+  ['Karaoke Night', 'rhythm', 'Hit the beat. Together. No, together.'],
+  ['The Campsite', 'dark', 'One lantern. Two of you. Stay close.'],
+  ['Anniversary Gala', 'gala', 'Everything you learned, with worse lighting and more witnesses.'],
 ];
 
-export const KIND_ICON = { tutorial: '🤝', trust: '🪂', split: '🗝', rope: '🧗', control: '🧖', quiz: '💬', team: '🍝', betrayal: '🎁', climb: '🎒', finale: '💍' };
+export const KIND_ICON = { tutorial: '🤝', trust: '🪂', split: '🗝', rope: '🧗', control: '🧖', quiz: '💬', team: '🍝', betrayal: '🎁', climb: '🎒', finale: '💍', board: '🎲', drive: '🚗', rhythm: '🎤', dark: '🏕', gala: '🥂' };
 
 const planned = ([name, kind, tagline], i) => ({ id: `coop-${i + 1}`, name, kind, tagline, index: i, placeholder: true });
 
 export function buildCoopLevels() {
-  const BUILT = [icebreakers, trustFalls, communication, tetheredTrek, spaDay, newlywed, dinnerDate, secretSanta, baggage, vows];
+  const BUILT = [icebreakers, trustFalls, communication, tetheredTrek, spaDay, newlywed, dinnerDate, secretSanta, baggage, vows, undefined, undefined, undefined, undefined, undefined];      // 11-15: Game Night, Road Trip, Karaoke Night, The Campsite, Anniversary Gala
   BUILT[0] = icebreakers;
   BUILT[3] = tetheredTrek;
   return ROSTER.map((r, i) => (BUILT[i] ? Object.assign(BUILT[i], { kind: r[1], tagline: r[2], index: i }) : planned(r, i)));

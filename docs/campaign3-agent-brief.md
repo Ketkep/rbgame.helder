@@ -33,3 +33,13 @@ Add `'coop.lN.<name>': ['line', 'alt line']` entries to `SCRIPT` in `src/script.
 * `w.plat({y})` — y is the **top** surface. `w.mover`, `w.crumble`, `riser`, `gate` all need `moving`-style plats (the helpers set it).
 * Bots drive `g.keys` and `_simulate` directly; modals must be closed with `g.closeModal()` (the harness does it) — avoid long modal-only puzzles without bot support.
 * Zones/plates see the partner with ~50–100 ms lag; never rely on exact simultaneity under ~0.3 s.
+
+## Lessons from sessions 1-10 (read before you build)
+* **Title sign**: ONE sign `SESSION N · NAME` at `(0, 10.8, spawnZ-20)` (w 14, h 1.9). Not at the spawn line (behind the player), not stacked with other signs.
+* **Checkpoints at every part** (every stage/room), on the main path, never inside a hazard lane. At least one per ~25 m of route.
+* **Walls and gates**: `World.sealWalls()` runs after your build and stretches gates (`gate()`), and extends thin tall walls over void, so nobody can leap round them. Leave real doorways as gaps between wall segments; do not rely on a wall being short. A gate must span the full deck width.
+* **Backdrop**: `scenery.js` (mountains, islands, waterfalls, aurora, lanterns) is added automatically from `retreatEnv(w, {mood})`; do not add your own sky/clouds. Moods: dusk, night, dawn, storm.
+* No two signs or boards may overlap in space (`tools/` has no checker; just look at screenshots: `BASE=… node tools/coop-bot.mjs` + a real-render screenshot via playwright at 1280x720).
+* Adjacent platforms at the same height must not overlap (z-fighting); butt them edge to edge.
+* Level length target ~10 min for a first-time pair; bots must complete it with `node tools/coop-bot.mjs <N> 1200` several times in a row (run it 3x: random seeds can differ), `node tools/test-coop.mjs` must pass.
+* Interactions the bots use go through `g.useFocus()` (the real crosshair rule): an interactable inside a solid collider can never be focused (that bug hit the hotel pantry). Keep interactables outside colliders.
