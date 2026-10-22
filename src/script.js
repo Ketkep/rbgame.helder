@@ -1165,3 +1165,30 @@ export const CREDITS = [
   ['Special thanks', 'Your mouse. Your patience. My ego.'],
   ['No contestants were harmed', 'Several were annoyed'],
 ];
+
+// ---- Campaign 3 · session 13 · Karaoke Night (coop.l13.*) ----
+Object.assign(SCRIPT, {
+  'coop.l13.intro.p1': ['Karaoke Night. Orange, you are the lead vocal. Everything here runs on a beat. No sound. I find sound unprofessional.'],
+  'coop.l13.intro.p2': ['Karaoke Night. Teal, you are the harmony. The beat is visual. Watch the lights. Your partner will not help.'],
+  'coop.l13.warm': ['A tile is solid while it is lit. The next one starts to glow a beat early. Step on the glow. This is called timing.', 'Warm-up. The tiles go on the beat. You have a quarter of a second of grace. I am generous.'],
+  'coop.l13.warmdone': ['You found the rhythm. I will pretend I was worried.', 'Warm-up complete. The lights approve. I do not.'],
+  'coop.l13.duet': ['A duet. Orange tiles are yours on the even beats. Teal tiles are theirs on the odd beats. You may not borrow each other\'s.'],
+  'coop.l13.chord': ['A chord. Both of you, your own colour, together. Then nine seconds of gate. Harmony is mostly standing still.'],
+  'coop.l13.lyric.read': ['Orange, you have the lyric sheet. Only you. Call the colours out, in order. Teal will walk. Teal has never been so dependent.'],
+  'coop.l13.lyric.walk': ['Teal, you walk. Orange reads the lyrics. I cannot see them either. A wrong note drops away. Quietly. Politely.'],
+  'coop.l13.lyric2.read': ['Teal, now you have the sheet. Read it clearly. Orange has one job and it is listening.'],
+  'coop.l13.lyric2.walk': ['Orange, your turn to walk. Teal reads. This is called trust. Or hearing loss.'],
+  'coop.l13.lyricdone': ['You sang from the same sheet. Remarkable. Do not get used to it.'],
+  'coop.l13.kcin': ['The next number has a key change. Watch the board. It will count you in. I am nothing if not considerate.'],
+  'coop.l13.kc': ['Four. Three. Two. One. It goes faster. Same tiles, less time. This is what we call a key change.', 'The tempo is about to change. The board says so. I am not the one who lied this time.'],
+  'coop.l13.kcdone': ['Ninety beats a minute. You kept up. Marvellous. Another chord, if you please.'],
+  'coop.l13.wl1': ['Verse one, from the counsellor\'s own lyric sheet. The right note breathes with the beat. I would never lie. Verse one is true.'],
+  'coop.l13.wl2': ['Verse two. The lyrics are right here on the board. I wrote them myself. Trust me.'],
+  'coop.l13.wldone': ['Verse two. Yes. About that. The board was wrong. The notes breathe. The notes do not lie. I do. Occasionally.'],
+  'coop.l13.hold1': ['Hold the note. Orange, left plate. Teal, right plate. The plates move. So do your hearts. Stand on them for six beats.'],
+  'coop.l13.held1': ['The note is held. The gate opens. The stage is slightly moved by it.'],
+  'coop.l13.hold2': ['The long note. Eight beats. The plates are quicker. Do not look at your feet. Look at each other. No. At the meter.'],
+  'coop.l13.held2': ['Eight beats. Together. If this were a couples retreat I would suggest you hold hands. It is not. It is just very sweaty.'],
+  'coop.l13.bow': ['Both of you, in the circle. Take a bow. Not too deep. The lake is right there.'],
+  'coop.l13.partnerdown': ['Your partner fell. That was off beat. I am not saying it was their fault. The tiles are saying it.', 'And down they go. The song continues. Do not wait for them. Wait for them.'],
+});
