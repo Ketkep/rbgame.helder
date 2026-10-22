@@ -39,7 +39,7 @@ export function planRound(rand, cfg, s, ri) {
   let card = 'none', r = Math.min(6, d);
   for (const k of shuffle(cfg.cards.slice(), rand)) {
     const rr = CARDS[k].inv(d);
-    if (rr >= 1 && rr <= 6) { card = k; r = rr; break; }
+    if (rr >= 1 && rr <= 6 && s + rr <= cfg.n - 1) { card = k; r = rr; break; }
   }
   const shown = cfg.rigged ? Math.max(1, r - 1) : r;
   return { d, r, card, shown, t: s + d, base: s + r };
@@ -49,8 +49,11 @@ export function planRound(rand, cfg, s, ri) {
 export function planTraps(rand, n, s, t, p) {
   const a = new Array(n).fill(-1);
   const mid = [];
-  for (let i = s + 1; i < t; i++) { mid.push(i); if (rand() < p) a[i] = rand() < 0.5 ? 0 : 1; }
-  if (mid.length && !mid.some((i) => a[i] >= 0)) a[mid[Math.floor(rand() * mid.length)]] = rand() < 0.5 ? 0 : 1;
+  // two traps on neighbouring tiles always sit on the SAME half (opposite halves back to back cannot be walked)
+  const put = (i) => { const h = rand() < 0.5 ? 0 : 1; a[i] = i > 0 && a[i - 1] >= 0 ? a[i - 1] : h; };
+  for (let i = s + 1; i < t; i++) { mid.push(i); if (rand() < p) put(i); }
+  if (mid.length && !mid.some((i) => a[i] >= 0)) put(mid[Math.floor(rand() * mid.length)]);
+  for (let i = s + 2; i < t; i++) if (a[i] >= 0 && a[i - 1] >= 0 && a[i] !== a[i - 1]) a[i] = a[i - 1];
   return a;
 }
 

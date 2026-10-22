@@ -19,8 +19,8 @@ const SEGS = [
   { key: 'e', title: 'BOARD 5 · FAIR DICE', n: 8, R: 3, cards: ['none'], trap: 0.5, rigged: true, minD: 2 },
 ];
 const HUB = 10;                                  // depth of the hub deck before each board
-const LANE_X = -8.5;                             // the Roller's walkway
-const CONSOLE_X = -9.6;
+const LANE_X = -9;                             // the Roller's walkway
+const CONSOLE_X = -9.0;
 const FP = [{ s: { p1: 0, p2: 3 }, t: 6 }, { s: { p1: 5, p2: 5 }, t: 8 }];   // final board: starts and the shared target tile
 const F_N = 10;
 
@@ -117,14 +117,14 @@ export default {
         B.tiles.push({ z: tz }); B.traps.push(row);
       }
       // lane for the Roller + console
-      deck(w, { x: LANE_X, y: 0, z: zMid, w: 5, d: L, color: 0x8c7a62 });
-      lantern(w, -11.3, 0, zB0 - 1); lantern(w, -11.3, 0, zEnd + 1);
+      deck(w, { x: LANE_X, y: 0, z: zMid, w: 6, d: L, color: 0x8c7a62 });
+      lantern(w, -11.5, 0, zB0 - 1); lantern(w, -11.5, 0, zEnd + 1);
       const roleBanner = liveSign(w, 0, 9.6, zB0 + 3.5, { w: 12, h: 1.4, tw: 900, border: '#ffc83d' });
       roleBanner.set(cfg.title);
       const timer = liveSign(w, 0, 7.6, zB0 + 3.5, { w: 8, h: 1.7, tw: 760, border: '#39d7c9', size: 0 });
       // console + roller sign
-      const rollSign = liveSign(w, -13, 4.0, zMid, { w: 7, h: 3.6, tw: 760, rotY: Math.PI / 2, border: '#ff9a3d', size: 30 });
-      const cardSign = liveSign(w, 13, 4.0, zMid, { w: 7, h: 3.6, tw: 760, rotY: -Math.PI / 2, border: '#39d7c9', size: 30 });
+      const rollSign = liveSign(w, -13.5, 4.0, zMid, { w: 7, h: 3.6, tw: 760, rotY: Math.PI / 2, border: '#ff9a3d', size: 30 });
+      const cardSign = liveSign(w, 13.5, 4.0, zMid, { w: 7, h: 3.6, tw: 760, rotY: -Math.PI / 2, border: '#39d7c9', size: 30 });
       const moverReady = () => { const s = pos().s; return P.has && !P.dead && Math.abs(P.sy) < 1.5 && tileAt(zB0, n, P.sx, P.sz) === s; };
       const canRoll = () => pos().seg === i && roller() === me && !activeOf(i) && moverReady() && (!res() || w.t - (res().at || 0) > 2.0);
       pedestal(w, {
@@ -256,6 +256,7 @@ export default {
     });
 
     // ============================================================ the last board: onto the SAME tile =============
+    const hubFz = zTop;
     const fz0 = zTop - HUB;                                     // board start
     const fEnd = fz0 - F_N * TILE_D;
     deck(w, { x: 0, y: 0, z: zTop - HUB / 2, w: 28, d: HUB });
@@ -307,12 +308,7 @@ export default {
         return { d, r: Math.min(6, d), card: 'none' };
       };
       out.p.p1 = pickCard('p1', null); out.p.p2 = pickCard('p2', out.p.p1.card);
-      for (const r of ['p1', 'p2']) {
-        const s = plan.s[r], t = plan.t, a = new Array(F_N).fill(-1);
-        const mid = []; for (let k = s + 1; k < t; k++) { mid.push(k); if (rr() < 0.55) a[k] = rr() < 0.5 ? 0 : 1; }
-        if (mid.length && !mid.some((k) => a[k] >= 0)) a[mid[Math.floor(rr() * mid.length)]] = rr() < 0.5 ? 0 : 1;
-        out.p[r].tr = a;
-      }
+      for (const r of ['p1', 'p2']) out.p[r].tr = planTraps(rr, F_N, plan.s[r], plan.t, 0.55);
       return out;
     };
     const fph = () => c.get('fph', 0);
@@ -374,14 +370,15 @@ export default {
     // ============================================================ scripted bots (tools/coop-bot.mjs) =============
     const g = game;
     void plainMaterial; void COL;
+    const goTile = (p, x, zk) => (Math.abs(p.x - x) > 0.25 && p.z > zk + 2.4 ? { x, z: zk + 3.0 } : { x, z: zk });      // shift sideways BEFORE entering a trap tile
     const half = (tr) => (tr === 0 ? 1.5 : -1.5);              // the safe half of a tile with a trap on `tr`
     w.botPlan = () => {
       const p = g.player, cur = pos();
       if (cur.seg < SEGS.length) {
         const B = boards[cur.seg], cfg = B.cfg, R = activeOf(cur.seg), pl = R ? derive(R) : null;
         if (roller() === me) {
-          if (p.z > B.zB0 - 0.5 && Math.abs(p.x - LANE_X) > 2.5) return { x: LANE_X, z: B.zB0 + 1.2 };
-          const near = Math.hypot(p.x - CONSOLE_X, p.z - B.zMid) < 1.0;
+          if (p.z > B.zB0 - 0.5 && Math.abs(p.x - LANE_X) > 2.5) return { x: LANE_X + 1, z: B.zB0 + 1.2 };
+          const near = Math.hypot(p.x - (CONSOLE_X), p.z - B.zMid) < 1.0;
           if (near && !R) g.useFocus();
           return { x: CONSOLE_X, z: B.zMid, wait: near };
         }
@@ -391,16 +388,18 @@ export default {
           if (idx < 0 || idx < R.s) return { x: 0, z: tileZ(B.zB0, R.s) };
           if (idx >= pl.t) return { x: 0, z: tileZ(B.zB0, pl.t), wait: true };
           const k = idx + 1, tr = pl.tr[k];
-          return { x: tr < 0 ? 0 : half(tr), z: tileZ(B.zB0, k) };
+          return goTile(p, tr < 0 ? Math.max(-1.5, Math.min(1.5, p.x)) : half(tr), tileZ(B.zB0, k));
         }
         const nearS = Math.hypot(p.x, p.z - tileZ(B.zB0, cur.s));
         return { x: 0, z: tileZ(B.zB0, cur.s), wait: nearS < 0.5 };
       }
       // final board
+      if (p.x < -5 && p.z > hubFz - 0.5) return { x: -9, z: hubFz - 3 };      // leave the Roller's lane along the lane, not across the gap
       const ph = fph(), ri = Math.min(fri(), 1), plan = fPlan(ri), s = FP[ri].s[me];
       if (ph >= 4) return { x: 0, z: gzz };
       const idx = tileAt(fz0, F_N, p.x, p.z, 3.1);
       const lx = me === 'p1' ? -1.5 : 1.5;
+      if (P.has && P.dead && ph < 4) return { x: me === 'p1' ? -0.5 : 0.5, z: P.sz, wait: Math.abs(p.z - P.sz) < 0.6 };      // revive range
       if (!fActive()) {
         if (p.z > fz0 - 0.5) return { x: lx, z: fz0 - 0.8 };
         return { x: lx, z: tileZ(fz0, s), wait: Math.hypot(p.x - lx, p.z - tileZ(fz0, s)) < 0.4 };
@@ -408,8 +407,9 @@ export default {
       if (idx < 0) return { x: lx, z: tileZ(fz0, s) };
       if (idx >= plan.t) return { x: lx, z: tileZ(fz0, plan.t), wait: true };
       const k = idx + 1, tr = plan.p[me].tr[k];
-      return { x: tr < 0 ? lx : laneX(me, tr === 0), z: tileZ(fz0, k) };
+      return goTile(p, tr < 0 ? Math.max(me === 'p1' ? -2.25 : 0.75, Math.min(me === 'p1' ? -0.75 : 2.25, p.x)) : laneX(me, tr === 0), tileZ(fz0, k));
     };
+    w._gn = () => { const R = rd(); return { rd: R, res: res(), pos: pos(), roller: roller(), plan: R ? derive(R) : null, respawn: w.respawn, me: { x: g.player.x, y: g.player.y, z: g.player.z } }; };
     w.botIndex = () => (pos().seg * 10 + (pos().ri || 0));
     w.botList = [];
   },
