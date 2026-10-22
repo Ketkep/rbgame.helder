@@ -154,8 +154,8 @@ export default {
     const bar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 1.5), plainMaterial(0x2b2f3a));
     mount(bar, 0, 0.0, 4.0);
     // dashboard (driver) and map (navigator): both ride on the car
-    const dash = dashboard(w, R, me);
-    mount(dash.mesh, 0, 1.85, -4.7);
+    const dash = dashboard(w, R, me, { width: 20, height: 2.8 });
+    mount(dash.mesh, 0, 1.85, -6.4);
     const map = mapBoard(w, R, items, { width: 4.4, height: 2.75 });
     mount(map.mesh, 0, 3.85, -3.1);
     function applyViews() {
