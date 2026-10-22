@@ -101,13 +101,17 @@ const colOther = { in: 'out', out: 'in' };
  */
 export function mirrorLanes(w, o) {
   const c = w.coop;
-  const { y = 0, z0, pitch = 5.4, rows = 6, cross = [], xs = { out: 7.0, in: 3.6 }, tw = 3.0, td = 3.0, hold = 2.5 } = o;
-  const zRow = (k) => z0 - (k - 1) * pitch;
+  const { y = 0, z0, pitch = 5.4, rows = 6, cross = [], xs = { out: 7.0, in: 3.6 }, tw = 3.0, td = 3.0, hold = 2.5, restAfter = 0, restLen = 8 } = o;
+  const zNat = (k) => z0 - (k - 1) * pitch;
+  const rest = restAfter ? { near: zNat(restAfter) - td / 2 - 2.4 } : null;
+  if (rest) { rest.far = rest.near - restLen; rest.zc = (rest.near + rest.far) / 2; rest.pad = rest.far + 1.8; rest.d = restLen; }
+  const zRow = (k) => (rest && k > restAfter ? rest.far - 2.4 - td / 2 - (k - restAfter - 1) * pitch : zNat(k));
   const T = {}, Z = {};
   const key = (r, k, col) => `${r}:${k}:${col}`;
   const X = (r, col) => (r === 'p1' ? -1 : 1) * xs[col];
   for (const r of ['p1', 'p2']) for (const col of ['out', 'in']) {
-    Z[key(r, 0, col)] = c.zone({ x: X(r, col), y: y + 1, z: zRow(0), w: tw - 0.3, h: 2, d: td + 1.0, need: 'any' });
+    Z[key(r, 0, col)] = c.zone({ x: X(r, col), y: y + 1, z: zNat(0), w: tw - 0.3, h: 2, d: td + 1.0, need: 'any' });
+    if (rest) Z[key(r, 'R', col)] = c.zone({ x: X(r, col), y: y + 1, z: rest.pad, w: tw - 0.3, h: 2, d: 3.4, need: 'any' });
     for (let k = 1; k <= rows; k++) {
       const x = X(r, col), crossed = cross.includes(k);
       const tint = crossed ? 0xff9ad5 : 0xcfe6ff;
@@ -121,14 +125,29 @@ export function mirrorLanes(w, o) {
     for (const t of Object.values(T)) {
       const q = OTHER[t.r];
       const srcCol = t.crossed ? colOther[t.col] : t.col;
-      const on = occ(t.r, t.k, t.col) || occ(q, t.k - 1, srcCol) || occ(q, t.k, t.col);
+      const srcRow = rest && t.k === restAfter + 1 ? 'R' : t.k - 1;
+      const on = occ(t.r, t.k, t.col) || occ(q, srcRow, srcCol) || occ(q, t.k, t.col);
       t.t = on ? hold : Math.max(0, t.t - dt);
       t.rs.set(t.t > 0);
     }
   });
-  // bots: the column a bot stands on at row k-1 and then steps to at row k (both bots stay on "out", crossing at funhouse rows)
-  const colAt = (k) => { let col = 'out'; for (let j = 1; j <= k; j++) if (cross.includes(j)) col = colOther[col]; return col; };
-  return { T, Z, zRow, X, colAt, up: (r, k, col) => T[key(r, k, col)].rs.k > 0.97, key, rows, pitch };
+  // bots: both stay on the outer column (stepping across on the pink rows), reset on the rest deck
+  const colAt = (k) => { let col = 'out'; for (let j = 1; j <= k; j++) { if (rest && j === restAfter + 1) col = 'out'; if (cross.includes(j)) col = colOther[col]; } return col; };
+  const up = (r, k, col) => T[key(r, k, col)].rs.k > 0.97;
+  const botSteps = (me, near) => {
+    const seq = [{ k: 0, z: zNat(0) }];
+    for (let k = 1; k <= rows; k++) { seq.push({ k, z: zRow(k) }); if (rest && k === restAfter) seq.push({ k: 'R', z: rest.pad }); }
+    const out = [];
+    seq.forEach((e, i) => {
+      const prevTile = e.k === 'R' ? restAfter : e.k;
+      const col = e.k === 'R' || e.k === 0 ? 'out' : colAt(e.k), x = X(me, col), nx = seq[i + 1];
+      const ready = !nx ? () => true : nx.k === 'R' ? () => true : () => up(me, nx.k, colAt(nx.k));
+      void prevTile;
+      out.push({ x, z: e.z, r: 0.7, until: () => near(x, e.z, 0.9) && ready() });
+    });
+    return out;
+  };
+  return { T, Z, zRow, X, colAt, up, key, rows, pitch, rest, botSteps };
 }
 
 /**
@@ -179,13 +198,13 @@ export function galaBots(w, byRole) {
     if (rewind) {
       rewind = false;
       let best = -1, bd = 1e9;
-      for (let j = 0; j <= Math.min(i, steps.length - 1); j++) {
+      for (let j = 0; j < steps.length; j++) {
         const s = steps[j];
         if (s.x === undefined || s.follow) continue;
-        const d = Math.hypot(val(s.x, p.x) - p.x, val(s.z, p.z) - p.z) - j * 0.01;
-        if (d < bd) { bd = d; best = j; }
+        const d = Math.hypot(val(s.x, p.x) - p.x, val(s.z, p.z) - p.z);
+        if (d < bd - 0.5) { bd = d; best = j; }
       }
-      if (best >= 0 && best < i) i = best;
+      if (best >= 0 && bd < 10) i = best;
     }
     for (let guard = 0; guard < 40 && i < steps.length; guard++) {
       const s = steps[i];

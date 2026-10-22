@@ -58,8 +58,8 @@ export default {
     // ============================================================ 1. the mirror hall ============================
     const Hz0 = -30, Hz1 = -42;
     deck(w, { x: 0, y: 0, z: (Hz0 + Hz1) / 2, w: 22, d: 12, path: true });            // entry deck z -30 … -42
-    const L = mirrorLanes(w, { y: 0, z0: -45.6, pitch: 5.4, rows: 6, cross: [3, 5], hold: 2.5 });
-    const zLast = L.zRow(6);                                                          // -72.6
+    const L = mirrorLanes(w, { y: 0, z0: -45.6, pitch: 5.4, rows: 8, cross: [3, 6, 7], hold: 2.5, restAfter: 4, restLen: 8 });
+    const zLast = L.zRow(8);
     const mirrorOn = () => gp().z < -29 && gp().z > zLast - 7;
     mirrorGhost(w, mirrorOn);
     // glass divider between the lanes (the reflection happens in it)
@@ -67,9 +67,8 @@ export default {
     sign(w, 'THE MIRROR. YOUR PARTNER IS BACKWARDS. THE FLOOR IS NOT.', 0, 7.2, -37, { w: 10, h: 1.6, size: 32 });
     sign(w, 'STAND ON A TILE · THE SAME TILE IN THE OTHER LANE RISES', 0, 5.4, -43.6, { w: 10, h: 1.2, size: 30, border: '#' + COL.p1.toString(16).padStart(6, '0') });
     sign(w, 'PINK ROWS ARE THE FUNHOUSE: THE OTHER COLUMN RISES', 0, 5.4, L.zRow(3) + 2.4, { w: 10, h: 1.2, size: 30, border: '#ff6ec7' });
-    for (let k = 1; k <= 6; k++) if (k !== 3) { /* row numbers on the divider are enough */ }
-    dressing(-30, -80); gallery(-32, -78, 0, 12, 5);
-    chandelier(w, 0, 13, -44); chandelier(w, 0, 13, -62);
+        dressing(-30, -92); gallery(-32, -90, 0, 14, 5);
+    chandelier(w, 0, 13, -44); chandelier(w, 0, 13, -62); chandelier(w, 0, 13, -80);
     w.checkpoint({ x: -8.6, y: 0, z: -36.5, real: true });                              // beside the lanes, on the deck
     stage(w, 'mirror', { x: 0, y: 1, z: -38, w: 22, h: 4, d: 5 }, () => { tell('p1', 'coop.l15.mirror', { priority: 2 }); });
     stage(w, 'funhouse', { x: 0, y: 1, z: L.zRow(2) - 1, w: 22, h: 6, d: 4 }, () => tell('all', 'coop.l15.funhouse'));
@@ -78,23 +77,18 @@ export default {
     deck(w, { x: 0, y: 0, z: toastZ0 - 16, w: 22, d: 32, path: true });               // z -76.5 … -108.5
     w.checkpoint({ x: 0, y: 0, z: toastZ0 - 3, real: true });
     stage(w, 'mirrordone', { x: 0, y: 1, z: toastZ0 - 2, w: 22, h: 4, d: 3 }, () => tell('all', 'coop.l15.mirrordone'));
-    // bots: lockstep up the lanes (both stay on the outer column, and cross over on the pink rows)
+    deck(w, { x: 0, y: 0, z: L.rest.zc, w: 22, d: L.rest.d, path: true });
+    w.checkpoint({ x: 0, y: 0, z: L.rest.zc, real: true });
+    sign(w, 'HALFWAY. THE MIRRORS ARE STILL WATCHING.', 0, 5.4, L.rest.near - 1.2, { w: 9, h: 1.2, size: 32 });
     {
-      const col = (k) => L.colAt(k);
-      const steps = [];
-      for (let k = 0; k < 6; k++) {
-        const ck = col(k), nk = col(k + 1), x = L.X(me, ck), z = L.zRow(k);
-        steps.push({ x, z, r: 0.7, until: () => near(x, z, 0.9) && L.up(me, k + 1, nk) });
-      }
-      steps.push({ x: L.X(me, col(6)), z: L.zRow(6), r: 0.7 });
+      const steps = L.botSteps(me, near);
       steps.push({ x: 0, z: toastZ0 - 6, r: 2 });
-      B.p1.push(...steps.map((s) => ({ ...s }))); B.p2.push(...steps.map((s) => ({ ...s })));
-      // the steps above were built for `me`; the other role's bot plan is never used on this machine
+      B.p1.push(...steps.map((o) => ({ ...o }))); B.p2.push(...steps.map((o) => ({ ...o })));
     }
 
     // ============================================================ 2. the toast ==================================
     const tz = toastZ0 - 8;                                                           // pedestals at z -84.5
-    sign(w, 'THE TOAST · RAISE BOTH GLASSES · WITHIN HALF A SECOND', 0, 5.8, tz - 6, { w: 12, h: 1.4, size: 32 });
+    sign(w, 'THE TOAST · THREE CLINKS · BOTH GLASSES WITHIN HALF A SECOND', 0, 5.8, tz - 6, { w: 12, h: 1.4, size: 32 });
     const lifted = { p1: -99, p2: -99 };
     const glasses = {};
     for (const [role, px] of [['p1', -6], ['p2', 6]]) {
@@ -111,8 +105,18 @@ export default {
     const press = () => { if (w.t - myLast < 2.2 || c.get('toast', false)) return; myLast = w.t; c.emit('lift', { r: me }); };
     c.onEvent('lift', (a) => {
       lifted[a.r] = w.t; glasses[a.r].k = 1.4;
-      if (c.isHost && !c.get('toast', false) && Math.abs(lifted.p1 - lifted.p2) <= 0.5) c.set('toast', true);
-      w.after(0.8, () => { if (!c.get('toast', false) && w.t - lastLate > 6 && a.r === me) { lastLate = w.t; tell('all', 'coop.l15.toastlate'); } });
+      const n0 = c.get('toastN', 0);
+      if (c.isHost && !c.get('toast', false) && Math.abs(lifted.p1 - lifted.p2) <= 0.5) {
+        c.set('toastN', n0 + 1);
+        if (n0 + 1 >= 3) c.set('toast', true);
+      }
+      w.after(0.8, () => { if (!c.get('toast', false) && c.get('toastN', 0) === n0 && w.t - lastLate > 6 && a.r === me) { lastLate = w.t; tell('all', 'coop.l15.toastlate'); } });
+    });
+    c.on('toastN', (n) => {
+      lifted.p1 = lifted.p2 = -99;
+      glasses.p1.k = glasses.p2.k = 1.4;
+      w.burst(new THREE.Vector3(0, 2.4, tz), 0xffe9a8, 14 + n * 6);
+      if (n < 3) tell('all', 'coop.l15.toastround');
     });
     const gT = gate(w, { x: 0, z: tz - 15, w: 22, h: 5, color: 0x9ab8d8, tex: 'metal', glow: 0xbfe6ff });
     c.on('toast', (v) => { gT.set(!!v); if (v) { tell('all', 'coop.l15.toastok'); w.burst(new THREE.Vector3(0, 2.2, tz), 0xffe9a8, 40); } });
@@ -145,9 +149,9 @@ export default {
     const rowsZ = [];                                                                 // centre z of the 8 tiles; a rest deck after the 4th
     let cz = dz0;
     const restZ = {};
-    for (let r = 1; r <= 8; r++) {
+    for (let r = 1; r <= 10; r++) {
       cz -= 2.0 + 1.8; rowsZ[r] = cz; cz -= 1.8;
-      if (r === 4) { cz -= 2.0; restZ.z0 = cz; cz -= 6; restZ.z1 = cz; restZ.c = (restZ.z0 + restZ.z1) / 2; }
+      if (r === 5) { cz -= 2.0; restZ.z0 = cz; cz -= 6; restZ.z1 = cz; restZ.c = (restZ.z0 + restZ.z1) / 2; }
     }
     const endDanceZ = cz;
     const laneX = (role) => (role === 'p1' ? -3.5 : 3.5);
@@ -157,7 +161,7 @@ export default {
     };
     const leftOf = (r, role) => ON * T - elapsedOf(r, role);
     const dance = [];
-    for (const role of ['p1', 'p2']) for (let r = 1; r <= 8; r++) {
+    for (const role of ['p1', 'p2']) for (let r = 1; r <= 10; r++) {
       const p = w.plat({ x: laneX(role), y: 0, z: rowsZ[r], w: 5.4, d: 3.6, h: 0.6, tex: 'metal', color: 0xe6d6ff, trim: COL[role], moving: true });
       dance.push({ p, role, r });
     }
@@ -182,13 +186,13 @@ export default {
     dressing(-112, endDanceZ - 12); gallery(dz0 - 4, endDanceZ - 10, 0, 14, 11);
     {
       const x = laneX(me), s = [];
-      const seq = [{ kind: 'deck', z: dz0 - 0.8 }];
-      for (let r = 1; r <= 8; r++) { seq.push({ kind: 'tile', r, z: rowsZ[r] }); if (r === 4) seq.push({ kind: 'deck', z: restZ.c }); }
+      const seq = [{ kind: 'deck', z: dz0 + 0.7 }];
+      for (let r = 1; r <= 10; r++) { seq.push({ kind: 'tile', r, z: rowsZ[r] }); if (r === 5) seq.push({ kind: 'deck', z: restZ.c }); }
       seq.push({ kind: 'deck', z: endDanceZ - 4 });
       for (let i = 0; i < seq.length - 1; i++) {
         const cur = seq[i], nxt = seq[i + 1];
         const ready = nxt.kind === 'tile' ? () => { const e = elapsedOf(nxt.r, me); return e < ON * T && e <= 0.98; } : () => leftOf(cur.r, me) > 0.9;
-        s.push({ x, z: cur.z, r: 0.7, until: () => near(x, cur.z, 1.0) && (cur.kind === 'deck' || leftOf(cur.r, me) > 0.7) && ready() });
+        s.push({ x, z: cur.z, r: 0.7, until: () => near(x, cur.z, 1.0) && ready() });
       }
       s.push({ x: 0, z: endDanceZ - 6, r: 2 });
       B.p1.push(...s.map((o) => ({ ...o }))); B.p2.push(...s.map((o) => ({ ...o })));
@@ -202,7 +206,7 @@ export default {
     {
       const lec = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.5, 0.9), new THREE.MeshStandardMaterial({ color: 0x4a3326, roughness: 0.6 })); lec.position.set(0, 0.75, lecternZ - 3); w.add(lec);
     }
-    const sRoute = { p1: [0, 2, 1, 0], p2: [1, 0, 2, 2] };                           // columns L=0 M=1 R=2 for each walker
+    const sRoute = { p1: [0, 2, 1, 0, 2], p2: [1, 0, 2, 2, 0] };                           // columns L=0 M=1 R=2 for each walker
     const colName = ['LEFT', 'MIDDLE', 'RIGHT'];
     const sentence = (route) => route.map((k) => colName[k]).join(' · ');
     sign(w, 'THE SPEECH · YOU HEAR THE OTHER ONE\'S ROUTE', 0, 6.4, lecternZ + 1.5, { w: 11, h: 1.5, size: 32 });
@@ -214,12 +218,12 @@ export default {
     const spZ1 = sZ0 - 14;                                                            // podium far edge
     const colX = (role, k) => (role === 'p1' ? -5 : 5) + (k - 1) * 2.0;
     const spRowZ = (j) => spZ1 - 2.4 - 1.5 - j * 5.4;                                 // j = 0..3
-    for (const role of ['p1', 'p2']) for (let j = 0; j < 4; j++) for (let k = 0; k < 3; k++) {
+    for (const role of ['p1', 'p2']) for (let j = 0; j < 5; j++) for (let k = 0; k < 3; k++) {
       const pl = w.plat({ x: colX(role, k), y: 0, z: spRowZ(j), w: 1.9, d: 3.0, h: 0.6, tex: 'metal', color: 0xd7ecff, trim: COL[role], path: false });
       if (sRoute[role][j] !== k) w.crumble(pl, { delay: 0.45, gone: 4 });
     }
-    w.plat({ x: 0, y: 9, z: (spZ1 + spRowZ(3) - 2) / 2, w: 0.3, d: Math.abs(spZ1 - spRowZ(3)) + 2, h: 9, tex: 'metal', color: 0xcfe6ff, trim: null, edge: null });
-    const spEnd = spRowZ(3) - 1.5 - 2.4;
+    w.plat({ x: 0, y: 9, z: (spZ1 + spRowZ(4) - 2) / 2, w: 0.3, d: Math.abs(spZ1 - spRowZ(4)) + 2, h: 9, tex: 'metal', color: 0xcfe6ff, trim: null, edge: null });
+    const spEnd = spRowZ(4) - 1.5 - 2.4;
     deck(w, { x: 0, y: 0, z: spEnd - 6, w: 22, d: 12, path: true });                   // exit deck
     w.checkpoint({ x: 0, y: 0, z: spEnd - 3, real: true });
     sign(w, `${N.p1}: THIS LANE`, -5, 3.6, spZ1 - 1.2, { w: 4.6, h: 0.9, size: 34, border: '#' + COL.p1.toString(16) });
@@ -229,7 +233,7 @@ export default {
     {
       const s = [];
       s.push({ x: me === 'p1' ? -5 : 5, z: lecternZ + 4, r: 1.5 });
-      for (let j = 0; j < 4; j++) { const x = colX(me, sRoute[me][j]), z = spRowZ(j); s.push({ x, z, r: 0.5 }); }
+      for (let j = 0; j < 5; j++) { const x = colX(me, sRoute[me][j]), z = spRowZ(j); s.push({ x, z, r: 0.5 }); }
       s.push({ x: 0, z: spEnd - 6, r: 2 });
       B.p1.push(...s.map((o) => ({ ...o }))); B.p2.push(...s.map((o) => ({ ...o })));
     }
@@ -238,8 +242,9 @@ export default {
     const K = carryKit(w);
     const D = [{ n: spEnd, f: spEnd - 12 }];                                          // deck 0 (the speech exit deck) – z near/far edges
     const addDeck = (gap, d, wd = 9) => { const n = D[D.length - 1].f - gap, f = n - d; D.push({ n, f }); deck(w, { x: 0, y: 0, z: (n + f) / 2, w: wd, d, path: true }); return D[D.length - 1]; };
-    addDeck(2.8, 8); addDeck(2.8, 8);
+    addDeck(2.8, 8); addDeck(2.8, 8); addDeck(2.8, 8);
     const hubB = addDeck(2.8, 18, 22);
+    const NG = D.length - 1;                                                          // 4 gaps
     K.item('tray', 'tray', 'bar', { name: 'Champagne tray' });
     K.station('bar', { x: 0, y: 0, z: D[0].n - 4.5, label: 'Champagne tray', approach: [0, D[0].n - 6.2], accept: ['tray'], color: 0xffc83d });
     const tableZ = hubB.f + 3;
@@ -249,12 +254,13 @@ export default {
     sign(w, 'THE TRAY CANNOT JUMP. YOU CAN. HAND IT ACROSS.', 0, 5.4, D[0].n - 2, { w: 10, h: 1.3, size: 32 });
     sign(w, 'TAKE THE TRAY TO THE ANNIVERSARY TABLE', 0, 5.4, hubB.n - 5, { w: 10, h: 1.2, size: 30 });
     w.checkpoint({ x: 0, y: 0, z: D[0].n - 8, real: true });
+    w.checkpoint({ x: 0, y: 0, z: D[2].n - 4, real: true });
     w.checkpoint({ x: 0, y: 0, z: hubB.n - 3, real: true });
     stage(w, 'hand', { x: 0, y: 1, z: D[0].n - 3, w: 22, h: 4, d: 4 }, () => tell('all', 'coop.l15.hand'));
-    dressing(spEnd - 6, hubB.f - 6); gallery(spEnd - 8, hubB.f, 0, 14, 17);
-    chandelier(w, 0, 13, D[1].n - 4); chandelier(w, 0, 13, hubB.n - 8);
+    dressing(spEnd - 6, hubB.f - 6); gallery(spEnd - 8, hubB.f, 0, 16, 17);
+    chandelier(w, 0, 13, D[1].n - 4); chandelier(w, 0, 13, D[3].n - 4); chandelier(w, 0, 13, hubB.n - 8);
     {
-      const X = me === 'p1' ? -1.5 : 1.5, XP = -X;
+      const X = me === "p1" ? -0.5 : 0.5, XP = -X;
       const edgeF = (i) => D[i].f + 0.45, edgeN = (i) => D[i].n - 0.45;
       const give = (i) => ({ x: X, z: edgeF(i), r: 0.5, face: [() => P.sx, () => P.sz], use: true, until: () => !K.held() });
       const waitAcross = (i) => ({ x: X, z: edgeF(i), r: 0.5, until: () => pnear(XP, edgeN(i + 1), 1.8) });
@@ -263,13 +269,15 @@ export default {
       const walkTo = (i) => ({ x: X, z: edgeF(i), r: 0.5 });
       const take = { x: 0, z: D[0].n - 6.2, r: 0.8, face: [0, D[0].n - 4.5], use: true, until: () => K.held() === 'tray' };
       const put = { x: 0, z: tableZ + 1.8, r: 0.8, face: [0, tableZ], use: true, until: () => !K.held() };
-      if (me === 'p1') {
-        B.p1.push({ x: X, z: D[0].n - 4, r: 1 }, take, walkTo(0), waitAcross(0), give(0), hop(1), walkTo(1), hop(2),
-          recv(2), walkTo(2), waitAcross(2), give(2), hop(3), { x: 0, z: hubB.n - 6, r: 1.5 });
-      } else {
-        B.p2.push({ x: X, z: D[0].n - 4, r: 1 }, { x: X, z: D[0].f + 0.45, r: 0.5, until: () => near(X, D[0].f + 0.45, 1) && P.has && P.sz < D[0].n - 5 }, hop(1),
-          recv(1), walkTo(1), waitAcross(1), give(1), hop(2), walkTo(2), hop(3), recv(3), { x: 0, z: tableZ + 1.8, r: 1 }, put);
+      const carrierOf = (g) => (g % 2 === 0 ? 'p1' : 'p2');
+      const out = [{ x: X, z: D[0].n - 4, r: 1 }];
+      if (me === 'p1') out.push(take);
+      for (let g = 0; g < NG; g++) {
+        if (carrierOf(g) === me) { out.push(walkTo(g), waitAcross(g), give(g), hop(g + 1)); }
+        else { out.push(walkTo(g), hop(g + 1), recv(g + 1)); }
       }
+      if (carrierOf(NG) === me) out.push({ x: 0, z: tableZ + 1.8, r: 1 }, put);       // whoever holds the tray at the hub sets it down
+      B[me].push(...out);
       both({ x: 0, z: hubB.f - 6, r: 2, until: () => gH.passable && near(0, hubB.f - 6, 3) });
     }
     const hubZ = hubB.f;
@@ -306,37 +314,37 @@ export default {
 
     // ============================================================ 5c. the callback: musical chairs ==============
     const cZ0 = eB - 12;                                                              // dock B ends here
-    deck(w, { x: 0, y: 0, z: cZ0 - 16, w: 22, d: 32, path: true });                  // z cZ0 … cZ0-32
-    const padZ1 = cZ0 - 6, padZ2 = cZ0 - 20;
-    // set 1: your colour, fixed
-    const p1a = chairPlates(w, { pads: [{ x: -5, z: padZ1 }, { x: 5, z: padZ1 }], beat: 1e9, hold: 7 });        // pad 0: p1, pad 1: p2 (never swaps)
-    const g1 = gate(w, { x: 0, z: padZ1 - 6, w: 22, h: 5 });
-    // set 2: the colours swap every 7 s
-    const p2a = chairPlates(w, { pads: [{ x: -5, z: padZ2 }, { x: 5, z: padZ2 }], beat: 7, hold: 7 });
-    const g2 = gate(w, { x: 0, z: padZ2 - 6, w: 22, h: 5 });
-    const open = { a: 0, b: 0 };
-    w.updaters.push((dt) => {
-      open.a = p1a.pressed ? 7 : Math.max(0, open.a - dt); g1.set(open.a > 0);
-      open.b = p2a.pressed ? 7 : Math.max(0, open.b - dt); g2.set(open.b > 0);
-    });
-    sign(w, 'STAND ON YOUR COLOUR · TOGETHER · THEN RUN', 0, 5.8, padZ1 + 3.5, { w: 11, h: 1.3, size: 32 });
-    sign(w, 'THE COLOURS HAVE DECIDED TO DANCE. SO WILL YOU.', 0, 5.8, padZ2 + 3.5, { w: 11, h: 1.3, size: 32 });
+    deck(w, { x: 0, y: 0, z: cZ0 - 25, w: 22, d: 50, path: true });                  // z cZ0 … cZ0-50
+    const chairSets = [
+      { z: cZ0 - 6, beat: 1e9, hold: 7, px: 5 },          // your colour, fixed
+      { z: cZ0 - 20, beat: 7, hold: 7, px: 5 },           // the colours swap every 7 s
+      { z: cZ0 - 34, beat: 5, hold: 6, px: 7 },           // faster, and the pads are wider apart
+    ];
+    for (const cs of chairSets) {
+      cs.pl = chairPlates(w, { pads: [{ x: -cs.px, z: cs.z }, { x: cs.px, z: cs.z }], beat: cs.beat, hold: cs.hold });
+      cs.gate = gate(w, { x: 0, z: cs.z - 6, w: 22, h: 5 });
+      cs.open = 0;
+      w.updaters.push((dt) => { cs.open = cs.pl.pressed ? cs.hold : Math.max(0, cs.open - dt); cs.gate.set(cs.open > 0); });
+    }
+    const padZ2 = chairSets[2].z;
+    sign(w, 'STAND ON YOUR COLOUR · TOGETHER · THEN RUN', 0, 5.8, chairSets[0].z + 3.5, { w: 11, h: 1.3, size: 32 });
+    sign(w, 'THE COLOURS HAVE DECIDED TO DANCE. SO WILL YOU.', 0, 5.8, chairSets[1].z + 3.5, { w: 11, h: 1.3, size: 32 });
+    sign(w, 'FASTER. THE PADS ARE FURTHER APART. SO, OBVIOUSLY, ARE YOU.', 0, 5.8, chairSets[2].z + 3.5, { w: 11, h: 1.3, size: 30 });
     w.checkpoint({ x: 0, y: 0, z: cZ0 - 3, real: true });
-    w.checkpoint({ x: 0, y: 0, z: padZ1 - 10, real: true });
-    stage(w, 'chairs', { x: 0, y: 1, z: padZ1 + 3, w: 22, h: 4, d: 4 }, () => tell('all', 'coop.l15.chairs'));
-    stage(w, 'chairs2', { x: 0, y: 1, z: padZ2 + 3, w: 22, h: 4, d: 4 }, () => tell('all', 'coop.l15.chairs2'));
-    chandelier(w, 0, 13, padZ1); chandelier(w, 0, 13, padZ2);
-    dressing(eB - 12, cZ0 - 36); gallery(cZ0 - 2, cZ0 - 34, 0, 12, 23);
+    w.checkpoint({ x: 0, y: 0, z: chairSets[0].z - 10, real: true });
+    w.checkpoint({ x: 0, y: 0, z: chairSets[1].z - 10, real: true });
+    stage(w, 'chairs', { x: 0, y: 1, z: chairSets[0].z + 3, w: 22, h: 4, d: 4 }, () => tell('all', 'coop.l15.chairs'));
+    stage(w, 'chairs2', { x: 0, y: 1, z: chairSets[1].z + 3, w: 22, h: 4, d: 4 }, () => tell('all', 'coop.l15.chairs2'));
+    stage(w, 'chairs3', { x: 0, y: 1, z: chairSets[2].z + 3, w: 22, h: 4, d: 4 }, () => tell('all', 'coop.l15.chairs3'));
+    for (const cs of chairSets) chandelier(w, 0, 13, cs.z);
+    dressing(eB - 12, cZ0 - 54); gallery(cZ0 - 2, cZ0 - 48, 0, 16, 23);
     {
-      const pad1 = (me === 'p1' ? -5 : 5);
-      const myPad = () => (p2a.roleAt(0, p2a.left() < 2 ? w.t + 2.1 : w.t) === me ? 0 : 1);
-      const s = [
-        { x: pad1, z: padZ1, r: 0.9, until: () => p1a.pressed },
-        { x: 0, z: padZ1 - 12, r: 1.5, until: () => g1.passable && near(0, padZ1 - 12, 3) },
-        // set 2: wait until there is time to settle, stand on whichever pad is mine now, and stay for the whole beat
-        { x: () => (myPad() === 0 ? -5 : 5), z: padZ2, r: 0.9, until: () => p2a.pressed },
-        { x: 0, z: padZ2 - 12, r: 1.5, until: () => g2.passable && near(0, padZ2 - 12, 3) },
-      ];
+      const s = [];
+      chairSets.forEach((cs, idx) => {
+        const myPad = () => (cs.pl.roleAt(0, cs.pl.left() < 2 ? w.t + 2.1 : w.t) === me ? 0 : 1);
+        s.push({ x: () => (idx === 0 ? (me === 'p1' ? -cs.px : cs.px) : myPad() === 0 ? -cs.px : cs.px), z: cs.z, r: 0.9, until: () => cs.pl.pressed });
+        s.push({ x: 0, z: cs.z - 12, r: 1.5, until: () => cs.gate.passable && near(0, cs.z - 12, 3) });
+      });
       B.p1.push(...s.map((o) => ({ ...o }))); B.p2.push(...s.map((o) => ({ ...o })));
     }
 
@@ -350,19 +358,21 @@ export default {
     dressing(padZ2 - 6, tw0 - 20, { tall: 22 }); gallery(tw0 - 1, tw0 - 15, 0, 10, 29);
     let ty = 0, tzc = tw0 - 16;
     const stairs = (n, o = {}) => {
-      const specs = Array.from({ length: n }, (_, i) => ({ gap: i === 0 && o.first ? o.first : 1.8, d: 3.2, w: o.w ?? 5, dy: 1.2, x: o.zig ? (i % 2 ? 3 : -3) * (o.zig) : undefined }));
+      const specs = Array.from({ length: n }, (_, i) => ({ gap: i === 0 && o.first ? o.first : 1.6, d: 3.2, w: o.w ?? 5, dy: 1.1, x: o.zig ? (i % 2 ? 3 : -3) * (o.zig) : undefined }));
       const ch = chain(w, { x: 0, y: ty, z: tzc }, specs);
       ty = ch.endY; tzc = ch.endZ; return ch;
     };
     const landing = (d = 8) => { const p = deck(w, { x: 0, y: ty, z: tzc - 1.8 - d / 2, w: 12, d, path: true }); w.checkpoint({ x: 0, y: ty, z: tzc - 1.8 - d / 2, real: true }); tzc = tzc - 1.8 - d; return p; };
     // tier 1: plain stairs, two macarons that fall away
-    const t1 = stairs(8, { first: 1.8 });
+    const t1 = stairs(10, { first: 1.6 });
     w.crumble(t1[2], { delay: 1.0, gone: 3 }); w.crumble(t1[5], { delay: 1.0, gone: 3 });
     w.checkpoint({ x: 0, y: t1[3].top, z: t1[3].body.z, real: true });
+    w.checkpoint({ x: 0, y: t1[7].top, z: t1[7].body.z, real: true });
     landing();
     // tier 2: zig-zag
-    const t2 = stairs(8, { w: 4, zig: 0.8 });
-    w.checkpoint({ x: 0, y: t2[3].top, z: t2[3].body.z, real: true });
+    const t2 = stairs(10, { w: 4.4, zig: 0.6 });
+    w.checkpoint({ x: t2[3].body.x, y: t2[3].top, z: t2[3].body.z, real: true });
+    w.checkpoint({ x: t2[7].body.x, y: t2[7].top, z: t2[7].body.z, real: true });
     stage(w, 'towermid', { x: 0, y: ty - 3, z: tzc + 3, w: 22, h: 12, d: 10 }, () => tell('all', 'coop.l15.towermid'));
     landing();
     // tier 3: candle lift, then more stairs, and the weather turns
@@ -378,10 +388,11 @@ export default {
     stage(w, 'storm', { x: 0, y: y3 + 3, z: z3 - 4, w: 22, h: 14, d: 8 }, () => { storm.on = true; tell('all', 'coop.l15.storm'); });
     landing();
     // tier 4: narrow stairs to the ring
-    const t4 = stairs(8, { w: 3.6 });
+    const t4 = stairs(10, { w: 3.6 });
     w.crumble(t4[3], { delay: 1.0, gone: 3 }); w.crumble(t4[6], { delay: 1.0, gone: 3 });
     w.checkpoint({ x: 0, y: t4[2].top, z: t4[2].body.z, real: true });
     w.checkpoint({ x: 0, y: t4[5].top, z: t4[5].body.z, real: true });
+    w.checkpoint({ x: 0, y: t4[8].top, z: t4[8].body.z, real: true });
     const top = deck(w, { x: 0, y: ty + 1.2, z: tzc - 1.8 - 7, w: 14, d: 14, path: true });
     const gy = ty + 1.2, gz = tzc - 1.8 - 7;
     w.goal({ x: 0, y: gy, z: gz });
