@@ -99,8 +99,8 @@ export default {
     const trims = [];
     let warnT = 0;
     const planks = stones(spec([
-      [1.2, 3.6, 3, 0, 0], [1.0, 3.6, 3, 2.4, 0], [1.0, 3.6, 3, 2.4, 1.0], [1.0, 3.6, 3, -2.4, 0], [1.0, 3.6, 3, -2.4, 0], [1.0, 3.6, 3, -2.4, -1.0],
-      [1.0, 3.6, 3, 2.4, 0], [1.0, 3.6, 3, 2.4, 1.0], [1.0, 3.6, 3, 0, 0], [1.0, 3.6, 3, -2.4, 0], [1.0, 3.6, 3, 0, -1.0],
+      [1.2, 3.6, 3.4, 0, 0], [1.0, 3.6, 3.4, 1.6, 0], [1.0, 3.6, 3.4, 1.6, 1.0], [1.0, 3.6, 3.4, -1.6, 0], [1.0, 3.6, 3.4, -1.6, 0], [1.0, 3.6, 3.4, -1.6, -1.0],
+      [1.0, 3.6, 3.4, 1.6, 0], [1.0, 3.6, 3.4, 1.6, 1.0], [1.0, 3.6, 3.4, 0, 0], [1.0, 3.6, 3.4, -1.6, 0], [1.0, 3.6, 3.4, 0, -1.0],
     ]), { cond: closeK, trim: 0x66aaff });
     for (const p of planks) trims.push(p.group.children[1].material);
     w.updaters.push((dt, t) => {
@@ -158,6 +158,7 @@ export default {
       L.plat({ x: side * 10.6, y: H.y, z: f.z, w: 2.6, d: 3.4, h: 1, color: 0xd2bc98, trim: 0xffd24d });
       deck(w, { x: f.x, y: H.y, z: f.z, w: 6, d: 6 });
     }
+    w.campsite = { seq, L, FF };
     const hubPost = L.post('h', 4.5, H.y, H.z0 - 3);
     const orbs = FF.map((f, k) => {
       const grp = new THREE.Group(); grp.position.set(f.x, H.y + 1.7, f.z); w.add(grp);
@@ -304,20 +305,34 @@ export default {
       if (me === from) return [{ x: sx, z: sz, r: 0.3, until: () => near({ x: px, z: pz, y: g.player.y }, 3.5) }, { x: sx, z: sz, r: 0.3, use: true, until: () => holder() === to }];
       return [{ x: sx, z: sz, r: 0.3, until: () => holder() === to }];
     };
+    // stand together at a post and hand the lantern over: the giver lines up in front of the post (so the crosshair is on it), the receiver stands beside
+    const handover = (px, pz, py, from, to) => {
+      const side = px < 0 ? 1 : -1;
+      if (me === from) return [
+        { x: px, z: pz + 4, r: 0.7, until: () => holder() !== from || Math.hypot(g.player.x - px, g.player.z - (pz + 4)) < 0.9 },
+        { x: px, z: pz + 1.4, r: 0.25, until: () => holder() !== from || (near({ x: px, z: pz, y: py }, 3.4) && Math.abs(g.player.x - px) < 0.4) },
+        { x: px, z: pz + 1.4, r: 0.25, use: true, until: () => holder() === to },
+      ];
+      return [{ x: px + side * 1.7, z: pz + 1.4, r: 0.4, until: () => holder() === to }];
+    };
     const seqSteps = () => (me === 'p1'
       ? []
       : []);
     void seqSteps; void me2; void take;
     const zPost = (id, z) => z;
     const stokerSteps = (F, stokerRole) => {
+      const crosserRole = stokerRole === 'p1' ? 'p2' : 'p1';
+      const fix = handover(-F.px, F.S.z0 - 4, F.S.y, stokerRole, crosserRole);        // if the stoker is holding the lantern (after a fall): hand it over first
       if (me === stokerRole) {
         return [
+          ...fix,
           { x: F.px, z: F.S.z0 - 7.6, r: 0.5, until: () => holder() !== stokerRole && F.pad.pressed && F.br.up },   // hands free, then wait on the pad until the bridge is down...
           { x: F.px, z: F.S.z0 - 7.6, r: 0.5, until: () => F.relay.pressed && P.has && P.sz < F.S2.z0 - 1.5 },                   // ...and until the carrier is over and holding the far pad
           { x: 0, z: F.S2.zc, r: 1.5 },
         ];
       }
       return [
+        ...fix,
         { x: 0, z: F.S.z1 + 1.2, r: 0.8, until: () => F.br.up },
         { x: 4.5, z: F.S2.z0 - 3, r: 0.6, until: () => P.has && P.sz < F.S2.z0 - 5 && Math.abs(P.sy - F.S2.y) < 1 },     // stand on the far pad until the stoker is across
         { x: 0, z: F.S2.zc, r: 1.5 },
@@ -326,7 +341,7 @@ export default {
     const ffSteps = () => {
       if (me === 'p1') {
         const out = [];
-        for (const k of seq) out.push({ x: FF[k].x, z: FF[k].z, r: 0.9 }, { x: 0, z: H.zc, r: 1.5 });
+        for (const k of seq) { const sx = FF[k].x < 0 ? -10.6 : 10.6; out.push({ x: sx, z: FF[k].z, r: 0.7 }, { x: FF[k].x, z: FF[k].z, r: 0.9 }, { x: sx, z: FF[k].z, r: 0.7 }, { x: 0, z: H.zc, r: 1.5 }); }
         out.push({ x: 0, z: H.z1 + 1.8, r: 1, until: () => gFF.passable }, { x: 0, z: H.z1 - 3, r: 1.5 });
         return out;
       }
@@ -354,18 +369,12 @@ export default {
     sequence.push(me === 'p1' ? [{ x: -0.5, z: -10.2, r: 0.3, use: true, until: () => holder() === 'p1' }] : [{ x: 0.5, z: -10.2, r: 0.4, until: () => holder() === 'p1' }]);
     // 2. trail to post 1, hand to p2 there
     sequence.push([{ follow: true, until: () => g.player.z < B1.z0 - 1 }]);
-    sequence.push([{ x: me === 'p1' ? -5.0 : -4.0, z: B1.zc + 0.9, r: 0.3, until: () => near({ x: -4.5, z: B1.zc - 0.5, y: B1.y }, 3.2) && Math.abs(g.player.z - (B1.zc + 0.9)) < 0.6 }]);
-    sequence.push(me === 'p1' ? [{ x: -5.0, z: B1.zc + 0.9, r: 0.3, use: true, until: () => holder() === 'p2' }] : [{ x: -4.0, z: B1.zc + 0.9, r: 0.3, until: () => holder() === 'p2' }]);
+    sequence.push(handover(-4.5, B1.zc - 0.5, B1.y, 'p1', 'p2'));
     // 3. teal stones + the close bridge up to the first fire
     sequence.push([{ follow: true, until: () => g.player.z < F1.S.z0 - 3 }]);
     sequence.push(stokerSteps(F1, 'p1'));
     // 4. post on S2: p2 hands it to p1
-    {
-      const px = -5.5, pz = F1.S2.z0 - 8;
-      sequence.push(me === 'p2'
-        ? [{ x: px + 0.5, z: pz + 1.4, r: 0.3, until: () => near({ x: px, z: pz, y: F1.S2.y }, 3.2) }, { x: px + 0.5, z: pz + 1.4, r: 0.3, use: true, until: () => holder() === 'p1' }]
-        : [{ x: px - 0.5, z: pz + 1.4, r: 0.3, until: () => holder() === 'p1' }]);
-    }
+    sequence.push(handover(-5.5, F1.S2.z0 - 8, F1.S2.y, 'p2', 'p1'));
     sequence.push([{ follow: true, until: () => g.player.z < F2.S.z0 - 3 }]);
     sequence.push(stokerSteps(F2, 'p2'));
     // 5. fireflies
@@ -373,19 +382,9 @@ export default {
     sequence.push(ffSteps());
     // 6. relay: M0 nothing, leg A (p1 holds) -> post m1: p1 gives to p2 -> leg B -> post m2: p2 gives to p1 -> leg C -> toss
     sequence.push([{ follow: true, until: () => g.player.z < M1.z0 - 1 }]);
-    {
-      const px = -4.5, pz = M1.zc;
-      sequence.push(me === 'p1'
-        ? [{ x: px - 0.5, z: pz + 1.4, r: 0.3, until: () => near({ x: px, z: pz, y: M1.y }, 3.2) && Math.abs(g.player.z - (pz + 1.4)) < 0.6 }, { x: px - 0.5, z: pz + 1.4, r: 0.3, use: true, until: () => holder() === 'p2' }]
-        : [{ x: px + 0.5, z: pz + 1.4, r: 0.3, until: () => holder() === 'p2' }]);
-    }
+    sequence.push(handover(-4.5, M1.zc, M1.y, 'p1', 'p2'));
     sequence.push([{ follow: true, until: () => g.player.z < M2.z0 - 1 }]);
-    {
-      const px = 4.5, pz = M2.zc;
-      sequence.push(me === 'p2'
-        ? [{ x: px + 0.5, z: pz + 1.4, r: 0.3, until: () => near({ x: px, z: pz, y: M2.y }, 3.2) && Math.abs(g.player.z - (pz + 1.4)) < 0.6 }, { x: px + 0.5, z: pz + 1.4, r: 0.3, use: true, until: () => holder() === 'p1' }]
-        : [{ x: px - 0.5, z: pz + 1.4, r: 0.3, until: () => holder() === 'p1' }]);
-    }
+    sequence.push(handover(4.5, M2.zc, M2.y, 'p2', 'p1'));
     sequence.push([{ follow: true, until: () => g.player.z < M3.zc - 1 && g.player.z > M3.z1 }]);
     sequence.push(me === 'p1'
       ? [{ x: -0.6, z: padZ, r: 0.4, until: () => tossZ.active }, { x: -0.6, z: padZ, r: 0.4, use: true, until: () => holder() === 'post:far' }]
@@ -402,13 +401,31 @@ export default {
     botSteps(w, { p1: me === 'p1' ? flat : [], p2: me === 'p2' ? flat : [] });
     // leash: whoever is ahead on a plain walk waits for the other (keeps the bots inside the lantern's circle and inside 6 m)
     const basePlan = w.botPlan;
+    let pp = null;
+    const idxOf = (x, yy, z) => {
+      pp = pp || w.plats.filter((q) => q.o.path === true);
+      let best = 0, bd = 1e9;
+      pp.forEach((q, i) => {
+        const b = q.body, bx = q.base.x, bz = q.base.z, top = q.base.y + b.hy;
+        const d = Math.hypot(Math.max(0, Math.abs(x - bx) - b.hx), Math.max(0, Math.abs(z - bz) - b.hz)) + Math.abs(yy - top) * 1.5;
+        if (d < bd) { bd = d; best = i; }
+      });
+      return best;
+    };
     w.botPlan = (gg) => {
       const plan = basePlan(gg);
       if (plan || !P.has) return plan;
       const p = gg.player;
       const d = Math.hypot(P.sx - p.x, P.sz - p.z, (P.sy - p.y) * 0.6);
-      const prog = (x, yy, z) => -z + 40 * yy;
-      if (d > 4.2 && prog(p.x, p.y, p.z) > prog(P.sx, P.sy, P.sz)) return { x: p.x, z: p.z, wait: true };
+      if (L.mode === 'one' && d > 9 && L.holder() !== 'post:far') {          // somebody fell and respawned: the one with the light goes back, the other stays on solid ground
+        const hh = L.holder();
+        if (hh === me && idxOf(P.sx, P.sy, P.sz) < idxOf(p.x, p.y, p.z)) return { x: P.sx, z: P.sz };
+        if (hh !== me) return { x: p.x, z: p.z, wait: true };
+      }
+      if (d > 4.2) {
+        const a = idxOf(p.x, p.y, p.z), b = idxOf(P.sx, P.sy, P.sz);
+        if (a > b || (a === b && p.z < P.sz)) return { x: p.x, z: p.z, wait: true };
+      }
       return null;
     };
   },

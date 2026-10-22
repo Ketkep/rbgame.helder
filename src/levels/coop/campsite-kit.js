@@ -160,7 +160,7 @@ export function makeLight(w, { posts = {} } = {}) {
     let cool = 0;
     w.updaters.push((dt) => { cool = Math.max(0, cool - dt); });
     w.interactable({
-      x, y: y + 1.5, z, w: 1.6, h: 3.2, d: 1.6, range: 4,
+      x, y: y + 1.5, z, w: 2.8, h: 3.2, d: 1.6, range: 4,
       enabled: () => !!act() && L.mode === 'one',
       label: () => { const a = act(); return a ? `${a.text}${label ? ' · ' + label : ''}` : ''; },
       onUse: () => {
