@@ -326,8 +326,8 @@ export default {
     block(w, R, items, { x: -8.1, z: -436, width: 9.6, depth: 1.2, label: 'BRIDGE OUT', sign: 'BRIDGE OUT' });
     block(w, R, items, { x: 0, z: -508, width: 6.4, depth: 32, h: 3.0, color: 0x6a7488, flash: false, label: '' });
     block(w, R, items, { x: 8.1, z: -498, width: 9.6, depth: 1.2, label: 'CLOSED', sign: 'ROAD CLOSED' });
-    sign(w, '← LAKE VIEW  (BRIDGE WORKS)        TOWN  →', 0, 7.2, -412, { w: 16, h: 2.2, size: 46, border: '#9fe8ff' });
-    sign(w, '← SERENITY FALLS        ROAD CLOSED  →', 0, 7.2, -480, { w: 16, h: 2.2, size: 48, border: '#ff4d5e' });
+    sign(w, '← LAKE VIEW  (BRIDGE WORKS)        TOWN  →', 0, 9.6, -412, { w: 16, h: 2.2, size: 46, border: '#9fe8ff' });
+    sign(w, '← SERENITY FALLS        ROAD CLOSED  →', 0, 9.6, -480, { w: 16, h: 2.2, size: 48, border: '#ff4d5e' });
     at('fork1', -392, () => { once('coop.l12.fork1', 'all'); });
     at('fork1b', -412, () => { tell(other(R.driver), 'coop.l12.fork1.nav'); });
     at('fork1done', -468, () => { tell('all', 'coop.l12.fork1done'); });
