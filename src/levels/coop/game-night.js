@@ -55,9 +55,9 @@ export default {
     for (const lx of [-12, 12]) { lantern(w, lx, 0, 2); lantern(w, lx, 0, -14); lantern(w, lx, 0, -30); }
     bigDie(w, -17, 3.2, -8, 3.2); bigDie(w, 17, 3.2, -20, 2.6, 0xe9d9c4); bigDie(w, -16, 2.4, -26, 1.8, 0xd8c8b0);
     pawn(w, -12, 0, -9, 0xff9a3d, 1.3); pawn(w, 12, 0, -9, 0x39d7c9, 1.3);
-    sign(w, 'THE ROLLER SEES THE TRAPS AND THE DIE.', 0, 6.4, -24, { w: 13, h: 1.3, size: 40 });
-    sign(w, 'THE MOVER SEES THE CHANCE CARD. TALK.', 0, 4.7, -24, { w: 13, h: 1.3, size: 40, border: '#39d7c9' });
-    sign(w, 'TARGET = START + ROLL + CARD · STAND ON IT ONE SECOND', 0, 3.0, -28.5, { w: 14, h: 1.2, size: 34 });
+    sign(w, 'THE ROLLER SEES\nTHE TRAPS AND THE DIE.', -8, 4.6, -24, { w: 9, h: 2.0, size: 40 });
+    sign(w, 'THE MOVER SEES\nTHE CHANCE CARD. TALK.', 8, 4.6, -24, { w: 9, h: 2.0, size: 40, border: '#39d7c9' });
+    sign(w, 'TARGET = START + ROLL + CARD · STAND ON IT ONE SECOND', 0, 2.6, -28.5, { w: 14, h: 1.2, size: 34 });
     cp(0, 0, -31);
     stage(w, 'welcome', { x: 0, y: 1, z: 2, w: 30, h: 4, d: 8 }, () => { tell('p1', 'coop.l11.intro.p1', { priority: 2 }); tell('p2', 'coop.l11.intro.p2', { priority: 2 }); });
     stage(w, 'rules', { x: 0, y: 1, z: -22, w: 28, h: 4, d: 6 }, () => tell('all', 'coop.l11.rules'));
