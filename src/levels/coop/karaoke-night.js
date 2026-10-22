@@ -80,12 +80,12 @@ export default {
     stage(w, 'chord', { x: 0, y: 1, z: -92, w: 30, h: 4, d: 3 }, () => tell('all', 'coop.l13.chord'));
 
     // ================================================================== 3. the lyric sheet ================================
-    const L = { catX: 12, wallX: 6.2, rows: 4 };
-    const seq = Array.from({ length: 8 }, () => ri(3));                                // the right note of every row
+    const L = { catX: 12, wallX: 6.2, rows: 6 };
+    const seq = Array.from({ length: 12 }, () => ri(3));                               // the right note of every row
     const slot = [-3.2, 0, 3.2];
     const rows = [];
-    const rowZ = (k) => (k < 4 ? -113.5 - 5 * k : -145.5 - 5 * (k - 4));
-    for (let k = 0; k < 8; k++) {
+    const rowZ = (k) => (k < 6 ? -113.5 - 5 * k : -155.5 - 5 * (k - 6));
+    for (let k = 0; k < 12; k++) {
       const perm = [0, 1, 2]; for (let i = 2; i > 0; i--) { const j = ri(i + 1); [perm[i], perm[j]] = [perm[j], perm[i]]; }
       const row = { k, z: rowZ(k), tiles: [] };
       perm.forEach((note, s) => row.tiles.push(noteTile(w, { x: slot[s], z: row.z, k: note, right: note === seq[k] })));
@@ -93,9 +93,9 @@ export default {
       rows.push(row);
     }
     // field walls + catwalks (half 1: reader = p1 on the left; half 2: reader = p2 on the right)
-    mk(-132, -142, 30); cp(0, -137); lampPair(-134, 13);                                  // M    z -132 … -142
-    mk(-164, -176, 30); cp(0, -170); lampPair(-167, 13); lampPair(-173, 13);              // D3   z -164 … -176
-    for (const [z0, z1] of [[-110, -132], [-142, -164]]) {
+    mk(-142, -152, 30); cp(0, -147); lampPair(-144, 13);                                  // M    z -142 … -152
+    mk(-184, -196, 30); cp(0, -190); lampPair(-187, 13); lampPair(-193, 13);              // D3   z -184 … -196
+    for (const [z0, z1] of [[-110, -142], [-152, -184]]) {
       const zc = (z0 + z1) / 2, dd = z0 - z1;
       for (const sx of [-1, 1]) {
         deck(w, { x: sx * L.catX, y: 0, z: zc, w: 3, d: dd, path: false });
@@ -104,16 +104,16 @@ export default {
     }
     const reader = (half) => (half === 0 ? 'p1' : 'p2');
     const lyricBoard = (half) => {
-      const rd = reader(half), sx = half === 0 ? -1 : 1, zc = half === 0 ? -121 : -153;
+      const rd = reader(half), sx = half === 0 ? -1 : 1, zc = half === 0 ? -126 : -168;
       if (me === rd) {
-        canvasPlane(w, { x: sx * 6.5, y: 3.1, z: zc, width: 12, height: 3.4, rotY: sx < 0 ? -Math.PI / 2 : Math.PI / 2, px: 1024, draw: (g, W, H) => {
+        canvasPlane(w, { x: sx * 6.5, y: 3.1, z: zc, width: 14, height: 3.4, rotY: sx < 0 ? -Math.PI / 2 : Math.PI / 2, px: 1200, draw: (g, W, H) => {
           panelBg(g, W, H, hexs(COL[rd]), '#14161f');
           text(g, 'LYRIC SHEET · ONLY YOU CAN SEE THIS · CALL IT OUT, IN ORDER', W / 2, H * 0.13, 38, hexs(COL[rd]));
-          for (let i = 0; i < 4; i++) {
-            const n = NOTE[seq[half * 4 + i]], cx = W * (0.14 + 0.24 * i);
+          for (let i = 0; i < 6; i++) {
+            const n = NOTE[seq[half * 6 + i]], cx = W * (0.09 + 0.164 * i);
             text(g, 'ROW ' + (i + 1), cx, H * 0.3, 30, '#9aa0b0');
-            glyph(g, seq[half * 4 + i], cx, H * 0.55, 56, n.css);
-            text(g, n.name, cx, H * 0.84, 46, n.css);
+            glyph(g, seq[half * 6 + i], cx, H * 0.55, 46, n.css);
+            text(g, n.name, cx, H * 0.84, 40, n.css);
           }
         } });
       } else {
@@ -122,16 +122,16 @@ export default {
     };
     lyricBoard(0); lyricBoard(1);
     sign(w, 'FIELD 1: ' + 'ORANGE READS, TEAL WALKS', 0, 5.4, -108.5, { w: 9, h: 1.1, size: 32, border: hexs(COL.p1) });
-    sign(w, 'FIELD 2: TEAL READS, ORANGE WALKS', 0, 5.4, -140.5, { w: 9, h: 1.1, size: 32, border: hexs(COL.p2) });
-    beatBar(w, clk, { x: 0, y: 7.6, z: -134 });
+    sign(w, 'FIELD 2: TEAL READS, ORANGE WALKS', 0, 5.4, -150.5, { w: 9, h: 1.1, size: 32, border: hexs(COL.p2) });
+    beatBar(w, clk, { x: 0, y: 7.6, z: -144 });
     stage(w, 'lyric1', { x: 0, y: 1, z: -108, w: 30, h: 4, d: 3 }, () => { tell('p1', 'coop.l13.lyric.read', { priority: 2 }); tell('p2', 'coop.l13.lyric.walk', { priority: 2 }); });
-    stage(w, 'lyric2', { x: 0, y: 1, z: -135, w: 30, h: 4, d: 3 }, () => { tell('p2', 'coop.l13.lyric2.read', { priority: 2 }); tell('p1', 'coop.l13.lyric2.walk', { priority: 2 }); });
-    stage(w, 'lyricdone', { x: 0, y: 1, z: -168, w: 30, h: 4, d: 3 }, () => tell('all', 'coop.l13.lyricdone'));
+    stage(w, 'lyric2', { x: 0, y: 1, z: -145, w: 30, h: 4, d: 3 }, () => { tell('p2', 'coop.l13.lyric2.read', { priority: 2 }); tell('p1', 'coop.l13.lyric2.walk', { priority: 2 }); });
+    stage(w, 'lyricdone', { x: 0, y: 1, z: -188, w: 30, h: 4, d: 3 }, () => tell('all', 'coop.l13.lyricdone'));
 
     // ================================================================== 4. the key change =================================
     const kc = [];
-    for (let j = 0; j < 8; j++) kc.push(beatTile(w, clk, { x: j % 2 ? 2 : -2, z: -179.5 - 5 * j, start: 2 * j, len: 3, cycle: 8, hex: 0xff7ad9, path: true }));
-    const kb = liveBoard(w, { x: 0, y: 8, z: -211, width: 13, height: 3.6, px: 832 });
+    for (let j = 0; j < 8; j++) kc.push(beatTile(w, clk, { x: j % 2 ? 2 : -2, z: -199.5 - 5 * j, start: 2 * j, len: 4, cycle: 8, hex: 0xff7ad9, path: true }));
+    const kb = liveBoard(w, { x: 0, y: 8, z: -231, width: 13, height: 3.6, px: 832 });
     const kcState = () => {
       const pend = clk.pending, bpm = clk.bpm();
       if (pend && w.t < pend.at) return { key: 'c' + Math.ceil((pend.at - w.t) / clk.spb()), n: Math.ceil((pend.at - w.t) / clk.spb()) };
@@ -144,31 +144,32 @@ export default {
     });
     kbDraw({ key: 'slow' });
     w.updaters.push(() => kbDraw(kcState()));
-    sign(w, 'THE BOARD AHEAD COUNTS YOU IN. THE TEMPO CHANGES WHEN IT HITS ZERO.', 0, 5.6, -178, { w: 12, h: 1.3, size: 30 });
-    beatBar(w, clk, { x: 0, y: 7.6, z: -184 });
+    sign(w, 'THE BOARD AHEAD COUNTS YOU IN. THE TEMPO CHANGES WHEN IT HITS ZERO.', 0, 5.6, -198, { w: 12, h: 1.3, size: 30 });
+    beatBar(w, clk, { x: 0, y: 7.6, z: -204 });
     c.onEvent('stage:kcgo', () => { if (c.isHost && !clk.pending) c.set('kc', { at: w.t + 4 * clk.spb(), bpm: BPM1 }); });
-    stage(w, 'kcgo', { x: 0, y: 1, z: -190, w: 20, h: 6, d: 5 }, () => tell('all', 'coop.l13.kc'));
-    stage(w, 'kcin', { x: 0, y: 1, z: -172, w: 30, h: 4, d: 3 }, () => tell('all', 'coop.l13.kcin'));
-    mk(-218, -234, 20); cp(0, -222); lampPair(-220); lampPair(-232);                     // D4   z -218 … -234
-    const ch2 = chord(-224, -231, 20, 'b');
-    stage(w, 'kcdone', { x: 0, y: 1, z: -220, w: 20, h: 4, d: 3 }, () => tell('all', 'coop.l13.kcdone'));
+    stage(w, 'kcgo', { x: 0, y: 1, z: -210, w: 20, h: 6, d: 5 }, () => tell('all', 'coop.l13.kc'));
+    stage(w, 'kcin', { x: 0, y: 1, z: -192, w: 30, h: 4, d: 3 }, () => tell('all', 'coop.l13.kcin'));
+    mk(-238, -254, 20); cp(0, -242); lampPair(-240); lampPair(-252);                     // D4   z -238 … -254
+    const ch2 = chord(-244, -251, 20, 'b');
+    stage(w, 'kcdone', { x: 0, y: 1, z: -240, w: 20, h: 4, d: 3 }, () => tell('all', 'coop.l13.kcdone'));
 
     // ================================================================== 5. the wrong lyric ================================
-    const t5 = Array.from({ length: 6 }, () => ri(3));                                 // the truth for the six rows
+    const t5 = Array.from({ length: 9 }, () => ri(3));                                 // the truth for the nine rows
     const LIE = 4;                                                                     // the board gets this row wrong (verse 2, second note)
     const shown = t5.map((v, i) => (i === LIE ? (v + 1 + ri(2)) % 3 : v));
     const rows5 = [];
-    const row5Z = (k) => (k < 3 ? -237.5 - 5 * k : -260.5 - 5 * (k - 3));
-    for (let k = 0; k < 6; k++) {
+    const row5Z = (k) => (-257.5 - 5 * (k % 3) - 23 * Math.floor(k / 3));
+    for (let k = 0; k < 9; k++) {
       const perm = [0, 1, 2]; for (let i = 2; i > 0; i--) { const j = ri(i + 1); [perm[i], perm[j]] = [perm[j], perm[i]]; }
       const row = { k, z: row5Z(k), tiles: [] };
       perm.forEach((note, s) => row.tiles.push(noteTile(w, { x: slot[s], z: row.z, k: note, right: note === t5[k], pulse: true, clk })));
       row.good = row.tiles.find((t) => t.right);
       rows5.push(row);
     }
-    mk(-251, -257, 20); cp(0, -254); lampPair(-254);                                     // M5   z -251 … -257
-    mk(-274, -288, 20); cp(0, -281); lampPair(-277); lampPair(-285);                       // D5   z -274 … -288
-    const verseBoard = (v) => canvasPlane(w, { x: 0, y: 7.6, z: v === 0 ? -235 : -255, width: 12, height: 3.2, px: 960, draw: (g, W, H) => {
+    mk(-271, -277, 20); cp(0, -274); lampPair(-274);                                     // M5a  z -271 … -277
+    mk(-294, -300, 20); cp(0, -297); lampPair(-297);                                     // M5b  z -294 … -300
+    mk(-317, -331, 20); cp(0, -324); lampPair(-320); lampPair(-328);                       // D5   z -317 … -331
+    const verseBoard = (v) => canvasPlane(w, { x: 0, y: 7.6, z: [-255, -275, -298][v], width: 12, height: 3.2, px: 960, draw: (g, W, H) => {
       panelBg(g, W, H, '#ffc83d', '#14161f');
       text(g, `THE COUNSELLOR'S LYRICS · VERSE ${v + 1}`, W / 2, H * 0.14, 38, '#ffc83d');
       for (let i = 0; i < 3; i++) {
@@ -177,12 +178,13 @@ export default {
         text(g, n.name, cx, H * 0.84, 42, n.css);
       }
     } });
-    verseBoard(0); verseBoard(1);
-    sign(w, 'THE RIGHT NOTE BREATHES WITH THE BEAT.', 0, 5.0, -236, { w: 9, h: 1.1, size: 30 });
-    beatBar(w, clk, { x: 0, y: 9.7, z: -238 });
-    stage(w, 'wl1', { x: 0, y: 1, z: -232, w: 20, h: 4, d: 3 }, () => tell('all', 'coop.l13.wl1'));
-    stage(w, 'wl2', { x: 0, y: 1, z: -253, w: 20, h: 4, d: 3 }, () => tell('all', 'coop.l13.wl2'));
-        stage(w, 'wldone', { x: 0, y: 1, z: -278, w: 20, h: 4, d: 3 }, () => tell('all', 'coop.l13.wldone'));
+    verseBoard(0); verseBoard(1); verseBoard(2);
+    sign(w, 'THE RIGHT NOTE BREATHES WITH THE BEAT.', 0, 5.0, -256, { w: 9, h: 1.1, size: 30 });
+    beatBar(w, clk, { x: 0, y: 9.7, z: -258 });
+    stage(w, 'wl1', { x: 0, y: 1, z: -252, w: 20, h: 4, d: 3 }, () => tell('all', 'coop.l13.wl1'));
+    stage(w, 'wl2', { x: 0, y: 1, z: -273, w: 20, h: 4, d: 3 }, () => tell('all', 'coop.l13.wl2'));
+    stage(w, 'wlie', { x: 0, y: 1, z: -297, w: 20, h: 4, d: 3 }, () => tell('all', 'coop.l13.wlie'));
+    stage(w, 'wldone', { x: 0, y: 1, z: -322, w: 20, h: 4, d: 3 }, () => tell('all', 'coop.l13.wldone'));
 
     // ================================================================== 6. hold the note ==================================
     const arenas = [];
@@ -219,20 +221,24 @@ export default {
       arenas.push(A);
       return A;
     };
-    const A1 = arena(-290, { amp: 2.4, per: 12, need: 6 });                              // hub 1 z -287 … -300.5
-    mk(-306, -314, 10); cp(0, -310);                                                      // bridge  z -306 … -314
-    const A2 = arena(-318, { amp: 2.8, per: 8, need: 8 });                                // hub 2 z -316 … -329.5
-    const GOALZ = -343;
-    mk(-335, -351, 14); lampPair(-340, 5); lampPair(-346, 5);                             // goal deck
+    const A1 = arena(-333, { amp: 2.4, per: 12, need: 6 });                              // hub 1 z -333 … -346.5
+    mk(-349, -357, 10); cp(0, -353);                                                      // bridge  z -349 … -357
+    const A2 = arena(-359, { amp: 2.8, per: 8, need: 8 });                                // hub 2 z -359 … -372.5
+    mk(-375, -383, 10); cp(0, -379);                                                      // bridge  z -375 … -383
+    const A3 = arena(-385, { amp: 3.0, per: 6, need: 10 });                               // hub 3 z -385 … -398.5
+    const GOALZ = -410;
+    mk(-402, -418, 14); lampPair(-407, 5); lampPair(-413, 5);                             // goal deck
     w.goal({ x: 0, y: 0, z: GOALZ });
     sign(w, 'BOTH OF YOU. IN THE CIRCLE. TAKE A BOW.', 0, 5.6, GOALZ + 4.5, { w: 9, h: 1.3, size: 32 });
     beacon(w, 0, 0, GOALZ, 0xffe9a8, 20);
-    beatBar(w, clk, { x: 0, y: 7.6, z: -287 });
-    stage(w, 'hold1', { x: 0, y: 1, z: -289, w: 14, h: 4, d: 3 }, () => tell('all', 'coop.l13.hold1'));
-    stage(w, 'hold2', { x: 0, y: 1, z: -316, w: 10, h: 4, d: 3 }, () => tell('all', 'coop.l13.hold2'));
-    stage(w, 'bow', { x: 0, y: 1, z: -337, w: 14, h: 4, d: 3 }, () => tell('all', 'coop.l13.bow'));
+    beatBar(w, clk, { x: 0, y: 7.6, z: -330 });
+    stage(w, 'hold1', { x: 0, y: 1, z: -332, w: 14, h: 4, d: 3 }, () => tell('all', 'coop.l13.hold1'));
+    stage(w, 'hold2', { x: 0, y: 1, z: -358, w: 10, h: 4, d: 3 }, () => tell('all', 'coop.l13.hold2'));
+    stage(w, 'hold3', { x: 0, y: 1, z: -384, w: 10, h: 4, d: 3 }, () => tell('all', 'coop.l13.hold3'));
+    stage(w, 'bow', { x: 0, y: 1, z: -404, w: 14, h: 4, d: 3 }, () => tell('all', 'coop.l13.bow'));
     c.on(A1.key, () => tell('all', 'coop.l13.held1'));
     c.on(A2.key, () => tell('all', 'coop.l13.held2'));
+    c.on(A3.key, () => tell('all', 'coop.l13.held3'));
     w.hooks.onPartnerDeath = () => { tell('all', 'coop.l13.partnerdown'); return true; };
 
     // ================================================================== scripted bots ====================================
@@ -254,15 +260,17 @@ export default {
       { x: role === 'p1' ? -6 : 6, z: -96, r: 0.7, until: () => ch1.g.passable },                // stand on my plate until the gate is up
     ];
     const afterField = (role) => [
-      { x: 0, z: -170, r: 2 },
-      ...wave(kc, { x: 0, z: -174.4 }),
-      { x: 0, z: -222, r: 2 },
-      { x: role === 'p1' ? -6 : 6, z: -224, r: 0.7, until: () => ch2.g.passable },
-      { x: 0, z: -233, r: 2 },
+      { x: 0, z: -190, r: 2 },
+      ...wave(kc, { x: 0, z: -194.4 }),
+      { x: 0, z: -242, r: 2 },
+      { x: role === 'p1' ? -6 : 6, z: -244, r: 0.7, until: () => ch2.g.passable },
+      { x: 0, z: -253, r: 2 },
       ...walkField(rows5.slice(0, 3), (r) => r.good),
-      { x: 0, z: -254, r: 1.5 },
-      ...walkField(rows5.slice(3), (r) => r.good),
-      { x: 0, z: -281, r: 2 },
+      { x: 0, z: -274, r: 1.5 },
+      ...walkField(rows5.slice(3, 6), (r) => r.good),
+      { x: 0, z: -297, r: 1.5 },
+      ...walkField(rows5.slice(6), (r) => r.good),
+      { x: 0, z: -324, r: 2 },
     ];
     const arenaSteps = (role, A) => {
       const plat = A.ents[role].plat, sx = role === 'p1' ? -1 : 1;
@@ -274,25 +282,27 @@ export default {
     };
     const finish = (role) => [
       ...arenaSteps(role, A1),
-      { x: 0, z: -305, r: 1.5 }, { x: 0, z: -310, r: 1.5 },
+      { x: 0, z: -348, r: 1.5 }, { x: 0, z: -353, r: 1.5 },
       ...arenaSteps(role, A2),
-      { x: 0, z: -334, r: 1.5 }, { x: 0, z: GOALZ, r: 1.2 },
+      { x: 0, z: -374, r: 1.5 }, { x: 0, z: -379, r: 1.5 },
+      ...arenaSteps(role, A3),
+      { x: 0, z: -401, r: 1.5 }, { x: 0, z: GOALZ, r: 1.2 },
     ];
     botSteps(w, {
       p1: [  // reader of field 1, walker of field 2
         ...common('p1'),
-        { x: -12, z: -112, r: 1.2 }, { x: -12, z: -134, r: 1.5 }, { x: -12, z: -137, r: 1.5, until: () => P.has && P.sz < -133 },
-        { x: 0, z: -137, r: 2 },
-        ...walkField(rows.slice(4), (r) => r.good),
+        { x: -12, z: -112, r: 1.2 }, { x: -12, z: -144, r: 1.5 }, { x: -12, z: -147, r: 1.5, until: () => P.has && P.sz < -143 },
+        { x: 0, z: -147, r: 2 },
+        ...walkField(rows.slice(6), (r) => r.good),
         ...afterField('p1'),
         ...finish('p1'),
       ],
       p2: [  // walker of field 1, reader of field 2
         ...common('p2'),
         { x: 0, z: -108, r: 1.5 },
-        ...walkField(rows.slice(0, 4), (r) => r.good),
-        { x: 0, z: -137, r: 2 },
-        { x: 12, z: -144, r: 1.2 }, { x: 12, z: -162, r: 1.5 }, { x: 12, z: -166, r: 1.5, until: () => P.has && P.sz < -165 },
+        ...walkField(rows.slice(0, 6), (r) => r.good),
+        { x: 0, z: -147, r: 2 },
+        { x: 12, z: -154, r: 1.2 }, { x: 12, z: -182, r: 1.5 }, { x: 12, z: -186, r: 1.5, until: () => P.has && P.sz < -185 },
         ...afterField('p2'),
         ...finish('p2'),
       ],
