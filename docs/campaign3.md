@@ -88,3 +88,4 @@ and respawn on death like players. **Always `npm run build` after editing source
 | 8 | Secret Santa | betrayal | self | Gifts: one is a trap. Secret buttons that let one of you sabotage the other for a shortcut — but it can be beaten cleanly.  **Built (coop-l8-secret-santa).** |
 | 9 | Shared Baggage | climb | both | A very tall pile of luggage: counterweights, boosts, pendulums, plates that raise the other. |
 | 10 | The Vows | finale | mix | A wedding chapel gauntlet recycling every mechanic, then the Counsellor as a boss. |
+| 13 | Karaoke Night | rhythm | self | Beat clock (BPM from w.t, all visual): wave tiles, duet (orange even / teal odd beats), lyric sheet read by one and walked by the other (swap), 60->90 BPM key change with countdown board, counsellor lyric board that lies once (the right note breathes), 3 "hold the note" arenas on moving plates. **Built** (`karaoke-night.js` + `karaoke-night-kit.js`). |

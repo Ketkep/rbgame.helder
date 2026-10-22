@@ -108,7 +108,7 @@ export default {
       if (me === rd) {
         canvasPlane(w, { x: sx * 6.5, y: 3.1, z: zc, width: 14, height: 3.4, rotY: sx < 0 ? -Math.PI / 2 : Math.PI / 2, px: 1200, draw: (g, W, H) => {
           panelBg(g, W, H, hexs(COL[rd]), '#14161f');
-          text(g, 'LYRIC SHEET · ONLY YOU CAN SEE THIS · CALL IT OUT, IN ORDER', W / 2, H * 0.13, 38, hexs(COL[rd]));
+          text(g, 'LYRIC SHEET · ONLY YOU CAN SEE THIS · CALL IT OUT', W / 2, H * 0.13, 34, hexs(COL[rd]));
           for (let i = 0; i < 6; i++) {
             const n = NOTE[seq[half * 6 + i]], cx = W * (0.09 + 0.164 * i);
             text(g, 'ROW ' + (i + 1), cx, H * 0.3, 30, '#9aa0b0');
@@ -121,7 +121,7 @@ export default {
       }
     };
     lyricBoard(0); lyricBoard(1);
-    sign(w, 'FIELD 1: ' + 'ORANGE READS, TEAL WALKS', 0, 5.4, -108.5, { w: 9, h: 1.1, size: 32, border: hexs(COL.p1) });
+    sign(w, 'FIELD 1: ' + 'ORANGE READS, TEAL WALKS', 0, 7.2, -108.5, { w: 9, h: 1.1, size: 32, border: hexs(COL.p1) });
     sign(w, 'FIELD 2: TEAL READS, ORANGE WALKS', 0, 5.4, -150.5, { w: 9, h: 1.1, size: 32, border: hexs(COL.p2) });
     beatBar(w, clk, { x: 0, y: 7.6, z: -144 });
     stage(w, 'lyric1', { x: 0, y: 1, z: -108, w: 30, h: 4, d: 3 }, () => { tell('p1', 'coop.l13.lyric.read', { priority: 2 }); tell('p2', 'coop.l13.lyric.walk', { priority: 2 }); });
