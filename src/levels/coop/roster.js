@@ -13,6 +13,7 @@ import gameNight from './game-night.js';
 import roadTrip from './road-trip.js';
 import karaokeNight from './karaoke-night.js';
 import campsite from './campsite.js';
+import gala from './gala.js';
 
 // [name, kind, tagline, deathRule]
 const ROSTER = [
