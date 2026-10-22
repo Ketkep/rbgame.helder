@@ -1212,6 +1212,41 @@ Object.assign(SCRIPT, {
   'coop.l12.partnerdown': ['Your partner has left the car. Not in the good way.', 'And they are gone. The car is sentimental about it and goes back.'],
 });
 
+// ---- Campaign 3, session 14: The Campsite (one lantern, two of you) ----
+Object.assign(SCRIPT, {
+  'coop.l14.intro.p1': ['Orange. Welcome to the campsite. There is one lantern. I have decided you are the responsible one. Pick it up.'],
+  'coop.l14.intro.p2': ['Teal. Welcome to the campsite. There is one lantern. Orange will pick it up. If Orange does not, that is a conversation.'],
+  'coop.l14.take': ['One of you has the light. The other has opinions. This is the natural order.'],
+  'coop.l14.handed': ['A handover. Look at that. Communication. I will make a note.'],
+  'coop.l14.trail': ['The platforms only exist where the lantern reaches. The faint outlines are the ones that are not there. Do not stand on those.'],
+  'coop.l14.post1': ['A lantern post. Stand together, press E, and the light changes hands. It is the closest you will get to a ceremony today.'],
+  'coop.l14.teal.p2': ['Teal stones. Teal light. You will want the lantern. You will want to ask nicely.'],
+  'coop.l14.teal.p1': ['Teal stones. They only listen to the teal lantern. Hand it over, Orange. It is not a hostage situation.'],
+  'coop.l14.close': ['This bridge is shy. It only exists while the two of you are within six metres. I have always found that a good test.'],
+  'coop.l14.apart': ['You are drifting. The bridge has noticed. The bridge takes it personally.', 'Closer. The bridge can feel the distance. So can I.'],
+  'coop.l14.closedone': ['You stayed close the entire way. I am proud, and also slightly suspicious.'],
+  'coop.l14.fire1.stoke': ['Orange: the fire needs feeding and the drawbridge needs the fire. Stand on the pad. Hands empty. The lantern is not a hand.'],
+  'coop.l14.fire1.cross': ['Teal: you have the light. Orange feeds the fire. Cross, then hold the far pad so Orange can follow. Trust, in the form of a plank.'],
+  'coop.l14.fire1done': ['Both across. The fire will be fine without you. It has no feelings, which is why it is so reliable.'],
+  'coop.l14.fire2.stoke': ['Teal: your turn at the fire. Orange needs the lantern. You will have noticed the lantern is not where it needs to be.'],
+  'coop.l14.fire2.cross': ['Orange: you carry now. Make sure the lantern is in your hands, and the fire is in your partner\'s.'],
+  'coop.l14.fire2done': ['Swapped and across. Eight out of ten. I take two off for the way you looked at each other on the plank.'],
+  'coop.l14.ff.intro': ['Fireflies. Three of them, and they will only light the gate in the right order. The order is on the board. Only the one without the lantern can read the board. I did not design it. I merely approved it.'],
+  'coop.l14.ff.ok': ['Lit. Next.', 'Correct. Do not let it go to your head.'],
+  'coop.l14.ff.wrong': ['Wrong order. They have scattered. They were very much looking forward to it.', 'No. The fireflies have lost interest. Start over, and listen to your partner this time.'],
+  'coop.l14.ff.done': ['Three lights, in order. The gate opens. A small win for communication.'],
+  'coop.l14.relay': ['The next stones are lit by one colour only. Orange light, then teal, then orange. The posts are where you swap. I will not be coordinating.'],
+  'coop.l14.tossintro': ['A gap. A big one. There is no bridge. There is a pad and a lantern. You are going to throw the lantern across.'],
+  'coop.l14.tossboth': ['Both of you on the pad. It is a hand-over platform, not a solo act.'],
+  'coop.l14.toss': ['Thrown. The lantern hangs on the far post and the bridge has remembered it exists. Walk. Do not look down. It is mostly down.'],
+  'coop.l14.twin': ['A second lantern. You each carry one now. Whatever stays dark between you, the summit has been saving.'],
+  'coop.l14.marsh': ['A marshmallow checkpoint. It is a real checkpoint. It is also a marshmallow. These are not in conflict.'],
+  'coop.l14.top': ['The last gap. One of you stands on the pad to keep the bridge down while the other crosses and holds the far pad. You know how this works now. You have been doing it all night.'],
+  'coop.l14.circle': ['The circle. Both of you, together. The lanterns can go out now. I will keep the thing in my head about you two.'],
+  'coop.l14.fell': ['The light goes to whoever is left standing. It is not fair, but it is practical.', 'Down they go. The lantern stays with the one who did not fall. That is called a contingency plan.'],
+  'coop.l14.partnerdown': ['Your partner fell. The dark did that, not you. Probably.', 'And down they go. You may want to go and get them.'],
+});
+
 export const CREDITS = [
   ['TRUST ME…', ''],
   ['Written, directed & narrated by', 'The Host'],

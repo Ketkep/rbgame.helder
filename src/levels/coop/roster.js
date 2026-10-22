@@ -12,6 +12,7 @@ import vows from './vows.js';
 import gameNight from './game-night.js';
 import roadTrip from './road-trip.js';
 import karaokeNight from './karaoke-night.js';
+import campsite from './campsite.js';
 
 // [name, kind, tagline, deathRule]
 const ROSTER = [
