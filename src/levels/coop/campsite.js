@@ -350,12 +350,12 @@ export default {
     const topSteps = () => {
       const upX = ts.x;
       if (me === 'p1') return [
-        { x: upX, z: ts.z - 2.4, r: 0.5, until: () => last.up && relay2.zn.pressed && P.has && P.sz < tz1 - 12 },
+        { x: upX, z: ts.z - 2.4, r: 0.5, until: () => last.up && relay2.zn.pressed && P.has && P.sz < tz1 - 10.5 },
         { x: upX, z: gzc, r: 1.5 },
       ];
       return [
         { x: upX, z: tz1 + 1.2, r: 0.8, until: () => last.up },
-        { x: upX + 4.5, z: tz1 - 9 - 2.5, r: 0.6, until: () => P.has && P.sz < tz1 - 12 },
+        { x: upX + 4.5, z: tz1 - 9 - 2.5, r: 0.6, until: () => P.has && P.sz < tz1 - 13.5 },
         { x: upX, z: gzc, r: 1.5 },
       ];
     };
