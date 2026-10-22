@@ -1151,6 +1151,28 @@ Object.assign(SCRIPT, {
   'coop.l10.last': ['The real final stretch. Rope on. Crumbling steps. You know all of this. You learned it from me. Go.'],
   'coop.l10.circle': ['The ring. Both of you. Together. No lies this time. Mostly no lies.'],
   'coop.l10.partnerdown': ['Your partner fell. I am not going to say it was their fault. You can say it, in your own time.', 'And down they go. Walk it off. Walk them off.'],
+  // ---------------------------------------------------------------- Campaign 3 · Session 11: Game Night ----------------
+  'coop.l11.intro.p1': ['Game night in the lodge. Orange, you are the Roller first. You see the traps. You see the die. You do not see the card. Communicate, or lose to a rug.'],
+  'coop.l11.intro.p2': ['Game night in the lodge. Teal, you are the Mover first. You see the card. You do not see the traps. Your partner does. Pay them some attention. They will like that.'],
+  'coop.l11.rules': ['The rules, which nobody reads. The Roller rolls. The Mover walks. Target is the start tile, plus the roll, plus whatever the card says. Stand on it for a second. Lose, and you go back. That is the whole game and also your relationship.'],
+  'coop.l11.hub.a': ['Board one. Six tiles. The Roller uses the console on the left. Press E. The Mover waits on the green tile. Gently.'],
+  'coop.l11.roll.first': ['It is rolled. Red tiles are traps, but only the Roller can see them. The Mover has been told nothing. Cooperation is the only house rule.'],
+  'coop.l11.ok': ['Landed. A round of applause, from me, in my head.', 'Correct tile. Don\'t let it go to your head, it is a very small tile.', 'Turn complete. Roll again. Your partner is being very brave.', 'Nicely done. I assume you both deserve the credit equally.'],
+  'coop.l11.timeup': ['Time. The ring closed. Back to where you started this turn, which is a nice metaphor.', 'The ring closed on empty tile. It was not rude. It was a ring.', 'Too slow. Roll again. Try speaking, it helps.'],
+  'coop.l11.gate': ['The gate. Rises when the board is done. Both through, please. Mind the lanterns.'],
+  'coop.l11.hub.b': ['Board two, with chance cards. Only the Mover reads the card. It says FORWARD or BACK or something dramatic. The Roller\'s ring only shows the roll. Add them together. Maths is a lovely shared hobby.'],
+  'coop.l11.hub.c': ['Board three has an orange space. Land on it and you swap places. The Roller becomes the Mover. Everyone gets to be wrong from the other side.'],
+  'coop.l11.swap.tile': ['That orange tile. Remember it. Land there and you will swap seats for the rest of the board.'],
+  'coop.l11.swap.done': ['Swap! Roller, you are now the Mover. Mover, the console is yours. Do not drop it. There is no way to drop it. I am just saying.'],
+  'coop.l11.hub.d': ['Board four. See the shortcut on the right? Sign says tile nine. It is the fastest way across. I would never lie about a sign. Take it. Please. Go.'],
+  'coop.l11.loop.caught': ['Funny. It sends you back three. The shortcut is a loop. Your partner could see that from over there. Allegedly they said something.', 'A loop! Nobody could have known. Except the Roller. The Roller knew.'],
+  'coop.l11.hub.e': ['Board five. The dice are fair. They have been checked by me. If the console and your eyes disagree, the console is right, because I said so.'],
+  'coop.l11.rigged.reveal': ['All right, the die is weighted. A little. Only slightly. The Mover can see the true face. The Roller\'s console rounds down. I told you the console was right. I was practising lying.'],
+  'coop.l11.hub.f': ['The last board. No Roller, no Mover. You both walk. You each have a roll and a card, but you can only see your partner\'s. Tell them what they rolled. Then both of you stand on the SAME tile.'],
+  'coop.l11.final.r2': ['Same tile. Again. Same start, different rolls. If you stand on the same tile, I am obliged to say well done. I am rehearsing it.'],
+  'coop.l11.final.done': ['The same tile. At the same time. I have been doing this for years and never seen two people agree so completely. Please go. The gate is open.'],
+  'coop.l11.finish': ['The finish. Both of you in the ring. I would call it a draw. I would call it a draw because I need to lie to someone.'],
+  'coop.l11.partnerdown': ['Your partner fell. I am not saying they should have read the red tile. I am saying it was red.', 'Down they go. It is a game. They are fine. I mean, they are respawning.'],
 });
 
 export const CREDITS = [
