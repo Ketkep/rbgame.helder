@@ -76,6 +76,7 @@ export class Game {
     this.sens = this.save.settings.sens ?? 1;
     if (this.save.settings.vol !== undefined) this.audio.volume = this.save.settings.vol;
     if (this.save.settings.music === false) this.audio.musicOn = false;
+    this.narrator.ttsOn = this.save.settings.voice !== false;
     this.locked = false;
     this.state = 'title'; // title | playing | paused | dead | complete | ended
     this.world = null; this.level = null; this.levelIndex = 0;
@@ -278,6 +279,8 @@ export class Game {
     el['set-vol'].value = this.audio.volume;
     el['set-music'].checked = this.audio.musicOn;
     el['set-gfx'].checked = !!this.save.settings.lowGfx;
+    el['set-voice'].checked = this.narrator.ttsOn;
+    el['set-voice'].addEventListener('change', (e) => { this.narrator.ttsOn = e.target.checked; if (!e.target.checked) { try { window.speechSynthesis?.cancel(); } catch { /* ignore */ } } this._saveSettings(); });
     el['set-sens'].addEventListener('input', (e) => { this.sens = +e.target.value; this._saveSettings(); });
     el['set-vol'].addEventListener('input', (e) => { this.audio.setVolume(+e.target.value); this._saveSettings(); });
     el['set-music'].addEventListener('change', (e) => { this.audio.setMusicEnabled(e.target.checked); this._saveSettings(); });
@@ -299,7 +302,7 @@ export class Game {
   }
 
   _saveSettings() {
-    this.save.settings = { ...this.save.settings, sens: this.sens, vol: this.audio.volume, music: this.audio.musicOn, lowGfx: !!this.lowGfx };
+    this.save.settings = { ...this.save.settings, sens: this.sens, vol: this.audio.volume, music: this.audio.musicOn, voice: this.narrator.ttsOn, lowGfx: !!this.lowGfx };
     writeSave(this.save);
   }
 

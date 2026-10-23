@@ -15,6 +15,9 @@ export class Narrator {
     this.now = 0;
     this.silenced = false;
     this.voiceIds = new Set();
+    this.tts = typeof window !== 'undefined' && 'speechSynthesis' in window;          // browser voice-over when there is no recorded clip
+    this.ttsOn = true;
+    this._voice = null;
     this.voiceBase = (import.meta.env?.BASE_URL || '/') + 'voice/';
     this._loadManifest();
   }
@@ -66,6 +69,32 @@ export class Narrator {
     else { this.queue.push(line); if (this.queue.length > 3) this.queue.shift(); }
   }
 
+  /** Pick a low, dry English voice if the device has one. */
+  _pickVoice() {
+    if (this._voice) return this._voice;
+    const vs = window.speechSynthesis.getVoices();
+    if (!vs.length) return null;
+    const en = vs.filter((v) => /^en(-|_|$)/i.test(v.lang));
+    const pref = [/daniel/i, /google uk english male/i, /arthur/i, /oliver/i, /james/i, /alex/i, /fred/i, /male/i, /en-gb/i];
+    for (const re of pref) { const v = en.find((x) => re.test(x.name) || re.test(x.lang)); if (v) return (this._voice = v); }
+    return (this._voice = en[0] || vs[0]);
+  }
+
+  _speak(line) {
+    const clean = line.text.replace(/…/g, '...').replace(/\s+/g, ' ').trim();
+    if (!clean) return;
+    try {
+      const u = new SpeechSynthesisUtterance(clean);
+      const v = this._pickVoice(); if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-GB';
+      u.rate = 0.96; u.pitch = 0.78; u.volume = this.audio.muted ? 0 : Math.min(1, this.audio.volume);
+      const h = { ended: false, pause: () => { try { window.speechSynthesis.cancel(); } catch { /* ignore */ } h.ended = true; } };
+      u.onend = u.onerror = () => { h.ended = true; };
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+      line.voice = h;
+    } catch (e) { if (import.meta.env?.DEV) console.warn('voice-over', e); line.voice = null; }
+  }
+
   _start(line) {
     if (this.cur?.voice) { try { this.cur.voice.pause(); } catch { /* ignore */ } }
     this.cur = line;
@@ -77,7 +106,7 @@ export class Narrator {
         a.play().catch(() => { line.voice = null; });
         line.voice = a;
       } catch { line.voice = null; }
-    }
+    } else if (this.tts && this.ttsOn && !this.silenced) this._speak(line);
     this.ui.setSubtitle(line.text, 0);
   }
 
