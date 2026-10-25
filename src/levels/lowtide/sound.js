@@ -64,6 +64,9 @@ export function horrorSound(game) {
   S.slam = (vol = 0.6) => { noise({ f: 120, q: 0.6, type: 'lowpass', dur: 0.6, vol, attack: 0.002 }); tone({ f: 55, type: 'sine', dur: 0.7, vol: vol * 0.9, slide: -35, attack: 0.002 }); noise({ f: 2400, q: 1, dur: 0.15, vol: vol * 0.4, attack: 0.002 }); };
   S.wail = (vol = 0.1) => { tone({ f: 330, type: 'sine', dur: 3, vol, slide: 90, attack: 1.2, pan: (Math.random() - 0.5) * 1.2 }); tone({ f: 333, type: 'sine', dur: 3, vol: vol * 0.7, slide: 120, attack: 1.2, pan: (Math.random() - 0.5) * 1.2 }); };
   S.static = (dur = 0.7, vol = 0.18) => { noise({ f: 3200, q: 0.5, type: 'highpass', dur, vol, attack: 0.01 }); };
+  /** A brass call-bell ding (pan -1..1) and a two-note ward alarm. */
+  S.bell = (pan = 0, vol = 0.22) => { for (const [f, d] of [[880, 1.5], [1320, 1.1], [2090, 0.6]]) tone({ f, type: 'sine', dur: d, vol: vol * (d / 1.5), pan, attack: 0.002 }); noise({ f: 3800, q: 6, dur: 0.12, vol: vol * 0.5, pan, attack: 0.001 }); };
+  S.alarm = (vol = 0.1) => { for (let i = 0; i < 4; i++) tone({ f: i % 2 ? 540 : 760, type: 'square', dur: 0.32, vol, when: i * 0.34, attack: 0.01 }); };
   S.intercom = () => { tone({ f: 880, type: 'sine', dur: 0.18, vol: 0.12 }); tone({ f: 660, type: 'sine', dur: 0.3, vol: 0.12, when: 0.2 }); };
 
   /** Per-frame: heartbeat, random drips, a heart of the room. */

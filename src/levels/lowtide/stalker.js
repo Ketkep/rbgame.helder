@@ -39,10 +39,10 @@ export function stalker(w, game, H, S, o) {
     while (open.size) {
       let u = null; for (const n of open) if (u === null || dist.get(n) < dist.get(u)) u = n;
       open.delete(u); if (u === e) break;
-      for (const v of u.adj) { const nd = dist.get(u) + Math.hypot(u.x - v.x, u.z - v.z); if (nd < (dist.get(v) ?? 1e9)) { dist.set(v, nd); prev.set(v, u); open.add(v); } }
+      for (const v of u.adj) { const gt = u.gates && u.gates.get(v); if (gt && !gt()) continue; const nd = dist.get(u) + Math.hypot(u.x - v.x, u.z - v.z); if (nd < (dist.get(v) ?? 1e9)) { dist.set(v, nd); prev.set(v, u); open.add(v); } }
     }
     const out = []; for (let n = e; n; n = prev.get(n)) out.unshift({ x: n.x, z: n.z });
-    out.push({ x: tx, z: tz }); return out;
+    if (out.length === 0 || clear(out[out.length - 1].x, out[out.length - 1].z, tx, tz)) out.push({ x: tx, z: tz }); return out;
   };
 
   const start = byId.get(o.start || o.route[0]);
@@ -51,7 +51,8 @@ export function stalker(w, game, H, S, o) {
   let wp = [], wi = 0, route = o.route.map((id) => byId.get(id)), ri = 0, wait = 0, search = 0, lost = 0, target = null, sendT = 0, phase = 0, squeakT = 0, stepT = 0, inv = null;
   const fig = figure(w, { kind: 'orderly' });
   fig.set(st.x, 0, st.z);
-  const sight = o.sight ?? 17, fov = o.fov ?? 0.95, hear = o.hear ?? 7.5, vPatrol = o.speed ?? 1.7, vChase = o.chaseSpeed ?? 6.1;
+  const sight = o.sight ?? 17, fov = o.fov ?? 0.95, hear = o.hear ?? 7.5;
+  st.speed = o.speed ?? 1.7; st.chaseSpeed = o.chaseSpeed ?? 6.1; st.home = o.home || null; st.hunt = false;       // tunable at run time by a chapter
 
   // ---- state sync -----------------------------------------------------------------------------------------------------------
   let net = null;
@@ -69,6 +70,15 @@ export function stalker(w, game, H, S, o) {
   const hiddenNow = (p) => !!p && st.spot.some((b) => Math.abs(p.x - b.x) < b.w / 2 && Math.abs(p.z - b.z) < b.d / 2) && (p.speed ?? 9) < 0.5;
   c.on('hid:p1', () => {}); c.on('hid:p2', () => {});
 
+  /** Extra graph edges that exist only while pred() is true (a door that is open). */
+  st.link = (a, b, pred) => { const A = byId.get(a), B = byId.get(b); if (!A || !B) return; for (const [p, q] of [[A, B], [B, A]]) { if (!p.adj.includes(q)) p.adj.push(q); (p.gates ||= new Map()).set(q, pred); } };
+  st.setRoute = (ids) => { route = ids.map((id) => byId.get(id)).filter(Boolean); ri = 0; wp = []; wait = 0; };
+  st.alert = (role) => { if (!host) return; st.state = 'chase'; target = role; lost = 0; };
+  st.reset = (id) => { if (!host) return; const n = byId.get(id || st.home); if (n) st.warp(n.x, n.z); st.state = 'search'; search = 6; wp = []; };
+  c.onEvent('orderly-caught', () => { if (host && st.home) { st.reset(st.home); if (st.hunt) st.huntHold = 7; } });   // a catch sends him home so a respawn is never in his sight
+  const lit = (role, x, z) => c.get('torch:' + role, false) === true && Math.hypot(x - st.x, z - st.z) < 5;           // a torch left on gives a hider away when he is close
+  st.lit = lit;
+
   let myHid = false;
   w.updaters.push(() => {                                                               // am I standing still inside a hiding place? tell everyone (the host's brain reads it)
     const g = game.player, still = Math.hypot(g.vx, g.vz) < 0.5;
@@ -78,8 +88,8 @@ export function stalker(w, game, H, S, o) {
   });
   const players = () => {
     const P = c.partner, g = game.player, out = [];
-    if (game.state === 'playing') out.push({ role: me, x: g.x, y: g.y, z: g.z, speed: Math.hypot(g.vx, g.vz), hidden: c.get('hid:' + me, false) });
-    if (P.has && !P.dead) out.push({ role: c.other, x: P.sx, y: P.sy, z: P.sz, speed: Math.hypot(P.vx || 0, P.vz || 0), hidden: c.get('hid:' + c.other, false) });
+    if (game.state === 'playing') out.push({ role: me, x: g.x, y: g.y, z: g.z, speed: Math.hypot(g.vx, g.vz), lit: lit(me, g.x, g.z), hidden: c.get('hid:' + me, false) && !lit(me, g.x, g.z) });
+    if (P.has && !P.dead) out.push({ role: c.other, x: P.sx, y: P.sy, z: P.sz, speed: Math.hypot(P.vx || 0, P.vz || 0), lit: lit(c.other, P.sx, P.sz), hidden: c.get('hid:' + c.other, false) && !lit(c.other, P.sx, P.sz) });
     return out;
   };
 
@@ -90,7 +100,7 @@ export function stalker(w, game, H, S, o) {
       const dx = p.x - st.x, dz = p.z - st.z, d = Math.hypot(dx, dz);
       p.d = d;
       if (!best || d < best.d) best = p;
-      if (p.hidden || (p.speed < 0.5 && hiddenNow({ x: p.x, z: p.z, speed: p.speed }))) continue;
+      if (p.hidden || (p.speed < 0.5 && !p.lit && hiddenNow({ x: p.x, z: p.z, speed: p.speed }))) continue;
       const ang = Math.abs(((Math.atan2(-dx, -dz) - st.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
       const inCone = d < sight && ang < fov;
       const bump = d < 3.2;                                                              // close enough to be noticed even from behind
@@ -99,6 +109,13 @@ export function stalker(w, game, H, S, o) {
       else if (p.speed > 5.4 && d < hear * 0.7) investigate(p.x, p.z, 8);
     }
     st.dist = best ? best.d : 99;
+    if (st.huntHold > 0) { st.huntHold -= dt; if (st.state === 'chase') st.state = 'search'; }
+    if (st.hunt && !(st.huntHold > 0)) {                                                    // scripted relentless pursuit of the nearest player who is not hiding
+      const cand = ps.filter((p) => !p.hidden).sort((a, b) => a.d - b.d)[0];
+      if (cand) { st.state = 'chase'; target = cand.role; lost = 0; if (clear(st.x, st.z, cand.x, cand.z)) { wp = [{ x: cand.x, z: cand.z }]; wi = 0; } else if (!wp.length || wi >= wp.length || Math.floor(game.time * 3) !== Math.floor((game.time - dt) * 3)) { wp = path(st.x, st.z, cand.x, cand.z); wi = 0; } }
+      else if (st.state === 'chase') { st.state = 'search'; search = 3; }
+      if (st.state === 'chase') return;
+    }
     if (st.state === 'chase') {
       const p = ps.find((q) => q.role === target) || best; if (!p) { st.state = 'search'; search = 3; return; }
       const seen = !p.hidden && clear(st.x, st.z, p.x, p.z);
@@ -113,7 +130,7 @@ export function stalker(w, game, H, S, o) {
   const move = (dt) => {
     if (st.state === 'search' || wait > 0 || wi >= wp.length) return false;
     const t = wp[wi], dx = t.x - st.x, dz = t.z - st.z, d = Math.hypot(dx, dz);
-    const v = st.state === 'chase' ? vChase : st.state === 'investigate' ? vPatrol * 1.9 : vPatrol;
+    const v = st.state === 'chase' ? st.chaseSpeed : st.state === 'investigate' ? st.speed * 1.9 : st.speed;
     if (d < 0.25) { wi++; return true; }
     const step = Math.min(d, v * dt); st.x += (dx / d) * step; st.z += (dz / d) * step;
     const ty = Math.atan2(-dx, -dz); let dy = ((ty - st.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI; st.yaw += dy * Math.min(1, dt * (st.state === 'chase' ? 12 : 5));
@@ -134,7 +151,7 @@ export function stalker(w, game, H, S, o) {
     const g = game.player, dme = Math.hypot(g.x - st.x, g.z - st.z); st.dist = Math.min(st.dist, dme);
     st.myDist = dme;
     const chase = st.state === 'chase';
-    if (!st.bot && game.state === 'playing' && dme < 1.0 && Math.abs(g.y - 0) < 2.2 && chase && !c.get('hid:' + me, false)) game.kill('The Orderly');
+    if (!st.bot && game.state === 'playing' && dme < 1.0 && Math.abs(g.y - 0) < 2.2 && chase && !(c.get('hid:' + me, false) && !lit(me, g.x, g.z))) { c.emit('orderly-caught', { role: me }); game.kill('The Orderly'); }
   });
 
   // ---- visuals and cues (per frame, both machines) -------------------------------------------------------------------------
