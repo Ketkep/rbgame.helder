@@ -123,8 +123,9 @@ export function stepPlayer(p, bodies, input, dt, opts = {}) {
   else p.coyoteT = Math.max(0, p.coyoteT - dt);
 
   // 4. Horizontal velocity.
-  const tx = input.wx * MOVE.speed;
-  const tz = input.wz * MOVE.speed;
+  const spd = MOVE.speed * (opts.speedMul || 1);   // wading / swimming (Lowtide)
+  const tx = input.wx * spd;
+  const tz = input.wz * spd;
   const hasInput = input.wx !== 0 || input.wz !== 0;
   if (p.grounded) {
     const k = p.ground && p.ground.slip ? 1 - 0.9 * p.ground.slip : 1;
