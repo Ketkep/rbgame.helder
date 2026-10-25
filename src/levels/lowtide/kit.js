@@ -179,7 +179,7 @@ export function desk(w, { x, y = 0, z, rot = 0, papers = true }) {
 }
 
 /** A barred, wire-glass window with the dark tide behind it (a faint moonlit shimmer). */
-export function window(w, { x, y = 1.7, z, rot = 0, width = 1.6, height = 1.1, glow = 0x1a3a46 }) {
+export function barWindow(w, { x, y = 1.7, z, rot = 0, width = 1.6, height = 1.1, glow = 0x1a3a46 }) {
   const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rot; w.add(g);
   const pane = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ color: new THREE.Color(glow).multiplyScalar(1.4), toneMapped: false })); pane.position.z = 0.01; g.add(pane);
   for (let i = -2; i <= 2; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.03, height + 0.1, 0.04), mat('darkSteel')); b.position.set(i * width / 5, 0, 0.05); g.add(b); }
@@ -226,4 +226,64 @@ export function checkpoint(w, { x, y = 0, z, side = 1 }) {
     halo.material.opacity = (was ? 0.4 : 0.5) + Math.sin(w.t * (was ? 1.4 : 3.2) + x) * 0.12;
   });
   return cp;
+}
+
+/**
+ * A sliding steel door in a wall. State is shared (both of you see it open/shut). `locked` doors say so and can be unlocked from code
+ * (`D.unlock()`; the lock state is shared too). The door will not shut on someone standing in it. Handles sit on both faces so the crosshair can
+ * reach them (an interactable inside a solid is never focusable).
+ *   along: 'x' for a wall running along x (you walk through it along z), 'z' for a wall running along z.
+ */
+export function door(w, { x, y = 0, z, along = 'x', width = 1.8, h = 2.5, key, locked = false, open = false, label = 'door', t = 0.3, slam = true, game }) {
+  const c = w.coop, S = w.H?.S;
+  const horiz = along === 'x';
+  const p = hp(w, { x, y: y + h, z, w: horiz ? width : 0.16, d: horiz ? 0.16 : width, h, kind: 'rust', path: false, moving: true, rough: 0.55, bump: 1.4 });
+  p.group.children[0].material = horrorSurface('rust', { color: 0x6a7873, roughness: 0.5, metalness: 0.75, bump: 1.6 });
+  const slit = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.5), new THREE.MeshBasicMaterial({ color: 0x0a1418 }));
+  for (const sd of [-1, 1]) { const s = slit.clone(); s.position.set(horiz ? 0 : sd * 0.09, h * 0.62 - h / 2, horiz ? sd * 0.09 : 0); s.rotation.y = horiz ? (sd > 0 ? 0 : Math.PI) : (sd > 0 ? Math.PI / 2 : -Math.PI / 2); p.group.add(s); }
+  const st = { open: !!open, locked: !!locked, k: open ? 1 : 0, plat: p, key };
+  const apply = (v) => { if (!v) return; if ('open' in v) { if (v.open !== st.open && S) S.door((Math.random() - 0.5) * 0.2, v.open ? 0.12 : (slam ? 0.4 : 0.15)); st.open = !!v.open; } if ('locked' in v) st.locked = !!v.locked; };
+  c.on('dr:' + key, apply);
+  const set = (v) => { const nv = { open: st.open, locked: st.locked, ...v }; apply(nv); c.set('dr:' + key, nv); };
+  st.unlock = () => set({ locked: false }); st.lock = () => set({ locked: true, open: false }); st.setOpen = (o) => set({ open: !!o });
+  const occupied = () => { const g = w.game.player, P = c.partner, hw = width / 2 + 0.5; const near = (px, pz) => (horiz ? Math.abs(px - x) < hw && Math.abs(pz - z) < 0.9 : Math.abs(pz - z) < hw && Math.abs(px - x) < 0.9); return near(g.x, g.z) || (P.has && !P.dead && near(P.sx, P.sz)); };
+  const botNear = () => { const g = w.game.player, P = c.partner; const d = (px, pz) => Math.hypot(px - x, pz - z) < 2.6; return d(g.x, g.z) || (P.has && d(P.sx, P.sz)); };
+  w.updaters.push((dt) => {
+    if (window.__noRender && !st.open && !st.locked && botNear()) set({ open: true });                    // test bots cannot press E: unlocked doors open as they arrive
+    const want = st.open ? 1 : 0;
+    if (!want && st.k > 0 && occupied()) { st.open = true; return; }                                  // never shut on somebody
+    st.k += Math.sign(want - st.k) * Math.min(Math.abs(want - st.k), dt * 2.6);
+    const slide = st.k * (width - 0.1);
+    p.setPos(x + (horiz ? slide : 0), y + h / 2, z + (horiz ? 0 : slide)); p.body.enabled = st.k < 0.92;
+  });
+  (w.doors ||= []).push(st);
+  for (const sd of [-1, 1]) {
+    const hx = x + (horiz ? 0 : sd * (0.2)), hz = z + (horiz ? sd * 0.2 : 0);
+    const knob = new THREE.Mesh(new THREE.BoxGeometry(horiz ? 0.34 : 0.06, 0.07, horiz ? 0.06 : 0.34), mat('darkSteel')); knob.position.set(hx, y + 1.05, hz); w.add(knob);
+    w.interactable({
+      x: hx + (horiz ? 0 : sd * 0.12), y: y + 1.1, z: hz + (horiz ? sd * 0.12 : 0), w: horiz ? 0.8 : 0.5, h: 0.8, d: horiz ? 0.5 : 0.8, range: 2.6, pad: 0.05,
+      label: () => (st.locked ? `Locked ${label}` : st.open ? `Close ${label}` : `Open ${label}`),
+      enabled: () => !(st.k > 0.05 && st.k < 0.95),
+      onUse: (g) => { if (st.locked) { S?.door(0, 0.1); g.say?.('It is locked.', { priority: 1 }); S?.squeak(0, 0.06); return; } set({ open: !st.open }); },
+    });
+  }
+  return st;
+}
+
+/** A readable note/file. text: string, or { keyholder, subject } / { p1, p2 } for different versions per player (asymmetric information). */
+export function note(w, game, { x, y = 1, z, rot = 0, title = 'NOTE', html, label = 'Read', onRead, role }) {
+  const c = w.coop;
+  const paper = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.4), new THREE.MeshStandardMaterial({ color: 0xcfc8b0, roughness: 1, emissive: 0x201c10, emissiveIntensity: 0.4 })); paper.position.set(x, y, z); paper.rotation.y = rot; paper.rotation.x = -0.15; w.add(paper);
+  let read = false;
+  const pick = () => {
+    if (typeof html === 'string') return html;
+    const R = w.roles?.mine;
+    return html[c.me] ?? html[R] ?? html.all ?? '';
+  };
+  const it = w.interactable({
+    x, y, z, w: 0.7, h: 0.7, d: 0.7, range: 3, pad: 0.1,
+    label: () => (read ? 'Read again' : label), enabled: () => !role || role === c.me,
+    onUse: async (g) => { const { readModal } = await import('../hotel/escape-kit.js'); readModal(g, { title, html: pick() }); if (!read) { read = true; onRead?.(); } },
+  });
+  void it; return paper;
 }

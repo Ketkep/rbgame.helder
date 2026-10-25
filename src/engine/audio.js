@@ -131,6 +131,8 @@ export class GameAudio {
     this._tone({ f: 1175, type: 'sine', dur: 0.55, vol: 0.18, when: 0.1 });
     this._tone({ f: 1568, type: 'triangle', dur: 0.6, vol: 0.08, when: 0.2 });
   }
+  /** the intercom switching on before the Night Desk speaks */
+  deskBlip() { this._tone({ f: 740, type: 'sine', dur: 0.09, vol: 0.07 }); this._tone({ f: 520, type: 'sine', dur: 0.14, vol: 0.07, when: 0.1 }); this._noise?.({ f: 3000, type: 'highpass', dur: 0.25, vol: 0.04 }); }
   click() { this._tone({ f: 900, type: 'square', dur: 0.04, vol: 0.08 }); }
   confirm() { this._tone({ f: 520, type: 'triangle', dur: 0.1, vol: 0.14 }); this._tone({ f: 780, type: 'triangle', dur: 0.16, vol: 0.14, when: 0.07 }); }
   tick() { this._tone({ f: 1500, type: 'square', dur: 0.025, vol: 0.05 }); }

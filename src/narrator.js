@@ -86,10 +86,11 @@ export class Narrator {
     try {
       const u = new SpeechSynthesisUtterance(clean);
       const v = this._pickVoice(); if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-GB';
-      u.rate = 0.96; u.pitch = 0.78; u.volume = this.audio.muted ? 0 : Math.min(1, this.audio.volume);
+      u.rate = this.desk ? 0.84 : 0.96; u.pitch = this.desk ? 0.5 : 0.78; u.volume = this.audio.muted ? 0 : Math.min(1, this.audio.volume);
       const h = { ended: false, pause: () => { try { window.speechSynthesis.cancel(); } catch { /* ignore */ } h.ended = true; } };
       u.onend = u.onerror = () => { h.ended = true; };
       window.speechSynthesis.cancel();
+      if (this.desk) this.audio.deskBlip?.();
       window.speechSynthesis.speak(u);
       line.voice = h;
     } catch (e) { if (import.meta.env?.DEV) console.warn('voice-over', e); line.voice = null; }
@@ -131,7 +132,7 @@ export class Narrator {
     const now = Math.floor(c.shown);
     if (now !== prev) {
       this.ui.setSubtitle(c.text, now);
-      if (!c.voice) {
+      if (!c.voice && !this.desk) {
         // one blip every other visible character; pitch wobbles around a smug low voice
         for (let i = prev; i < now; i++) {
           const ch = c.text[i];

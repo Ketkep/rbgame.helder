@@ -122,6 +122,7 @@ export class UI {
   setSubtitle(text, n) {
     clearTimeout(this._subHideT);
     const s = this.el.subs;
+    const who = s.querySelector('.who'); const nm = document.body.classList.contains('horror') ? 'NIGHT DESK' : 'THE HOST'; if (who && who.textContent !== nm) who.textContent = nm;
     s.classList.remove('hidden', 'fading');
     this.el['sub-shown'].textContent = text.slice(0, n);
     this.el['sub-rest'].textContent = text.slice(n);

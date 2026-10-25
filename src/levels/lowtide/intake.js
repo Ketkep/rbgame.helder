@@ -1,5 +1,7 @@
 import { stalker } from './stalker.js';
-import { horrorEnv, exitDoor, checkpoint, room, floor, box, decal, bed, locker, curtain, gurney, wheelchair, pipes, desk, window as wardWindow, stencil } from './kit.js';
+import { scares } from './scare.js';
+import { roles } from './roles.js';
+import { horrorEnv, exitDoor, checkpoint, door, room, floor, box, decal, bed, locker, curtain, gurney, wheelchair, pipes, desk, barWindow as wardWindow, stencil } from './kit.js';
 
 // Chapter 1 — Intake. (Vertical slice: the look first. Puzzles and the stalker come next.)
 export default {
@@ -31,7 +33,7 @@ export default {
     wheelchair(w, { x: 2.5, z: -5.2, rot: 2.4 });
 
     // ---- the corridor north ---------------------------------------------------------------------------------------------
-    room(w, { x: 0, z: -29, w: 4.6, d: 44, h: 3.4, doors: { e: [{ c: 12, w: 1.6 }, { c: -2, w: 1.6 }], w: [{ c: 6, w: 1.6 }, { c: -14, w: 1.6 }], s: [{ c: 0, w: 1.8 }] }, sides: { s: false } });
+    room(w, { x: 0, z: -29, w: 4.6, d: 44, h: 3.4, doors: { e: [{ c: 12, w: 1.6 }, { c: -2, w: 1.6 }], w: [{ c: 6, w: 1.6 }, { c: -14, w: 1.6 }], s: [{ c: 0, w: 1.8 }] }, sides: { s: false, n: false } });
     for (let i = 0; i < 7; i++) H.lamp({ x: 0, y: 3.35, z: -10 - i * 6.2, mode: ['buzz', 'steady', 'dying', 'buzz', 'dead', 'buzz', 'steady'][i], rot: Math.PI / 2, len: 1.4 });
     pipes(w, { x0: -1.9, z0: -8, x1: -1.9, z1: -50, y: 2.9, n: 2 });
     decal(w, { kind: 'splat', seed: 7, x: 1.3, y: 0.02, z: -22, w: 2.4, h: 2.4 });
@@ -42,10 +44,10 @@ export default {
     stencil(w, 'WARD B', { x: -2.3, y: 2.6, z: -9, rot: Math.PI / 2, width: 2.4 });
 
     // ---- side rooms: records office (east) and a locker room (west) -----------------------------------------------------
-    room(w, { x: 6.2, z: -17, w: 8, d: 6, sides: { w: false }, doors: {} });
+    room(w, { x: 6.2, z: -17, w: 8, d: 6, sides: { w: false }, doors: {}, path: false });
     desk(w, { x: 7.6, z: -18.4, rot: Math.PI / 2 }); box(w, { x: 9.7, y: 1.1, z: -16, w: 0.5, h: 2.2, d: 2.4, kind: 'rust', color: 0x66726c, rough: 0.6 });
     H.lamp({ x: 6.2, y: 3.35, z: -17, mode: 'dying' });
-    room(w, { x: -6.2, z: -23, w: 8, d: 6, sides: { e: false }, doors: {} });
+    room(w, { x: -6.2, z: -23, w: 8, d: 6, sides: { e: false }, doors: {}, path: false });
     for (let i = 0; i < 5; i++) locker(w, { x: -9.4, z: -25 + i * 0.64, rot: Math.PI / 2, ajar: i === 3 ? 0.7 : 0 });
     H.lamp({ x: -6.2, y: 3.35, z: -23, mode: 'buzz' });
 
@@ -56,8 +58,12 @@ export default {
     exitDoor(w, { x: 0, z: -65.7, rot: 0 });
 
     checkpoint(w, { x: 0, z: -10 }); checkpoint(w, { x: 0, z: -40 });
+    door(w, { x: 0, z: -8, along: 'x', width: 1.8, key: 'ward', label: 'ward door' });
     const st = stalker(w, game, H, H.S, { nodes: [{ id: 'a', x: 0, z: -12 }, { id: 'b', x: 0, z: -26 }, { id: 'c', x: 0, z: -40 }, { id: 'd', x: 0, z: -52 }, { id: 'e', x: 6, z: -17 }, { id: 'f', x: -6, z: -23 }], route: ['a', 'e', 'b', 'f', 'c', 'd', 'c', 'b'], start: 'c' });
-    void st;
+    st.hideSpot({ x: -9.2, z: -23, w: 1.6, d: 4 }); st.hideSpot({ x: 8.6, z: -15, w: 2.4, d: 2.4 });
+    const Z = scares(w, game, H, H.S), R = roles(w, game);
+    c.zone({ x: 0, y: 1, z: -30, w: 4.6, h: 3, d: 2, need: 'any' }).onChange((zn) => { if (zn.active && !Z._once1) { Z._once1 = true; Z.fire('behind', { kind: 'patient', role: 'p1' }); } });
+    c.zone({ x: 0, y: 1, z: -46, w: 4.6, h: 3, d: 2, need: 'any' }).onChange((zn) => { if (zn.active && !Z._once2) { Z._once2 = true; Z.fire('rush', { kind: 'orderly', role: R.keyholder }); } });
     c.tell(me, 'Patient. Please remain calm. This is the Night Desk.', { priority: 2 });
     void floor; void tell;
   },

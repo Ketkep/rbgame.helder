@@ -3,7 +3,7 @@ import * as THREE from 'three';
 // Procedural humanoids for Lowtide: "the Orderly" (tall, stained whites, a blank mask), a pale patient, and the doll-like wrong-partner.
 // Built from capsules/cylinders so they read as silhouettes in torchlight; pose() animates a gait from a phase.
 
-const skin = () => new THREE.MeshStandardMaterial({ color: 0xb9b3a4, roughness: 0.85, metalness: 0 });
+const skin = () => new THREE.MeshStandardMaterial({ color: 0x8d877a, roughness: 0.85, metalness: 0 });
 const coat = (c = 0xa7a89a) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.95, metalness: 0 });
 const dark = () => new THREE.MeshStandardMaterial({ color: 0x0a0b0c, roughness: 0.9 });
 const stain = () => new THREE.MeshStandardMaterial({ color: 0x4a0c10, roughness: 0.8 });
@@ -11,7 +11,7 @@ const stain = () => new THREE.MeshStandardMaterial({ color: 0x4a0c10, roughness:
 export function figure(w, { kind = 'orderly', scale = 1 } = {}) {
   const g = new THREE.Group(); const root = new THREE.Group(); g.add(root); g.scale.setScalar(scale);
   const tall = kind === 'orderly' ? 1.18 : 1.0;
-  const cloth = kind === 'orderly' ? coat(0x8d8f84) : kind === 'patient' ? coat(0x7d8a84) : coat(0x6b7773);
+  const cloth = kind === 'orderly' ? coat(0x5f6259) : kind === 'patient' ? coat(0x6a7670) : coat(0x6b7773);
   const add = (parent, geo, m, x, y, z, sx = 1, sy = 1, sz = 1) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.scale.set(sx, sy, sz); o.castShadow = true; o.receiveShadow = true; parent.add(o); return o; };
   const hips = new THREE.Group(); hips.position.y = 0.95 * tall; root.add(hips);
   const torso = new THREE.Group(); torso.position.y = 0.05; hips.add(torso);

@@ -32,7 +32,7 @@ export function horrorEnv(w, game, o = {}) {
     hemi: { sky: o.ambientSky ?? 0x33505e, ground: 0x0b0e10, intensity: o.ambient ?? 0.55 },
     exposure: o.exposure ?? 1.35, stars: 0, clouds: null,
     bloom: { strength: o.bloom ?? 0.9, radius: 0.85, threshold: 0.58 },
-    motes: { color: 0xb8ccd6, count: low ? 120 : 300, size: 0.05, opacity: 0.55 },
+    motes: { color: 0xb8ccd6, count: low ? 100 : 240, size: 0.022, opacity: 0.4 },
     envMap: { top: 0x1c2a34, mid: 0x0a1014, bottom: 0x040506, intensity: 0.45, lights: [{ pos: [0, 9, 0], w: 8, h: 4, color: 0xcfeee0, intensity: 2.4 }, { pos: [-9, 3, 4], w: 3, h: 6, color: 0x7ec4b0, intensity: 1.4 }] },
   });
   w.scene.fog = new THREE.FogExp2(o.fogColor ?? 0x05090c, o.density ?? 0.062);

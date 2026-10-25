@@ -522,3 +522,30 @@ body.touch .host-wrap, body.touch .chips, body.touch .ribbon, body.touch .cookie
 .art-coop i:nth-child(2) { right: 26%; background: #39d7c9; animation: bob 3.1s ease-in-out infinite 0.5s; }
 .art-coop i:nth-child(3) { left: 36%; right: 36%; bottom: 40%; height: 3px; background: rgba(255,255,255,0.8); }
 .art-coop i:nth-child(4) { left: 47%; top: 14%; width: 22px; height: 22px; border-radius: 50%; background: #ffe9a8; box-shadow: 0 0 20px #ffe9a8; }
+
+/* ---- Lowtide (horror campaign) ------------------------------------------------------------------------------------------------ */
+.art-lowtide { background: radial-gradient(ellipse at 50% 20%, rgba(150,200,180,0.35), rgba(8,14,14,0) 55%), linear-gradient(180deg, #0b1514 0%, #050808 100%); overflow: hidden; }
+.art-lowtide i:nth-child(1) { left: 14%; top: 10%; width: 46px; height: 7px; background: #d8fff0; box-shadow: 0 0 22px 6px rgba(190,255,230,0.55); animation: lt-flicker 3.1s steps(1) infinite; }
+.art-lowtide i:nth-child(2) { left: 52%; top: 26%; width: 18px; height: 62%; background: #020303; border-radius: 9px 9px 2px 2px; box-shadow: 0 0 14px 2px #000; animation: lt-sway 5s ease-in-out infinite; }
+.art-lowtide i:nth-child(3) { left: 52%; top: 20%; width: 18px; height: 18px; background: #0a0c0c; border-radius: 50%; animation: lt-sway 5s ease-in-out infinite; }
+.art-lowtide i:nth-child(4) { right: 12%; bottom: 0; width: 70%; height: 22%; background: linear-gradient(180deg, rgba(20,60,60,0.0), rgba(30,90,90,0.45)); animation: lt-tide 6s ease-in-out infinite; }
+@keyframes lt-flicker { 0%, 38%, 44%, 100% { opacity: 1; } 40% { opacity: 0.1; } 42% { opacity: 0.8; } 71% { opacity: 0.2; } 73% { opacity: 1; } }
+@keyframes lt-sway { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-4px); } }
+@keyframes lt-tide { 0%, 100% { transform: translateY(6px); } 50% { transform: translateY(-3px); } }
+.card.horror { border-color: rgba(190,40,48,0.5); box-shadow: 0 14px 44px rgba(120,10,16,0.25); }
+.card.horror:hover { box-shadow: 0 18px 52px rgba(170,20,30,0.38); }
+.card.horror .eyebrow { color: #e0525a; }
+.card.horror h3 { letter-spacing: 0.12em; }
+body.horror #subs { background: rgba(4,8,8,0.82); border-color: rgba(120,200,180,0.18); box-shadow: 0 10px 40px rgba(0,0,0,0.6); border-radius: 6px; }
+body.horror #subs .who { background: transparent; color: #7fd8bf; border: 1px solid rgba(127,216,191,0.5); border-radius: 3px; font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.18em; }
+body.horror #subs .line { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 500; color: #cfe6dd; letter-spacing: 0.01em; }
+#scr-coop.horror .panel { background: rgba(6,10,10,0.92); border-color: rgba(190,40,48,0.35); }
+#scr-coop.horror .eyebrow { color: #e0525a; }
+#scr-coop.horror h2 { letter-spacing: 0.2em; }
+#lt-warn { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; background: #020303; }
+#lt-warn.show { display: flex; }
+#lt-warn .box { width: min(560px, 90vw); text-align: left; padding: 34px 38px; border: 1px solid rgba(190,40,48,0.5); background: #060909; color: #cfe6dd; font: 500 15px/1.6 ui-monospace, Menlo, Consolas, monospace; }
+#lt-warn h2 { margin: 0 0 14px; font: 400 26px var(--display); letter-spacing: 0.2em; color: #e0525a; }
+#lt-warn ul { margin: 10px 0 18px; padding-left: 20px; }
+#lt-warn .btns { display: flex; gap: 12px; }
+#lt-flash { position: fixed; inset: 0; z-index: 60; background: #fff; opacity: 0; pointer-events: none; }

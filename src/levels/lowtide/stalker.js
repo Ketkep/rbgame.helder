@@ -69,6 +69,13 @@ export function stalker(w, game, H, S, o) {
   const hiddenNow = (p) => !!p && st.spot.some((b) => Math.abs(p.x - b.x) < b.w / 2 && Math.abs(p.z - b.z) < b.d / 2) && (p.speed ?? 9) < 0.5;
   c.on('hid:p1', () => {}); c.on('hid:p2', () => {});
 
+  let myHid = false;
+  w.updaters.push(() => {                                                               // am I standing still inside a hiding place? tell everyone (the host's brain reads it)
+    const g = game.player, still = Math.hypot(g.vx, g.vz) < 0.5;
+    const inside = st.spot.some((b) => Math.abs(g.x - b.x) < b.w / 2 && Math.abs(g.z - b.z) < b.d / 2) && still;
+    if (inside !== myHid) { myHid = inside; c.set('hid:' + me, inside); }
+    st.hidden = myHid;
+  });
   const players = () => {
     const P = c.partner, g = game.player, out = [];
     if (game.state === 'playing') out.push({ role: me, x: g.x, y: g.y, z: g.z, speed: Math.hypot(g.vx, g.vz), hidden: c.get('hid:' + me, false) });
@@ -151,6 +158,7 @@ export function stalker(w, game, H, S, o) {
     game.fx.pulse = Math.max(game.fx.pulse * 0.95, heartOn ? 0.15 + 0.6 * Math.max(0, 1 - d / 15) : 0);
     if (d < 7 && st.on) H.stutter(0.06);
     S.dread(Math.max(near, st.state === 'chase' ? 1 : 0));
+    g.fx.desat = st.hidden ? 0.5 : 0.12; g.fx.vig = st.hidden ? 0.85 : 0.5;
   };
   w.stalker = st;
   void THREE; void S0; void inv;

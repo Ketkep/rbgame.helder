@@ -81,7 +81,7 @@ export class Coop {
       case 'rev': this.revive.target = { x: m.x, y: m.y, z: m.z }; this.revive.granted = true; break;
       case 'shove': if ((this.world?.coopRules?.shove ?? 1) > 0 && g.state === 'playing') { g.player.vx += m.vx; g.player.vz += m.vz; g.player.grounded = false; g.player.ground = null; } break;
       case 'done': if (g.state === 'playing') g.completeLevel(); break;
-      case 'load': g.coopLoad(m.i, m.seed, m.camp || 'coop').then(() => this.send({ t: 'loaded' })); break;
+      case 'load': if (m.run !== undefined) this.runSeed = m.run; g.coopLoad(m.i, m.seed, m.camp || 'coop').then(() => this.send({ t: 'loaded' })); break;
       case 'loaded': this._partnerLoaded = true; this._maybeGo(); break;
       case 'go': g.coopBegin(m.rtt ?? this.rtt); break;
       case 'clk': this._recvClock(m); break;
@@ -94,11 +94,14 @@ export class Coop {
 
   // ------------------------------------------------------------------ level lifecycle -------
   /** Host: load level i on both sides, then start together. */
+  /** Run-long state that survives level loads (Lowtide: secret roles and story flags). */
+  get runFlags() { return (this._runFlags ||= {}); }
   startLevel(i) {
     if (!this.isHost) return;
     const seed = (Math.random() * 2 ** 31) | 0;
+    if (this.runSeed === undefined) this.runSeed = (Math.random() * 2 ** 31) | 0;      // one value for the whole run: secret roles, branching flags
     this._partnerLoaded = false; this._myLoaded = false;
-    this.send({ t: 'load', i, seed, camp: this.game.coopUI.campId });
+    this.send({ t: 'load', i, seed, camp: this.game.coopUI.campId, run: this.runSeed });
     this.game.coopLoad(i, seed, this.game.coopUI.campId).then(() => { this._myLoaded = true; this._maybeGo(); });
   }
   _maybeGo() {
@@ -111,6 +114,7 @@ export class Coop {
   /** Called by Game before level.build(): makes the partner's avatar + body and gives the level its API. */
   attachWorld(w, seed) {
     this.levelSeed = seed;
+    if (this.runSeed === undefined) this.runSeed = seed;
     this._rng = mulberry32(seed);
     this.store = new Map(); this._st = {}; this._ev = {}; this._pres = { p1: {}, p2: {} };
     this.zones = [];

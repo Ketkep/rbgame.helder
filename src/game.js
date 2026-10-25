@@ -348,7 +348,7 @@ export class Game {
 
   _campaignCard(c) {
     const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
-    const card = mk('article', 'card ' + (c.status === 'playable' ? 'playable' : 'soon'));
+    const card = mk('article', 'card ' + (c.status === 'playable' ? 'playable' : 'soon') + (c.horror ? ' horror' : ''));
     card.dataset.fx = c.status !== 'playable' ? 'soon' : c.hub ? 'hotel' : 'pilot';
     const art = mk('div', 'card-art art-' + (c.status !== 'playable' ? 'soon' : c.id));
     art.setAttribute('aria-hidden', 'true');
@@ -373,7 +373,16 @@ export class Game {
       const cleared = c.levels.filter((_, i) => cs.levelBest[i]).length, ready = c.levels.filter((l) => !l.placeholder).length;
       card.appendChild(mk('p', 'card-stats', cleared ? `${cleared}/${c.levels.length} ${c.unit || 'sessions'} cleared` : `2 players · online · ${ready}/${c.levels.length} ${c.unit || 'sessions'} ready`));
       const go = mk('button', 'btn primary', 'Play with a friend');
-      go.addEventListener('click', () => { this.audio.init(); this.audio.click(); this.coopUI.open(c.id); });
+      go.addEventListener('click', () => {
+        this.audio.init(); this.audio.click();
+        if (c.horror && !this.save.settings.horrorOk) {                       // content warning once (it is a real horror game)
+          const wr = document.getElementById('lt-warn'); wr.classList.add('show');
+          document.getElementById('lt-warn-ok').onclick = () => { this.save.settings.horrorOk = true; this._saveSettings(); wr.classList.remove('show'); this.coopUI.open(c.id); };
+          document.getElementById('lt-warn-no').onclick = () => wr.classList.remove('show');
+          return;
+        }
+        this.coopUI.open(c.id);
+      });
       const b = mk('div', 'card-btns'); b.appendChild(go); card.appendChild(b);
       return card;
     }
@@ -570,6 +579,7 @@ export class Game {
     this.bloom.strength = env.bloom.strength; this.bloom.radius = env.bloom.radius; this.bloom.threshold = env.bloom.threshold;
     document.body.classList.toggle('theme-glitch', !!level.glitchTheme);
     this.horrorPass.enabled = !!level.horror;                          // Lowtide look
+    this.narrator.desk = !!level.horror;                               // the Night Desk: lower, slower, an intercom click first
     document.body.classList.toggle('horror', !!level.horror);
     Object.assign(this.fx, { pulse: 0, glitch: 0, fade: 0, damage: 0 });
     this.deaths = 0; this.time = 0; this.timeSinceSpawn = 0;
