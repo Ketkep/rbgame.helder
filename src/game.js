@@ -3,6 +3,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { HORROR_SHADER } from './levels/lowtide/post.js';
 import { coopScenery } from './levels/coop/scenery.js';
 
 import { Mover, stepPlayer, MOVE, rayAABB } from './engine/physics.js';
@@ -155,6 +157,10 @@ export class Game {
     this.composer.addPass(this.renderPass);
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
+    this.horrorPass = new ShaderPass(HORROR_SHADER);                       // Lowtide: vignette, grain, aberration, glitch, damage (off for every other level)
+    this.horrorPass.enabled = false;
+    this.composer.addPass(this.horrorPass);
+    this.fx = { vig: 0.5, grain: 0.07, aber: 0.0018, desat: 0.12, pulse: 0, glitch: 0, fade: 0, damage: 0, tint: [0.86, 1.0, 0.94] };
     this._resize();
     window.addEventListener('resize', () => this._resize());
     if (this.save.settings.lowGfx) this.setQuality(true, false);
@@ -365,9 +371,9 @@ export class Game {
     if (c.coop) {                                                                // online two-player: the card opens the room screen
       if (this.touch && !this.debug) { card.classList.remove('playable'); card.classList.add('soon'); card.appendChild(mk('div', 'soon-badge', '🖥 Desktop only for now')); return card; }
       const cleared = c.levels.filter((_, i) => cs.levelBest[i]).length, ready = c.levels.filter((l) => !l.placeholder).length;
-      card.appendChild(mk('p', 'card-stats', cleared ? `${cleared}/${c.levels.length} sessions cleared` : `2 players · online · ${ready}/${c.levels.length} sessions ready`));
+      card.appendChild(mk('p', 'card-stats', cleared ? `${cleared}/${c.levels.length} ${c.unit || 'sessions'} cleared` : `2 players · online · ${ready}/${c.levels.length} ${c.unit || 'sessions'} ready`));
       const go = mk('button', 'btn primary', 'Play with a friend');
-      go.addEventListener('click', () => { this.audio.init(); this.audio.click(); this.coopUI.open(); });
+      go.addEventListener('click', () => { this.audio.init(); this.audio.click(); this.coopUI.open(c.id); });
       const b = mk('div', 'card-btns'); b.appendChild(go); card.appendChild(b);
       return card;
     }
@@ -490,8 +496,9 @@ export class Game {
   }
 
   // ---- Campaign 3 (online co-op): the host chooses, both load, then both start on "go" ----------------------
-  async coopLoad(i, seed) {
-    this.campaign = getCampaign('coop');
+  async coopLoad(i, seed, camp = 'coop') {
+    this.campaign = getCampaign(camp);
+    if (this.coopUI) this.coopUI.campId = this.campaign.id;
     this.reset();
     this.state = 'coopwait';
     this.ui.hideScreens();
@@ -554,7 +561,7 @@ export class Game {
     if (old) { try { old.dispose(); } catch { /* best effort */ } this.renderer.renderLists.dispose(); }
     if (this.coop) this.coop.attachWorld(w, opts.coopSeed || 0);
     level.build(w, this);
-    if (this.coop) { if (!location.search.includes("noseal")) w.sealWalls(); if (!location.search.includes("noscen")) coopScenery(w, this); }                                    // 2 Player Mode: no walking or jumping around the end of a wall
+    if (this.coop && !level.horror) { if (!location.search.includes("noseal")) w.sealWalls(); if (!location.search.includes("noscen")) coopScenery(w, this); }                                    // 2 Player Mode: no walking or jumping around the end of a wall
     this.renderPass.scene = w.scene;
     if (this.lowGfx) this._applyShadowQuality(w);
     this.focus = null;
@@ -562,6 +569,9 @@ export class Game {
     this.renderer.toneMappingExposure = env.exposure;
     this.bloom.strength = env.bloom.strength; this.bloom.radius = env.bloom.radius; this.bloom.threshold = env.bloom.threshold;
     document.body.classList.toggle('theme-glitch', !!level.glitchTheme);
+    this.horrorPass.enabled = !!level.horror;                          // Lowtide look
+    document.body.classList.toggle('horror', !!level.horror);
+    Object.assign(this.fx, { pulse: 0, glitch: 0, fade: 0, damage: 0 });
     this.deaths = 0; this.time = 0; this.timeSinceSpawn = 0;
     this.hintCool = 0; this.levelHints = 0;
     this.deathSpots = [];
@@ -852,7 +862,7 @@ export class Game {
     e['end-baby'].textContent = this.baby ? 'Yes 👶' : 'No';
     e['end-title'].textContent = this.totalDeaths === 0 ? 'Zero deaths?! Cheater.' : this.baby ? 'You trusted no one. (After some help.)' : 'You trusted no one. You win.';
     e['end-share'].textContent = this._shareText();
-    e['end-eyebrow'].textContent = this.campaign.eyebrow ? '2 PLAYER MODE COMPLETE' : `CAMPAIGN ${this.campaign.number} COMPLETE`;
+    e['end-eyebrow'].textContent = this.campaign.eyebrow ? `${this.campaign.title.toUpperCase()} COMPLETE` : `CAMPAIGN ${this.campaign.number} COMPLETE`;
     e['btn-again'].classList.toggle('hidden', !!this.coop);
     e['end-next'].textContent = this.campaign.after || '';
     this.ui.hud(false);
@@ -1158,6 +1168,12 @@ export class Game {
       w.frame(dt, p, cam);
     }
 
+    if (this.horrorPass.enabled) {
+      const u = this.horrorPass.uniforms, f = this.fx;
+      u.uTime.value += dt; u.uVig.value = f.vig; u.uGrain.value = this.lowGfx ? f.grain * 0.5 : f.grain; u.uAber.value = f.aber; u.uDesat.value = f.desat;
+      u.uPulse.value = f.pulse; u.uGlitch.value = f.glitch; u.uFade.value = f.fade; u.uDamage.value = f.damage; u.uTint.value.set(...f.tint);
+      u.uRes.value.set(window.innerWidth * this.pixelRatio, window.innerHeight * this.pixelRatio);
+    }
     if (!window.__noRender) this.composer.render(dt);        // tests can skip drawing entirely
   }
 }

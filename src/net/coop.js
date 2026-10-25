@@ -81,7 +81,7 @@ export class Coop {
       case 'rev': this.revive.target = { x: m.x, y: m.y, z: m.z }; this.revive.granted = true; break;
       case 'shove': if ((this.world?.coopRules?.shove ?? 1) > 0 && g.state === 'playing') { g.player.vx += m.vx; g.player.vz += m.vz; g.player.grounded = false; g.player.ground = null; } break;
       case 'done': if (g.state === 'playing') g.completeLevel(); break;
-      case 'load': g.coopLoad(m.i, m.seed).then(() => this.send({ t: 'loaded' })); break;
+      case 'load': g.coopLoad(m.i, m.seed, m.camp || 'coop').then(() => this.send({ t: 'loaded' })); break;
       case 'loaded': this._partnerLoaded = true; this._maybeGo(); break;
       case 'go': g.coopBegin(m.rtt ?? this.rtt); break;
       case 'clk': this._recvClock(m); break;
@@ -98,8 +98,8 @@ export class Coop {
     if (!this.isHost) return;
     const seed = (Math.random() * 2 ** 31) | 0;
     this._partnerLoaded = false; this._myLoaded = false;
-    this.send({ t: 'load', i, seed });
-    this.game.coopLoad(i, seed).then(() => { this._myLoaded = true; this._maybeGo(); });
+    this.send({ t: 'load', i, seed, camp: this.game.coopUI.campId });
+    this.game.coopLoad(i, seed, this.game.coopUI.campId).then(() => { this._myLoaded = true; this._maybeGo(); });
   }
   _maybeGo() {
     if (!this.isHost || !this._partnerLoaded || !this._myLoaded) return;
@@ -152,6 +152,17 @@ export class Coop {
     w.scene.add(g);
     this.mats = [mat, visor.material];
     w.disposers.push(() => { this._tagTex.dispose(); mat.dispose(); });
+  }
+  /** 'horror': the partner is a pale figure in a hospital gown with a coloured wristband glow; no visor, no name pill. */
+  setAvatarStyle(style) {
+    const g = this.avatar; if (!g || this._style === style) return; this._style = style;
+    if (style !== 'horror') return;
+    const col = ROLES[this.other].color;
+    const body = g.children[0]; body.material.color.setHex(0x9aa39c); body.material.emissive.setHex(0x0a0f0d); body.material.emissiveIntensity = 0.1; body.material.roughness = 0.9;
+    g.children[1].visible = false; g.children[2].visible = false;                       // visor, head lamp
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 14, 12), new THREE.MeshStandardMaterial({ color: 0xb4ada0, roughness: 0.85 })); head.position.set(0, 1.5, 0); head.scale.set(0.9, 1.1, 0.95); g.add(head);
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.035, 6, 20), new THREE.MeshBasicMaterial({ color: new THREE.Color(col).multiplyScalar(2.2), toneMapped: false })); band.rotation.x = Math.PI / 2; band.position.y = 0.95; g.add(band);
+    this.tag.material.opacity = 0.55; this.tag.scale.set(1.1, 0.275, 1); this.tag.position.y = 2.0;
   }
   _drawTag() {
     const c = this._tagCanvas, x = c.getContext('2d');

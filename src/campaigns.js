@@ -11,6 +11,7 @@ import level5 from './levels/level5.js';
 import hotelLobby from './levels/hotel/lobby.js';
 import { TIERS, buildHotelLevels } from './levels/hotel/roster.js';
 import { buildCoopLevels } from './levels/coop/roster.js';
+import { buildLowtideLevels } from './levels/lowtide/roster.js';
 
 export const CAMPAIGNS = [
   {
@@ -46,6 +47,20 @@ export const CAMPAIGNS = [
     coop: true,
     levels: buildCoopLevels(),
     after: 'The retreat is over. Whether you are still friends is between you.',
+  },
+  {
+    id: 'lowtide',
+    number: 4,
+    eyebrow: 'HORROR · 2 PLAYERS · ONLINE',
+    title: 'Lowtide',
+    tagline: 'A flooded asylum. A voice on the intercom. Two patients who do not remember each other. One of you is lying, and it might be you.',
+    eta: '8 chapters · 10+ min each',
+    unit: 'chapters',
+    status: 'playable',
+    coop: true,
+    horror: true,
+    levels: buildLowtideLevels(),
+    after: 'The tide goes out. Whatever you decided stays decided.',
   },
 ];
 

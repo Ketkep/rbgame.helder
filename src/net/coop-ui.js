@@ -10,6 +10,7 @@ export class CoopUI {
     this.game = game;
     this.loop = new URLSearchParams(location.search).has('loop');        // tests: link two tabs of one browser instead of WebRTC
     this.busy = false;
+    this.campId = 'coop';
     $('coop-host').addEventListener('click', () => { game.audio.init(); game.audio.click(); this.host(); });
     $('coop-join').addEventListener('click', () => { game.audio.init(); game.audio.click(); this.join($('coop-code').value); });
     $('coop-code').addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') $('coop-join').click(); });
@@ -27,10 +28,21 @@ export class CoopUI {
   get name() { return $('coop-name').value.trim(); }
   _msg(t) { $('coop-msg').textContent = t || ''; }
 
-  open() {
+  open(campId = 'coop') {
+    this.setCampaign(campId);
     this.game.ui.showScreen('coop');
     $('coop-menu').classList.remove('hidden'); $('coop-room').classList.add('hidden');
     this._msg('');
+  }
+
+  /** Which co-op campaign this room is for (2 Player Mode, Lowtide…). The host's choice wins: it is sent with every level load. */
+  setCampaign(id) {
+    const camp = getCampaign(id); if (!camp?.coop) return;
+    this.campId = camp.id;
+    if (this.game.campaign?.id !== camp.id || this.game.coop) this.game.campaign = camp;
+    const eb = document.querySelector('#scr-coop .eyebrow'); if (eb) eb.textContent = camp.eyebrow ? camp.eyebrow.replace('·', '·') : '2 PLAYER MODE · ONLINE';
+    $('coop-title').textContent = camp.title;
+    $('scr-coop').classList.toggle('horror', camp.horror === true);
   }
 
   _saveName() {
@@ -83,7 +95,7 @@ export class CoopUI {
       if (type === 'bye') this.partnerLeft();
       if (type === 'menu') this.backToRoom(false);
     };
-    g.campaign = getCampaign('coop');
+    g.campaign = getCampaign(this.campId);
     $('coop-menu').classList.add('hidden'); $('coop-room').classList.remove('hidden');
     $('coop-codeout').textContent = code;
     g.ui.showScreen('coop');
@@ -107,7 +119,7 @@ export class CoopUI {
   }
 
   _levels(full) {
-    const g = this.game, c = g.coop, camp = getCampaign('coop'), cs = g.cs('coop');
+    const g = this.game, c = g.coop, camp = getCampaign(this.campId), cs = g.cs(this.campId);
     const grid = $('coop-levels'); grid.innerHTML = '';
     if (!full) return;
     camp.levels.forEach((lv, i) => {
@@ -175,8 +187,9 @@ export class CoopUI {
     const q = new URLSearchParams(location.search);
     const j = q.get('join') || (q.get('coop') === 'join' ? q.get('code') : null);
     if (q.get('name')) $('coop-name').value = q.get('name');
-    if (q.get('coop') === 'host') { this.open(); return this.host(q.get('code') || undefined); }
-    if (j) { this.open(); $('coop-code').value = cleanCode(j); if (q.has('coop')) return this.join(j); }
+    if (q.get('camp')) this.setCampaign(q.get('camp'));
+    if (q.get('coop') === 'host') { this.open(this.campId); return this.host(q.get('code') || undefined); }
+    if (j) { this.open(this.campId); $('coop-code').value = cleanCode(j); if (q.has('coop')) return this.join(j); }
     return null;
   }
 }

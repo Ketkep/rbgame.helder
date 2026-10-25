@@ -545,9 +545,9 @@ export class World {
 
   // ---- composite pieces ------------------------------------------------------------------
   checkpoint(o) {
-    const { x, y, z, real = true, label = 'CHECKPOINT', yaw = 0, id = null } = o;
+    const { x, y, z, real = true, label = 'CHECKPOINT', yaw = 0, id = null, hidden = false } = o;
     const g = new THREE.Group();
-    g.position.set(x, y, z);
+    g.position.set(x, y, z); g.visible = !hidden;                              // hidden: the level draws its own marker
     const col = real ? 0xffc83d : 0xe9b83f;
     const base = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.25, 0.12, 32), plainMaterial(0x222330, { roughness: 0.4, metalness: 0.6 }));
     base.position.y = 0.06; base.receiveShadow = true; base.castShadow = true; g.add(base);
@@ -582,9 +582,9 @@ export class World {
   }
 
   goal(o) {
-    const { x, y, z, yaw = 0, color = 0x2dd4bf, onReach = null } = o;
+    const { x, y, z, yaw = 0, color = 0x2dd4bf, onReach = null, hidden = false } = o;
     const g = new THREE.Group();
-    g.position.set(x, y, z); g.rotation.y = yaw;
+    g.position.set(x, y, z); g.rotation.y = yaw; g.visible = !hidden;          // hidden: the trigger still works, the level draws its own exit
     const ring = new THREE.Mesh(new THREE.TorusGeometry(1.55, 0.12, 12, 56), glowMaterial(color, 2.2));
     ring.position.y = 1.9; g.add(ring);
     const ring2 = new THREE.Mesh(new THREE.TorusGeometry(1.95, 0.04, 8, 56), glowMaterial(0xffffff, 1.5, 0.6));
