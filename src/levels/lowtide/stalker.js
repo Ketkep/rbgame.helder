@@ -134,11 +134,7 @@ export function stalker(w, game, H, S, o) {
   const move = (dt) => {
     if (st.state === 'search' || wait > 0 || wi >= wp.length) return false;
     const t = wp[wi], dx = t.x - st.x, dz = t.z - st.z, d = Math.hypot(dx, dz);
-<<<<<<< HEAD
-    const v = st.state === 'chase' ? st.chaseSpeed : st.state === 'investigate' ? st.speed * 1.9 : st.speed;
-=======
-    const v = (st.state === 'chase' ? vChase : st.state === 'investigate' ? vPatrol * 1.9 : vPatrol) * (o.slow ? o.slow(st.x, st.z) : 1);
->>>>>>> origin/lowtide-c4-hydro
+    const v = (st.state === 'chase' ? st.chaseSpeed : st.state === 'investigate' ? st.speed * 1.9 : st.speed) * (o.slow ? o.slow(st.x, st.z) : 1);
     if (d < 0.25) { wi++; return true; }
     const step = Math.min(d, v * dt); st.x += (dx / d) * step; st.z += (dz / d) * step;
     const ty = Math.atan2(-dx, -dz); let dy = ((ty - st.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI; st.yaw += dy * Math.min(1, dt * (st.state === 'chase' ? 12 : 5));
