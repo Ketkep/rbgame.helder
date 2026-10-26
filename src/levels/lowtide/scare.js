@@ -90,7 +90,7 @@ export function scares(w, game, H, S) {
       if (L.dead) { w.scene.remove(L.f.group); live.splice(i, 1); }
     }
     // the wrong partner: stretch, jitter, flicker in and out, a lean that is not theirs
-    const av = c.avatar;
+    const av = game.coop?.avatar;
     if (Z._wrong && av) {
       Z._wrong.t -= dt; const k = Math.max(0, Z._wrong.t / Z._wrong.dur), tt = w.t;
       const j = Math.floor(tt * 12); const r = (n) => { const s = Math.sin((j + n) * 91.7) * 4375.5; return s - Math.floor(s); };
