@@ -569,8 +569,9 @@ export default {
       phase = 'ward'; tell('all', 'lt.c5.ward', { priority: 2 }); w.after(8, () => tell('all', 'lt.c5.buttons')); w.after(30, startHunt); Z.stand('patient', -19.5, -69, { dur: 25 });
     });
     const held = [false, false];
+    const liftH = [];
     for (let i = 0; i < 2; i++) {
-      holdable(w, game, HOLD, {
+      liftH[i] = holdable(w, game, HOLD, {
         x: i ? -14.0 : -25.0, y: 1.4, z: -72, w: 1.4, h: 1.2, d: 1.4, range: 3, label: 'Hold the lift call', noBar: true, enabled: () => phase === 'ward' && !liftOn,
         tick: (dt, s) => { if (s.held !== held[i]) { held[i] = s.held; c.set(`c5.hb${i}.${me}`, s.held); } if (s.held) { HOLD.show('CALLING THE LIFT', c.get('c5.lp', 0)); if (!hunt.on) startHunt(); } },
       });
@@ -643,7 +644,7 @@ export default {
         if (me === TB && bStage === 2) grip.it.onUse();
       });
       const lounge = (role) => [{ x: -11, z: -34, r: 1.0 }, { x: -15, z: -34 }, { x: -22, z: role === 'p1' ? -29.6 : -30.8, r: 0.5, until: () => { if (halves[role]) return true; if (!halves[role]) c.emit('c5:half', { role }); return halves[role]; } }, { x: -21, z: -34.6, r: 0.7, until: hold(join, -21, -32.4, () => photoDone, 2.5) }];
-      const ward = (isP1) => [{ x: -19.5, z: -41 }, { x: -19.5, z: -46 }, { x: -19.5, z: -52 }, { x: -19.5, z: -62 }, { x: isP1 ? -24 : -15, z: -70.5 }, { x: isP1 ? -24.6 : -14.4, z: -71.4, r: 0.5, until: () => liftOn }, { x: -19.5, z: -75 }, { x: -19.5, z: -79.4, r: 0.6, until: () => false }];
+      const ward = (isP1) => [{ x: -19.5, z: -41 }, { x: -19.5, z: -46 }, { x: -19.5, z: -52 }, { x: -19.5, z: -62 }, { x: isP1 ? -24 : -15, z: -70.5 }, { x: isP1 ? -24.6 : -14.4, z: -71.4, r: 0.5, until: () => { if (liftOn) return true; liftH[isP1 ? 0 : 1].it.onUse(); return false; } }, { x: -19.5, z: -75 }, { x: isP1 ? -20.1 : -18.9, z: -80.0, r: 0.3, until: () => false }];
       const tapeStep = [{ x: -21.5, z: -34.2, r: 0.7, until: () => { if (!tapeChosen && photoDone && me === 'p1') { c.emit('c5:tape', { play: true, who: me }); } return photoDone; } }];
       const role = (r) => (r === TB1 ? 'T' : 'O');
       const mk = (r) => {

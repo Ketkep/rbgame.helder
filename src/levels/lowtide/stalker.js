@@ -61,7 +61,7 @@ export function stalker(w, game, H, S, o) {
   const investigate = (x, z, r = 8) => {
     if (!host || !st.on || st.state === 'chase') return;
     const d = Math.hypot(st.x - x, st.z - z); if (d > Math.max(r, 6) * 3.2) return;
-    st.state = 'investigate'; inv = { x, z }; wp = path(st.x, st.z, x, z); wi = 0; search = 0;
+    st.state = 'investigate'; inv = { x, z }; wp = path(st.x, st.z, x, z); wi = 0; search = 0; wait = 0;                // (a noise during a patrol pause used to freeze him)
   };
   st.noise = (x, z, r = 8) => c.emit('noise', { x, z, r });
   st.setActive = (v) => { st.on = !!v; fig.group.visible = !!v; };
