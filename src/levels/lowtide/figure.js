@@ -60,6 +60,15 @@ export function figure(w, { kind = 'orderly', scale = 1 } = {}) {
     const j = Math.sin(t * 7.3) * Math.sin(t * 2.1);
     head.rotation.z = 0.25 + j * 0.12 * (1 + F.twitch * 2) ; head.rotation.x = -0.1 - lean * 0.4 + Math.sin(t * 3.1) * 0.05; head.rotation.y = Math.sin(t * 0.7) * 0.25 * (1 - lean);
   };
+  /** k 0..1: drop onto all fours (call AFTER pose(); a gait phase keeps the limbs scuttling). The body tips forward about the hips. */
+  F.crawl = (k, phase = 0) => {
+    const th = 1.22 * k;
+    root.rotation.x = th; root.position.set(0, 0.62 * k - 0.95 * tall * Math.cos(th) * k + 0.95 * tall * k * 0, -0.95 * tall * Math.sin(th) * 0.55 * k);
+    const sw = Math.sin(phase) * 0.5 * k;
+    arms[0].sh.rotation.x = -th + 0.15 + sw; arms[1].sh.rotation.x = -th + 0.15 - sw; arms[0].el.rotation.x = -0.2; arms[1].el.rotation.x = -0.2;
+    legs[0].hp.rotation.x = -th * 0.45 + sw * 0.5; legs[1].hp.rotation.x = -th * 0.45 - sw * 0.5; legs[0].kn.rotation.x = 1.0 * k; legs[1].kn.rotation.x = 1.0 * k;
+    head.rotation.x = -0.6 * k - th * 0.0; head.rotation.z *= 1 - k * 0.5;
+  };
   F.face = (yaw) => { g.rotation.y = yaw; };
   F.set = (x, y, z) => g.position.set(x, y, z);
   return F;
