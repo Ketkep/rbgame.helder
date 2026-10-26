@@ -130,6 +130,8 @@ export default {
     decal(w, { kind: 'splat', seed: 18, x: 14, y: 0.02, z: -37, w: 2.6, h: 2.6 });
     decal(w, { kind: 'hand', seed: 19, x: 10.76, y: 1.2, z: -26, w: 0.5, h: 0.5, face: 'e' });
     decal(w, { kind: 'scratch', seed: 22, x: 18.44, y: 1.4, z: -27, w: 1.5, h: 1.5, face: 'w' });
+    box(w, { x: 18.3, y: 1.5, z: -38.6, w: 0.3, h: 0.9, d: 0.8, kind: 'rust', color: 0x4d5a56, rough: 0.5 });
+    const fuseLed = box(w, { x: 18.12, y: 1.8, z: -38.6, w: 0.03, h: 0.06, d: 0.3, kind: 'concrete', color: 0xff3a2a, shadow: false });
     stencil(w, 'SERVICE · STAFF ONLY', { x: 14.6, y: 2.7, z: -14.18, rot: Math.PI, width: 4.2 });
     const T3 = trolley(w, { x: 12.2, z: -24.6, rot: -0.2 });
 
@@ -142,6 +144,8 @@ export default {
     decal(w, { kind: 'splat', seed: 23, x: -6.8, y: 0.02, z: -44, w: 2.2, h: 2.2 });
     decal(w, { kind: 'hand', seed: 24, x: -9.84, y: 1.0, z: -41.6, w: 0.5, h: 0.5, face: 'e' });
     stencil(w, 'LINEN · BULKHEAD 3', { x: -6.2, y: 2.7, z: -39.84, rot: Math.PI, width: 3.6 });
+    box(w, { x: -7.4, y: 0.45, z: -45.3, w: 1.2, h: 0.9, d: 0.7, kind: 'wood', rough: 0.8 }); w.collider({ x: -7.4, y: 0.45, z: -45.3, w: 1.2, h: 0.9, d: 0.7 });
+    const fuseMesh = box(w, { x: -7.4, y: 0.99, z: -45.3, w: 0.16, h: 0.1, d: 0.16, kind: 'rust', color: 0xc9a24a, rough: 0.4, shadow: false });
     const T1 = trolley(w, { x: 1.55, z: -35.6, rot: 0.1 });
 
     // ---- the HALL behind the bulkhead (z -50 .. -66) and the lift ----------------------------------------------------------------
@@ -325,6 +329,13 @@ export default {
     }
 
     // ---- 5. the bulkhead: two consoles held at the same time -----------------------------------------------------------------
+    w.interactable({ x: -7.4, y: 1.25, z: -45.3, w: 1.2, h: 0.9, d: 0.7, range: 3.2, pad: 0.1, label: () => 'Take the fuse', enabled: () => free(me) && !c.get('fuse', null),
+      onUse: () => { c.set('fuse', me); S.step(0, 0.06); } });
+    c.on('fuse', (v) => { if (v) fuseMesh.visible = false; if (v === me) w.after(0.5, () => sayMe('lt.c1.fuse')); });
+    w.interactable({ x: 17.5, y: 1.5, z: -38.6, w: 0.9, h: 0.9, d: 0.9, range: 3, pad: 0.1,
+      label: () => (c.get('fuse', null) === me ? 'Fit the fuse' : 'Fuse box (empty)'), enabled: () => !c.get('fuse-in', false) && free(me),
+      onUse: () => { if (c.get('fuse', null) === me) c.emit('fuse-in'); else { S.squeak(0, 0.05); say(me, 'lt.c1.nofuse'); } } });
+    c.onEvent('fuse-in', () => { c.set('fuse-in', true); fuseLed.material.color.setHex(0x3dff7a); S.door(0, 0.2); S.beat(0.6); say('all', 'lt.c1.fuse.in'); });
     let prog = 0, bulkDone = false, fired = { rush: false, dark: false, wrong: false };
     const heldOf = (id) => !!c.get('held:' + id, false);
     const consoles = {};
@@ -340,8 +351,8 @@ export default {
       let was = false;
       holdable(w, game, hud, {
         x: cx, y: 1.1, z: cz, w: 1.5, h: 1.3, d: 1.5, range: 3, secs: 9, noBar: true, bar: 'AUTHORISING',
-        enabled: () => !bulkDone && free(me),
-        label: () => `Hold key ${id} (the other console must be held too)`,
+        enabled: () => !bulkDone && free(me) && (id === 'A' || c.get('fuse-in', false)),
+        label: () => (id === 'B' && !c.get('fuse-in', false) ? 'Console B has no power' : `Hold key ${id} (the other console must be held too)`),
         tick: (dt, s) => { if (s.held !== was) { was = s.held; c.set('held:' + id, s.held); if (s.held) c.set('holder:' + id, me); } s.k = prog; if (s.held) hud.show(heldOf(id === 'A' ? 'B' : 'A') ? 'AUTHORISING' : 'WAITING FOR THE OTHER KEY', prog); },
       });
       void label;
@@ -352,7 +363,7 @@ export default {
     w.updaters.push((dt) => {
       if (bulkDone) return;
       const both2 = heldOf('A') && heldOf('B');
-      prog = Math.max(0, Math.min(1, prog + (both2 ? dt / 9 : -dt / 2.5)));
+      prog = Math.max(0, Math.min(1, prog + (both2 ? dt / 12 : -dt / 2.5)));
       scrT -= dt; if (scrT <= 0) { scrT = 0.2; consoles.A.refresh(); consoles.B.refresh(); }
       if (both2 && prog > 0.42 && !fired.dark) { fired.dark = true; Z.fire('blackout', { sec: 2.6 }); Z.fire('wrong', { sec: 4.5 }); }
       if (prog >= 1) { bulkDone = true; c.emit('bulk-open'); }
@@ -430,9 +441,11 @@ export default {
     steps.push({ x: 1.0, z: -17, r: 0.9 }, { x: 0, z: -17.2, r: 0.7 });
     steps.push({ x: 0, z: -27, r: 1.0, until: () => !shutter.locked && shutter.open });
     if (cardBot) {
-      steps.push({ x: 0, z: -43, r: 1.0 }, { x: -8.4, z: -43, r: 1.2, use: true, until: () => bulkDone }, { x: 0, z: -43, r: 1.0 });
+      steps.push({ x: 0, z: -43, r: 1.0 }, { x: -7.4, z: -45.3, r: 1.5, use: true, until: () => c.get('fuse', null) === me }, { x: 0, z: -43, r: 1.0 });
+      steps.push({ x: 0, z: -31, r: 0.9 }, { x: 6.4, z: -31, r: 0.9 }, { x: 14.6, z: -31, r: 0.9 }, { x: 17.5, z: -38.6, r: 1.0, use: true, until: () => c.get('fuse-in', false) });
+      steps.push({ x: 14.6, z: -39.9, r: 1.2, use: true, until: () => bulkDone }, { x: 14.6, z: -31, r: 0.9 }, { x: 6.4, z: -31, r: 0.9 }, { x: 0, z: -31, r: 0.9 });
     } else {
-      steps.push({ x: 0, z: -31, r: 0.9 }, { x: 6.4, z: -31, r: 0.9 }, { x: 14.6, z: -31, r: 0.9 }, { x: 14.6, z: -39.9, r: 1.2, use: true, until: () => bulkDone }, { x: 14.6, z: -31, r: 0.9 }, { x: 6.4, z: -31, r: 0.9 }, { x: 0, z: -31, r: 0.9 });
+      steps.push({ x: 0, z: -43, r: 1.0 }, { x: -8.4, z: -43, r: 1.2, use: true, until: () => bulkDone }, { x: 0, z: -43, r: 1.0 });
     }
     steps.push({ x: 0, z: -47, r: 1.0 }, { x: 0, z: -56, r: 1.2 });
     steps.push({ x: cardBot ? -3.7 : -2.9, z: cardBot ? -64.9 : -64.2, r: 1.3, use: cardBot, until: () => c.get('lift-called', false) });
