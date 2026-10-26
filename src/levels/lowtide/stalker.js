@@ -62,7 +62,7 @@ export function stalker(w, game, H, S, o) {
   const investigate = (x, z, r = 8) => {
     if (!host || !st.on || st.state === 'chase') return;
     const d = Math.hypot(st.x - x, st.z - z); if (d > Math.max(r, 6) * 3.2) return;
-    st.state = 'investigate'; inv = { x, z }; wp = path(st.x, st.z, x, z); wi = 0; search = 0;
+    st.state = 'investigate'; inv = { x, z }; wp = path(st.x, st.z, x, z); wi = 0; search = 0; wait = 0;                // (a noise during a patrol pause used to freeze him)
   };
   st.noise = (x, z, r = 8) => c.emit('noise', { x, z, r });
   st.setActive = (v) => { st.on = !!v; fig.group.visible = !!v; };
@@ -94,8 +94,8 @@ export function stalker(w, game, H, S, o) {
   const players = () => {
     const P = c.partner, g = game.player, out = [];
     if (game.state === 'playing') out.push({ role: me, x: g.x, y: g.y, z: g.z, speed: Math.hypot(g.vx, g.vz), lit: lit(me, g.x, g.z), hidden: c.get('hid:' + me, false) && !lit(me, g.x, g.z) });
-    if (P.has && !P.dead) out.push({ role: c.other, x: P.sx, y: P.sy, z: P.sz, speed: Math.hypot(P.vx || 0, P.vz || 0), lit: lit(c.other, P.sx, P.sz), hidden: c.get('hid:' + c.other, false) && !lit(c.other, P.sx, P.sz) });
-    return out;
+    if (P.has && !P.dead) out.push({ role: c.other, y: P.sy, x: P.sx, y: P.sy, z: P.sz, speed: Math.hypot(P.vx || 0, P.vz || 0), lit: lit(c.other, P.sx, P.sz), hidden: c.get('hid:' + c.other, false) && !lit(c.other, P.sx, P.sz) });
+    return o.ignoreHigh ? out.filter((p) => !(p.y > o.ignoreHigh)) : out;                  // option: players on a gallery/balcony above this height are out of his reach and ignored
   };
 
   // ---- the brain (host) -----------------------------------------------------------------------------------------------------
