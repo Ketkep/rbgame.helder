@@ -66,6 +66,10 @@ export function stalker(w, game, H, S, o) {
   st.setActive = (v) => { st.on = !!v; fig.group.visible = !!v; };
   st.warp = (x, z) => { st.x = x; st.z = z; fig.set(x, 0, z); wp = []; };
   st.hideSpot = (b) => { st.spot.push(b); };
+  /** Replace the patrol (node ids) and restart it at index `idx`; he drops whatever he was doing and walks to the first node. */
+  st.setRoute = (ids, idx = 0) => { route = ids.map((id) => byId.get(id)); ri = idx; wp = []; wi = 0; wait = 0; search = 0; if (st.state !== 'chase') st.state = 'patrol'; };
+  /** A patrol node by id. */
+  st.nodeAt = (id) => byId.get(id);
   const hiddenNow = (p) => !!p && st.spot.some((b) => Math.abs(p.x - b.x) < b.w / 2 && Math.abs(p.z - b.z) < b.d / 2) && (p.speed ?? 9) < 0.5;
   c.on('hid:p1', () => {}); c.on('hid:p2', () => {});
 
