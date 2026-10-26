@@ -79,7 +79,7 @@ export default {
 
     // ================================================================ 1. lobby =================================================
     room(w, { x: 0, z: 0, w: 16, d: 12, doors: { n: [{ c: 0, w: 1.8 }] } });
-    stencil(w, 'CHAPTER 3 · RECORDS ROOM', { x: -3.6, y: 2.6, z: -5.8, rot: 0, width: 4.6, size: 0.42 });
+    stencil(w, 'CHAPTER 3', { x: -3.6, y: 2.95, z: -5.8, rot: 0, width: 3, size: 0.4 }); stencil(w, 'RECORDS ROOM', { x: -3.6, y: 2.3, z: -5.8, rot: 0, width: 3.8, size: 0.34 });
     H.lamp({ x: -3, y: 3.35, z: -1, mode: 'buzz', rot: 0 }); H.lamp({ x: 3.4, y: 3.35, z: 3, mode: 'dying', rot: 0 }); H.lamp({ x: -4, y: 3.35, z: 3.5, mode: 'dead' }); H.lamp({ x: 0.5, y: 3.35, z: -4.6, mode: 'steady', len: 0.8, power: 0.6 });
     barWindow(w, { x: 7.82, y: 1.9, z: -0.5, rot: -PI / 2 });
     pipes(w, { x0: -7.4, z0: 5, x1: -7.4, z1: -5, y: 3.0, n: 2 });
@@ -106,7 +106,7 @@ export default {
     // the keypad: four dials, shared
     const dial = [0, 0, 0, 0], dialTex = [], dialCv = [];
     box(w, { x: 2.65, y: 1.5, z: -5.77, w: 2.4, h: 1.0, d: 0.1, kind: 'rust', color: 0x252b2e });
-    stencil(w, 'RECORDS · STAFF', { x: 2.65, y: 2.15, z: -5.8, rot: 0, width: 1.9, size: 0.3 });
+    stencil(w, 'STAFF ONLY', { x: 2.65, y: 2.15, z: -5.8, rot: 0, width: 1.9, size: 0.3 });
     const D0 = door(w, { x: 0, z: -6, along: 'x', width: 1.8, key: 'rec', locked: true, label: 'records door', game });
     const drawDial = (i) => {
       const cv = dialCv[i], g = cv.getContext('2d'); g.fillStyle = '#071a14'; g.fillRect(0, 0, 64, 96);
@@ -198,7 +198,7 @@ export default {
     // ================================================================ 4. the staff lockers (east) ==================================
     room(w, { x: 15, z: -25.5, w: 10, d: 9, sides: { s: false } });
     H.lamp({ x: 15, y: 3.35, z: -25, mode: 'dying', len: 1.2 }); H.lamp({ x: 12, y: 3.35, z: -28, mode: 'dead' }); H.lamp({ x: 18.2, y: 3.35, z: -23, mode: 'buzz', len: 1 });
-    stencil(w, 'STAFF · EAST', { x: 17.6, y: 2.7, z: -29.82, rot: 0, width: 2.4, size: 0.4 });
+    stencil(w, 'STAFF', { x: 17.6, y: 2.7, z: -29.82, rot: 0, width: 2.4, size: 0.4 });
     pa(10.2, -23, 1, 0, 'Page the Orderly (west end)', { x: -21, z: -18 });
     bench(w, { x: 16.8, z: -23.2, rot: 0 });
     curtain(w, { x: 19.3, z: -25.5, width: 3.6, rot: PI / 2 });
