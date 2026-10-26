@@ -25,9 +25,10 @@ const segHitsBox = (x0, z0, x1, z1, b) => {                     // 2D slab test 
 
 export function stalker(w, game, H, S, o) {
   const c = w.coop, me = c.me, host = c.isHost;
+  const Y0 = o.y ?? 0;                                           // the floor he walks on (a chapter on an upper storey passes `y`)
   const nodes = o.nodes.map((n, i) => ({ ...n, i, adj: [] }));
   const byId = new Map(nodes.map((n) => [n.id, n]));
-  const solids = () => (o.extra || []).concat(w.bodies).filter((b) => b.enabled && b.solid !== false && b.tag !== 'partner' && b.top - b.hy * 2 < 1.4 && b.top > 0.6 && b.hy * 2 > 0.7);
+  const solids = () => (o.extra || []).concat(w.bodies).filter((b) => b.enabled && b.solid !== false && b.tag !== 'partner' && b.top - b.hy * 2 - Y0 < 1.4 && b.top - Y0 > 0.6 && b.hy * 2 > 0.7);
   const clear = (x0, z0, x1, z1, list = solids()) => !list.some((b) => segHitsBox(x0, z0, x1, z1, b));
   const list0 = solids();
   for (const a of nodes) for (const b of nodes) if (a !== b && Math.hypot(a.x - b.x, a.z - b.z) < (o.link ?? 18) && clear(a.x, a.z, b.x, b.z, list0)) a.adj.push(b);
@@ -50,7 +51,7 @@ export function stalker(w, game, H, S, o) {
   const st = { x: S0.x, z: S0.z, yaw: 0, state: 'patrol', on: true, dist: 99, who: null, nodes, byId, spot: [], bot: !!window.__noRender };
   let wp = [], wi = 0, route = o.route.map((id) => byId.get(id)), ri = 0, wait = 0, search = 0, lost = 0, target = null, sendT = 0, phase = 0, squeakT = 0, stepT = 0, inv = null;
   const fig = figure(w, { kind: 'orderly' });
-  fig.set(st.x, 0, st.z);
+  fig.set(st.x, Y0, st.z);
   const sight = o.sight ?? 17, fov = o.fov ?? 0.95, hear = o.hear ?? 7.5;
   st.speed = o.speed ?? 1.7; st.chaseSpeed = o.chaseSpeed ?? 6.1; st.home = o.home || null; st.hunt = false;       // tunable at run time by a chapter
 
@@ -65,7 +66,7 @@ export function stalker(w, game, H, S, o) {
   };
   st.noise = (x, z, r = 8) => c.emit('noise', { x, z, r });
   st.setActive = (v) => { st.on = !!v; fig.group.visible = !!v; };
-  st.warp = (x, z) => { st.x = x; st.z = z; fig.set(x, 0, z); wp = []; };
+  st.warp = (x, z) => { st.x = x; st.z = z; fig.set(x, Y0, z); wp = []; };
   st.hideSpot = (b) => { st.spot.push(b); };
   /** Replace the patrol (node ids) and restart it at index `idx`; he drops whatever he was doing and walks to the first node. */
   st.setRoute = (ids, idx = 0) => { route = ids.map((id) => byId.get(id)); ri = idx; wp = []; wi = 0; wait = 0; search = 0; if (st.state !== 'chase') st.state = 'patrol'; };
@@ -155,7 +156,7 @@ export function stalker(w, game, H, S, o) {
     const g = game.player, dme = Math.hypot(g.x - st.x, g.z - st.z); st.dist = Math.min(st.dist, dme);
     st.myDist = dme;
     const chase = st.state === 'chase';
-    if (!st.bot && game.state === 'playing' && dme < 1.0 && Math.abs(g.y - 0) < 2.2 && chase && !(c.get('hid:' + me, false) && !lit(me, g.x, g.z))) { c.emit('orderly-caught', { role: me }); game.kill('The Orderly'); }
+    if (!st.bot && game.state === 'playing' && dme < 1.0 && Math.abs(g.y - Y0) < 2.2 && chase && !(c.get('hid:' + me, false) && !lit(me, g.x, g.z))) { c.emit('orderly-caught', { role: me }); game.kill('The Orderly'); }
   });
 
   // ---- visuals and cues (per frame, both machines) -------------------------------------------------------------------------
@@ -165,7 +166,7 @@ export function stalker(w, game, H, S, o) {
     if (!st.on) return;
     const spd = st.moving ? (st.state === 'chase' ? 1 : 0.35) : 0;
     phase += dt * (st.state === 'chase' ? 12 : 5.5) * (st.moving ? 1 : 0.2);
-    fig.set(st.x, 0, st.z); fig.face(st.yaw + Math.PI); fig.pose(phase, spd, st.state === 'chase' ? 1 : 0.2, w.t); fig.twitch = st.state === 'search' ? 1 : 0;
+    fig.set(st.x, Y0, st.z); fig.face(st.yaw + Math.PI); fig.pose(phase, spd, st.state === 'chase' ? 1 : 0.2, w.t); fig.twitch = st.state === 'search' ? 1 : 0;
     const d = st.myDist ?? 99;
     // the tells: wheels and steps carry; the torch dims near him; a heartbeat starts as he closes in
     const rel = Math.atan2(st.x - g.camera.position.x, st.z - g.camera.position.z) - g.yaw; const pan = Math.max(-1, Math.min(1, Math.sin(rel + Math.PI) * 0.9));
