@@ -37,6 +37,7 @@ export default {
     w.respawn = { ...w.spawn };
     const tell = (r, k, o) => c.tell(r, k, o);
     const done = (id) => () => c.get('v:' + id, false);
+    const fireH = (id, arg) => { if (c.isHost) Z.fire(id, arg); };         // events go out once (from the host), every machine renders its own
     const tiled = { floorKind: 'tile', wallKind: 'tile' };
 
     // =========================================================================================================================
@@ -160,7 +161,7 @@ export default {
     const bucketPos = { x: 5.5, z: -44.5 };
     w.interactable({ x: bucketPos.x, y: 0.5, z: bucketPos.z, w: 0.6, h: 0.7, d: 0.6, range: 3, label: 'Kick the bucket', onUse: () => { H.S.slam(0.25); st1.noise(bucketPos.x, bucketPos.z, 16); } });
     box(w, { x: bucketPos.x, y: 0.22, z: bucketPos.z, w: 0.35, h: 0.45, d: 0.35, kind: 'rust', color: 0x6a736d });
-    stage(w, 'hall-in', { x: 0, y: 1, z: -42, w: 22, h: 3, d: 2 }, () => { tell('all', 'lt.c4.hall', { priority: 1 }); w.after(70, () => Z.fire('behind', { kind: 'patient', role: 'all', dist: 3.4 })); });
+    stage(w, 'hall-in', { x: 0, y: 1, z: -42, w: 22, h: 3, d: 2 }, () => { tell('all', 'lt.c4.hall', { priority: 1 }); w.after(70, () => fireH('behind', { kind: 'patient', role: 'all', dist: 3.4 })); });
 
     // =========================================================================================================================
     // 4 · THE POOL HALL — the Orderly on the deck, the sea gate, the flood
@@ -234,10 +235,10 @@ export default {
       a: { x: -15.9, y: 3, z: -92, text: 'SEA GATE · TOWER', rot: Math.PI / 2 },
       b: { x: 13.4, y: 0, z: -93, text: 'SEA GATE · DECK', rot: -Math.PI / 2 },
       onDone: () => {
-        if (c.get('flood', null) == null) c.set('flood', w.t);
+        if (c.isHost && c.get('flood', null) == null) c.set('flood', w.t);
         w.respawn = { x: 0, y: 5.05, z: -108.5, yaw: 0 };
         R.flag('ch4-flood', true);
-        Z.fire('sting', { vol: 0.6, role: 'all' }); H.S.groan(0.3); Z.knock({ n: 3 });
+        fireH('sting', { vol: 0.6, role: 'all' }); H.S.groan(0.3); Z.knock({ n: 3 });
         tell('all', 'lt.c4.flood', { priority: 2 });
         st2.noise(13.4, -93, 40);
       },
@@ -306,7 +307,7 @@ export default {
     });
     stage(w, 'dc-in', { x: 0, y: 0, z: -127, w: 5, h: 3, d: 1.5 }, () => { tell('all', 'lt.c4.drowned', { priority: 1 }); });
     stage(w, 'dc-crank', { x: 0, y: 0, z: -142, w: 5, h: 3, d: 1.5 }, () => { tell('all', 'lt.c4.bridge', { priority: 1 }); });
-    stage(w, 'dc-far', { x: 0, y: 0, z: -158.5, w: 5, h: 3, d: 1.5 }, () => { R.flag('ch4-crossed', true); w.after(16, () => { Z.fire('wrong', { sec: 4.5, role: 'all' }); w.after(20, () => Z.fire('behind', { kind: 'patient', role: 'all', dist: 3.2 })); }); });
+    stage(w, 'dc-far', { x: 0, y: 0, z: -158.5, w: 5, h: 3, d: 1.5 }, () => { R.flag('ch4-crossed', true); w.after(16, () => { fireH('wrong', { sec: 4.5, role: 'all' }); w.after(20, () => fireH('behind', { kind: 'patient', role: 'all', dist: 3.2 })); }); });
     checkpoint(w, { x: -0.9, z: -162.5 });
     const trench = { x: 0, z: -153, hx: 2.7, hz: 3.1, hy: 2, top: 1, enabled: true };
     const st3 = stalker(w, game, H, H.S, {
@@ -316,7 +317,7 @@ export default {
     });
     st3.setActive(false);
     st3.hideSpot({ x: -4.4, z: -132, w: 2.8, d: 2.2 }); st3.hideSpot({ x: 4.4, z: -141, w: 2.8, d: 2.2 });
-    c.zone({ x: 0, y: 1, z: -135, w: 5, h: 3, d: 8, need: 'any' }).onChange((zn) => { if (zn.active && !c.get('c3:rush', false)) { c.set('c3:rush', true); w.after(26, () => Z.fire('rush', { kind: 'orderly', role: R.subject })); } });
+    c.zone({ x: 0, y: 1, z: -135, w: 5, h: 3, d: 8, need: 'any' }).onChange((zn) => { if (zn.active && !c.get('c3:rush', false)) { c.set('c3:rush', true); w.after(26, () => fireH('rush', { kind: 'orderly', role: R.subject })); } });
 
     // =========================================================================================================================
     // 6 · THE TIDE CHAMBER — two ledges, valve 3, the cycle under you
@@ -356,7 +357,7 @@ export default {
     st4.setActive(false);
     stage(w, 'tc-in', { x: 0, y: 1, z: -172, w: 15, h: 3, d: 1.6 }, () => { tell('all', 'lt.c4.chamber', { priority: 1 }); });
     let blacked = false;
-    w.updaters.push(() => { if (blacked || V3.prog < V3.secs * 0.5 || V3.done) return; blacked = true; Z.blackout(2.6); R.whisper({ keyholder: 'lt.c4.whisper.k3', subject: 'lt.c4.whisper.s3' }); w.after(4, () => Z.fire('rush', { kind: 'orderly', role: R.keyholder })); });
+    w.updaters.push(() => { if (blacked || V3.prog < V3.secs * 0.5 || V3.done) return; blacked = true; Z.blackout(2.6); R.whisper({ keyholder: 'lt.c4.whisper.k3', subject: 'lt.c4.whisper.s3' }); w.after(4, () => fireH('rush', { kind: 'orderly', role: R.keyholder })); });
 
     // =========================================================================================================================
     // 7 · OUT
@@ -388,9 +389,9 @@ export default {
       p1: [
         { x: 0, z: -3, r: 1 }, { x: 0, z: -9, r: 1 }, { x: -1.6, z: -34, r: 0.8 }, { x: -1.6, z: -35.5, r: 0.45, until: done('v1') },
         { x: 0, z: -39, r: 0.8 }, { x: 0, z: -43, r: 1 },
-        { x: 9.3, z: lz('14'), r: 0.3, use: true, until: () => seq() >= 1 },
+        { x: 8.3, z: lz('14'), r: 0.3 }, { x: 10.4, z: lz('14'), r: 1.0, use: true, until: () => seq() >= 1 },
         { until: () => seq() >= 2 },
-        { x: 9.3, z: lz('22'), r: 0.3, use: true, until: () => seq() >= 3 },
+        { x: 8.3, z: lz('22'), r: 0.3 }, { x: 10.4, z: lz('22'), r: 1.0, use: true, until: () => seq() >= 3 },
         { until: () => c.get('lk:ok', false) },
         { x: 0, z: -62, r: 1 }, { x: 0, z: -68, r: 1 }, { x: -13, z: -76, r: 1 }, { x: -16.8, z: -82, r: 0.8 }, { x: -16.8, z: -86, r: 0.8 },
         { x: -15.9, z: -92, r: 0.4, until: done('v2') },
@@ -405,9 +406,9 @@ export default {
         { x: 0, z: -3, r: 1 }, { x: 0, z: -9, r: 1 }, { x: 0.5, z: -23, r: 1 }, { x: 1.95, z: -23, r: 0.8 }, { x: 1.95, z: -34.5, r: 0.45, until: done('v1') },
         { x: 0, z: -37, r: 1 }, { x: 0, z: -39, r: 0.8 }, { x: 0, z: -43, r: 1 },
         { until: () => seq() >= 1 },
-        { x: 9.3, z: lz('07'), r: 0.3, use: true, until: () => seq() >= 2 },
+        { x: 8.3, z: lz('07'), r: 0.3 }, { x: 10.4, z: lz('07'), r: 1.0, use: true, until: () => seq() >= 2 },
         { until: () => seq() >= 3 },
-        { x: 9.3, z: lz('03'), r: 0.3, use: true, until: () => c.get('lk:ok', false) },
+        { x: 8.3, z: lz('03'), r: 0.3 }, { x: 10.4, z: lz('03'), r: 1.0, use: true, until: () => c.get('lk:ok', false) },
         { x: 0, z: -62, r: 1 }, { x: 0, z: -68, r: 1 }, { x: 13, z: -76, r: 1 }, { x: 13.4, z: -93, r: 0.4, until: done('v2') },
         { x: 16.5, z: -88.5, r: 0.8 }, { x: 16.5, z: -100, r: 0.8 }, { x: 16.5, z: -105, r: 1 }, { x: 10, z: -108.5, r: 1 }, { x: 0, z: -108.5, r: 1 }, { x: 0, z: -113, r: 0.8 }, { x: 0, z: -122, r: 1 },
         { x: 0, z: -146, r: 0.6, until: bk },
@@ -418,6 +419,7 @@ export default {
       ],
     });
 
+    w.hooks.onComplete = () => { R.flag('ch4-drowned-' + me, HY.drowned); };
     w.after(3, () => tell(me, 'lt.c4.intro', { priority: 2 }));
     void box; void gurney; void wheelchair; void barWindow; void HY; void bell;
   },
