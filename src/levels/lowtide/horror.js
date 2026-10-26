@@ -140,6 +140,22 @@ export function horrorEnv(w, game, o = {}) {
   };
   const V3 = new THREE.Vector3();
 
+  /** A torch beam + glow with NO real light behind it (the doppelganger's torch: it never lights the wall it points at). Returns { set(x, y, z, yaw, pitch, on), hide() }. */
+  H.ghostTorch = () => {
+    const beam = new THREE.Mesh(beamGeometry(), beamMaterial(0xdff4ff, 0.2)); beam.frustumCulled = false; beam.scale.set(6.5, 6.5, 13); beam.visible = false; w.add(beam);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTexture('glow'), color: 0xcfeaff, transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+    glow.scale.setScalar(0.9); glow.visible = false; w.add(glow);
+    const qq = new THREE.Quaternion(), ee = new THREE.Euler(0, 0, 0, 'YXZ'), vv = new THREE.Vector3();
+    return {
+      set(x, y, z, yaw, pitch, on = true) {
+        beam.visible = glow.visible = on; if (!on) return;
+        ee.set(pitch || 0, yaw || 0, 0, 'YXZ'); qq.setFromEuler(ee);
+        vv.set(0.22, 1.35, -0.1).applyQuaternion(qq).add(V3.set(x, y, z));
+        beam.position.copy(vv); beam.quaternion.copy(qq); glow.position.copy(vv);
+      },
+      hide() { beam.visible = glow.visible = false; },
+    };
+  };
   /** Brief torch stutter (a scare beat). */
   H.stutter = (sec = 1.2) => { H.dimT = Math.max(H.dimT, sec); };
   /** Switch every lamp to one mode, or force them all to a brightness for a while (null releases them). */
