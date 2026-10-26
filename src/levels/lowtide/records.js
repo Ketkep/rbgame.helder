@@ -105,8 +105,8 @@ export default {
     paper({ x: -7.6, y: 1.5, z: 0.4, rot: PI / 2, face: { nx: 1, nz: 0 }, title: 'NOTICE', html: '<b>RECORDS WING</b><p>After midnight: files stay in the room. Patients must be accompanied. Do not compare copies. Do not read your copy aloud to the other party.</p><p><i>The Night Desk reminds you that comparing copies is how the files get confused.</i></p><p style="opacity:.7">(Someone has crossed out "confused" and written "corrected".)</p>', size: 0.4 });
     // the keypad: four dials, shared
     const dial = [0, 0, 0, 0], dialTex = [], dialCv = [];
-    box(w, { x: 2.7, y: 1.5, z: -5.77, w: 1.9, h: 1.0, d: 0.1, kind: 'rust', color: 0x252b2e });
-    stencil(w, 'RECORDS · STAFF', { x: 2.7, y: 2.15, z: -5.8, rot: 0, width: 1.9, size: 0.3 });
+    box(w, { x: 2.65, y: 1.5, z: -5.77, w: 2.4, h: 1.0, d: 0.1, kind: 'rust', color: 0x252b2e });
+    stencil(w, 'RECORDS · STAFF', { x: 2.65, y: 2.15, z: -5.8, rot: 0, width: 1.9, size: 0.3 });
     const D0 = door(w, { x: 0, z: -6, along: 'x', width: 1.8, key: 'rec', locked: true, label: 'records door', game });
     const drawDial = (i) => {
       const cv = dialCv[i], g = cv.getContext('2d'); g.fillStyle = '#071a14'; g.fillRect(0, 0, 64, 96);
@@ -114,12 +114,12 @@ export default {
       dialTex[i].needsUpdate = true;
     };
     for (let i = 0; i < 4; i++) {
-      const dx = 2.05 + i * 0.4;
+      const dx = 1.9 + i * 0.5;
       const cv = document.createElement('canvas'); cv.width = 64; cv.height = 96; dialCv.push(cv); const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; dialTex.push(t);
       const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.45), new THREE.MeshBasicMaterial({ map: t, toneMapped: false, color: new THREE.Color(1.3, 1.3, 1.3) })); pl.position.set(dx, 1.5, -5.7); w.add(pl);
       drawDial(i);
       c.on('dial:' + i, (v) => { dial[i] = v | 0; drawDial(i); if (c.isHost && dial.every((q, k) => q === CODE[k]) && D0.locked) { D0.unlock(); D0.setOpen(true); } });
-      press({ x: dx, y: 1.45, z: -5.5, bw: 0.34, bh: 1.2, bd: 0.3, label: () => `Dial ${i + 1} (${dial[i]})`, onUse: () => { c.set('dial:' + i, (dial[i] + 1) % 10); S.tick?.(); game.audio.confirm?.(); } });
+      press({ x: dx, y: 1.45, z: -5.5, bw: 0.3, bh: 1.2, bd: 0.3, label: () => `Dial ${i + 1} (${dial[i]})`, onUse: () => { c.set('dial:' + i, (dial[i] + 1) % 10); S.tick?.(); game.audio.confirm?.(); } });
     }
     c.on('dr:rec', (v) => { if (v && v.locked === false) { S.door(0, 0.2); } });
     sayAll('lt.c3.intro', { priority: 2 });
@@ -503,7 +503,7 @@ export default {
       }
       return out;
     };
-    const dialSteps = [0, 1, 2, 3].map((i) => ({ x: 2.05 + i * 0.4, z: -5.5, r: 1.15, use: true, until: () => dial[i] === CODE[i] }));
+    const dialSteps = [0, 1, 2, 3].flatMap((i) => [{ x: 1.9 + i * 0.5, z: -4.1, r: 0.3 }, { x: 1.9 + i * 0.5, z: -5.5, r: 1.2, use: true, until: () => dial[i] === CODE[i] }]);
     const keySpot = { x: LX[2], z: LZ + 0.62 };
     const common = [{ x: 0, z: -7.6, r: 0.8 }, { x: 0, z: -24, r: 1.0 }];
     const keyholder = [
