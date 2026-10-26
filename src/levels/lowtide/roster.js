@@ -2,10 +2,14 @@
 // Slots are filled in by `BUILT[i]`; see docs/lowtide.md for the story and the chapter plan.
 import intake from './intake.js';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import nightRounds from './night-rounds.js';
 =======
 import records from './records.js';
 >>>>>>> origin/lowtide-c3-records
+=======
+import hydro from './hydro.js';
+>>>>>>> origin/lowtide-c4-hydro
 
 const ROSTER = [
   ['Intake', 'Wake up. Check your wristband. It is not your name.'],
@@ -24,9 +28,13 @@ const planned = ([name, tagline], i) => ({ id: `lowtide-${i + 1}`, name, kind: '
 
 export function buildLowtideLevels() {
 <<<<<<< HEAD
+<<<<<<< HEAD
   const BUILT = [intake, nightRounds];
 =======
   const BUILT = [intake, undefined, records];
 >>>>>>> origin/lowtide-c3-records
+=======
+  const BUILT = [intake, undefined, undefined, hydro];
+>>>>>>> origin/lowtide-c4-hydro
   return ROSTER.map((r, i) => (BUILT[i] ? Object.assign(BUILT[i], { kind: 'horror', tagline: r[1], index: i }) : planned(r, i)));
 }

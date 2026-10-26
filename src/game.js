@@ -958,7 +958,8 @@ export class Game {
     if (this.mods.jumpLag && edge) { this._jumpQ = this.mods.jumpLag; edge = false; }          // "input lag": the jump arrives late
     else if (this._jumpQ > 0) { this._jumpQ -= dt; if (this._jumpQ <= 0) edge = true; }
     const opts = {
-      jumpMul: this.baby ? 1.07 : 1,
+      jumpMul: (this.baby ? 1.07 : 1) * (w.moveMul?.jump || 1),
+      speedMul: w.moveMul?.speed || 1,
       coyoteExtra: this.baby ? 0.12 : 0,
       accelX: w.extraAccel.x, accelZ: w.extraAccel.z, stepHeight: w.stepHeight,
     };

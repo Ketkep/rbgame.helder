@@ -27,7 +27,7 @@ export function stalker(w, game, H, S, o) {
   const c = w.coop, me = c.me, host = c.isHost;
   const nodes = o.nodes.map((n, i) => ({ ...n, i, adj: [] }));
   const byId = new Map(nodes.map((n) => [n.id, n]));
-  const solids = () => w.bodies.filter((b) => b.enabled && b.solid !== false && b.tag !== 'partner' && b.top - b.hy * 2 < 1.4 && b.top > 0.6 && b.hy * 2 > 0.7);
+  const solids = () => (o.extra || []).concat(w.bodies).filter((b) => b.enabled && b.solid !== false && b.tag !== 'partner' && b.top - b.hy * 2 < 1.4 && b.top > 0.6 && b.hy * 2 > 0.7);
   const clear = (x0, z0, x1, z1, list = solids()) => !list.some((b) => segHitsBox(x0, z0, x1, z1, b));
   const list0 = solids();
   for (const a of nodes) for (const b of nodes) if (a !== b && Math.hypot(a.x - b.x, a.z - b.z) < (o.link ?? 18) && clear(a.x, a.z, b.x, b.z, list0)) a.adj.push(b);
@@ -134,7 +134,11 @@ export function stalker(w, game, H, S, o) {
   const move = (dt) => {
     if (st.state === 'search' || wait > 0 || wi >= wp.length) return false;
     const t = wp[wi], dx = t.x - st.x, dz = t.z - st.z, d = Math.hypot(dx, dz);
+<<<<<<< HEAD
     const v = st.state === 'chase' ? st.chaseSpeed : st.state === 'investigate' ? st.speed * 1.9 : st.speed;
+=======
+    const v = (st.state === 'chase' ? vChase : st.state === 'investigate' ? vPatrol * 1.9 : vPatrol) * (o.slow ? o.slow(st.x, st.z) : 1);
+>>>>>>> origin/lowtide-c4-hydro
     if (d < 0.25) { wi++; return true; }
     const step = Math.min(d, v * dt); st.x += (dx / d) * step; st.z += (dz / d) * step;
     const ty = Math.atan2(-dx, -dz); let dy = ((ty - st.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI; st.yaw += dy * Math.min(1, dt * (st.state === 'chase' ? 12 : 5));
