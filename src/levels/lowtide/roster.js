@@ -1,7 +1,11 @@
 // LOWTIDE — the horror campaign. Eight long chapters; chapters that are not built yet are placeholders.
 // Slots are filled in by `BUILT[i]`; see docs/lowtide.md for the story and the chapter plan.
 import intake from './intake.js';
+<<<<<<< HEAD
 import nightRounds from './night-rounds.js';
+=======
+import records from './records.js';
+>>>>>>> origin/lowtide-c3-records
 
 const ROSTER = [
   ['Intake', 'Wake up. Check your wristband. It is not your name.'],
@@ -19,6 +23,10 @@ export const KIND_ICON = {};
 const planned = ([name, tagline], i) => ({ id: `lowtide-${i + 1}`, name, kind: 'horror', tagline, index: i, placeholder: true });
 
 export function buildLowtideLevels() {
+<<<<<<< HEAD
   const BUILT = [intake, nightRounds];
+=======
+  const BUILT = [intake, undefined, records];
+>>>>>>> origin/lowtide-c3-records
   return ROSTER.map((r, i) => (BUILT[i] ? Object.assign(BUILT[i], { kind: 'horror', tagline: r[1], index: i }) : planned(r, i)));
 }
