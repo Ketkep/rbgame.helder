@@ -167,7 +167,7 @@ export default {
     const L0 = [lamp({ x: -3, y: 3.35, z: -2, mode: 'buzz', rot: 0 }), lamp({ x: 3.4, y: 3.35, z: 1.5, mode: 'dying' }), lamp({ x: -4, y: 3.35, z: 2.5, mode: 'dead' }), lamp({ x: 0, y: 3.35, z: -6.3, mode: 'dead', len: 1 })];
     barWindow(w, { x: 7.82, y: 1.9, z: 2.6, rot: -PI / 2 });
     pipes(w, { x0: 7.4, z0: 4.5, x1: 7.4, z1: -8, y: 3.0, n: 2 });
-    desk(w, { x: 4.2, z: 0.6, rot: PI / 2 }); bench(w, { x: -5.6, z: 3.2, rot: 0 }); wheelchair(w, { x: 5.4, z: 3.4, rot: 3.6 }); gurney(w, { x: -5.2, z: -5.8, rot: 0.1 });
+    desk(w, { x: 4.2, z: 0.6, rot: PI / 2 }); bench(w, { x: -5.6, z: 3.2, rot: 0 }); wheelchair(w, { x: 5.4, z: 3.4, rot: 3.6 }); gurney(w, { x: -4.6, z: -2.4, rot: 0.1 });
     decal(w, { kind: 'puddle', seed: 4, x: 1.5, y: 0.025, z: 1.6, w: 3, h: 3 }); decal(w, { kind: 'drag', seed: 11, x: 0, y: 0.02, z: -4, w: 3.2, h: 2.4, face: 'floor', rot: 1.57 });
     decal(w, { kind: 'hand', seed: 6, x: 7.84, y: 1.2, z: -2, w: 0.5, h: 0.5, face: 'e' }); decal(w, { kind: 'scratch', seed: 9, x: -7.84, y: 1.5, z: 3.4, w: 1.4, h: 1.4, face: 'w' });
     note(w, game, { x: 4.2, y: 0.88, z: 0.6, rot: 0, title: 'LOG', label: 'Read the log', html: { all: '<b>MORGUE · NIGHT LOG</b><p>02:10 two admitted, upright. 02:14 refused to lie down.<br>02:31 power to the cold wing cut (storm). Do not restore it by hand.<br>02:40 visitors may stay until the tide.</p><p><i>Nobody signs the log after 02:40. Nobody has to.</i></p>' } });
@@ -485,7 +485,7 @@ export default {
           let cool = 0;
           press({ x: pad.x, y: 1.2, z: pad.z + pad.sz * 0.05, bw: 0.8, bh: 1.6, bd: 0.4, range: 3.0, label: () => (P.done ? 'Clasped' : 'Press your palm'), enabled: () => P.on && !P.done && !charge.D,
             onUse: () => {
-              if (w.t < cool) return; cool = w.t + 0.6;
+              if (w.t < cool) return; cool = w.t + 0.6; w.c6?.log.push(`${id} press k${k} ${side} t${w.t.toFixed(1)}`);
               const Pp = c.partner, real = Pp.has && !Pp.dead && Math.hypot(Pp.sx - cn.x, Pp.sz - cn.z) < 2.7;
               const dbl = P.doubles.find((D) => D.vis && Math.hypot(D.x - cn.x, D.z - cn.z) < 2.7);
               if (!real && dbl) { recordPick(id, false); hc.set('bad'); w.after(1.2, () => hc.set('idle')); startCharge(dbl); return; }
@@ -542,7 +542,7 @@ export default {
     grave(w, { x: -11.5, z: -124.6, rot: 0, text: [n1.toUpperCase(), '1971 - TONIGHT'] }); grave(w, { x: -9.4, z: -124.9, rot: 0.1, text: [n2.toUpperCase(), '1974 - TONIGHT'], lean: 0.06 });
     grave(w, { x: 9, z: -125, rot: -0.12, text: ['NOT YET', ''], lean: -0.05 }); grave(w, { x: 11.5, z: -124.6, rot: 0.05, text: ['ANNE L.', 'KEEP THE LIGHT'], h: 1.3 });
     for (let i = 0; i < 6; i++) grave(w, { x: (i % 2 ? 1 : -1) * (9 + (i % 3)), z: -146 - (i % 3) * 1.6 - Math.floor(i / 2) * 0.1, rot: (hash(i) - 0.5) * 0.4, lean: (hash(i + 9) - 0.5) * 0.14, h: 0.8 + hash(i + 2) * 0.5 });
-    for (const [lx, lz, m] of [[-4.6, -125, 'dying'], [4.6, -125, 'dead'], [-4.6, -141, 'buzz'], [4.6, -141, 'dying'], [-6, -155, 'dying'], [6, -155, 'buzz']]) lampPost(w, H, { x: lx, z: lz, mode: m, power: 0.8 });
+    for (const [lx, lz, m] of [[-4.6, -125, 'dying'], [4.6, -125, 'dead'], [-4.6, -141, 'buzz'], [4.6, -141, 'dying'], [-9.5, -154, 'dying'], [9.5, -154, 'buzz']]) lampPost(w, H, { x: lx, z: lz, mode: m, power: 0.8 });
     decal(w, { kind: 'puddle', seed: 40, x: -3, y: 0.025, z: -134, w: 3.4, h: 3.4 }); decal(w, { kind: 'puddle', seed: 41, x: 4, y: 0.025, z: -146, w: 3.6, h: 3.0 }); decal(w, { kind: 'drag', seed: 44, x: 0, y: 0.04, z: -126, w: 3, h: 2.4, face: 'floor', rot: 1.57 });
     // the weeping angels
     const A1 = angel(w, { x: -9, z: -138, yaw: PI / 2 }), A2 = angel(w, { x: 9, z: -144, yaw: -PI / 2 });
@@ -687,6 +687,7 @@ export default {
         reach(0, -166.2, 0.8),
       ];
     };
+    w.c6 = { par2, par3, charge, doubles, picks, log: [] };
     botSteps(w, { p1: mk('p1'), p2: mk('p2') });
     void pn; void N;
   },
