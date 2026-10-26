@@ -497,40 +497,40 @@ export default {
     const leverSteps = (K, doneCheck) => {
       const out = [];
       for (let i = 0; i < 3; i++) {
-        const lv = K.rig.levers[i], cell = cellOf(BANK_AT[i] - 1 >= 0 ? BANK_AT[i] - 1 : 0);
-        out.push({ x: lv.x, z: lv.z, r: 0.6, until: () => partnerNear(cell.x, cell.z, 4.2) || bank[i].want || doneCheck() });
-        out.push({ x: lv.x, z: lv.z, r: 0.6, use: true, until: () => bank[i].want || doneCheck() });
+        const lv = K.rig.levers[i], cell = cellOf(BANK_AT[i] - 1 >= 0 ? BANK_AT[i] - 1 : 0), sz = lv.z + (K === consoles[0] ? 2.0 : -2.0);
+        out.push({ x: lv.x, z: sz, r: 0.4, until: () => partnerNear(cell.x, cell.z, 4.2) || bank[i].want || doneCheck() });
+        out.push({ x: lv.x, z: lv.z, r: 1.0, use: true, until: () => bank[i].want || doneCheck() });
       }
       return out;
     };
     const dialSteps = [0, 1, 2, 3].flatMap((i) => [{ x: 1.9 + i * 0.5, z: -4.1, r: 0.3 }, { x: 1.9 + i * 0.5, z: -5.5, r: 1.2, use: true, until: () => dial[i] === CODE[i] }]);
     const keySpot = { x: LX[2], z: LZ + 0.62 };
-    const common = [{ x: 0, z: -7.6, r: 0.8 }, { x: 0, z: -24, r: 1.0 }];
+    const common = [{ x: 0, z: -7.6, r: 0.8 }];
     const keyholder = [
       ...dialSteps,
       { x: 0, z: -4, r: 1, until: () => !D0.locked && D0.k > 0.9 },
       ...common,
-      { x: 15, z: -18.3, r: 1.0 }, { x: 15, z: -22.6, r: 1.0 },
+      { x: 0, z: -18.3, r: 1.0 }, { x: 15, z: -18.3, r: 1.0 }, { x: 15, z: -22.6, r: 1.0 },
       { x: keySpot.x, z: keySpot.z, r: 1.0, use: true, until: () => opened[2] },
       { x: keySpot.x, z: keySpot.z, r: 1.0, use: true, until: () => holderIs(me) },
       { x: 15, z: -22.6, r: 1.0 }, { x: 15, z: -18.3, r: 1.0 }, { x: 0, z: -20, r: 1.0 }, { x: 0, z: -31.5, r: 1.0 },
-      { x: 1.75, z: -32.2, r: 0.9, use: true, until: () => !D1.locked },
+      { x: 1.75, z: -33.5, r: 0.9, use: true, until: () => !D1.locked },
       { x: 0, z: -41, r: 1.0 },
       ...leverSteps(consoles[0], () => phase === 2),
-      { x: consoles[0].rig.levers[1].x, z: consoles[0].rig.levers[1].z, r: 0.8, until: () => phase === 2 },
+      { x: consoles[0].rig.levers[1].x, z: consoles[0].rig.levers[1].z + 2.0, r: 0.5, until: () => phase === 2 },
       ...walkSteps(),
-      { x: 2.55, z: -84.2, r: 0.9, use: true, until: () => !D2.locked },
+      { x: 2.55, z: -85.5, r: 0.9, use: true, until: () => !D2.locked },
       { x: 0, z: -98, r: 1.0 }, { x: 0, z: -104, r: 1.0 },
     ];
     const subject = [
       { x: -1.0, z: -2.0, r: 1, until: () => !D0.locked && D0.k > 0.9 },
-      ...common,
+      { x: -1.8, z: -9, r: 0.8, until: () => !!c.get('c3:key', '') && c.get('c3:key', '') !== 'locker' }, { x: 0, z: -20, r: 1.0 },
       { x: 0, z: -31.5, r: 1.0 },
       { x: 0, z: -31.5, r: 1.0, until: () => !D1.locked },
       { x: 0, z: -41, r: 1.0 },
       { x: 0, z: -42, r: 1.0, until: () => partnerNear(consoles[0].rig.levers[1].x, consoles[0].rig.levers[1].z, 2.5) },
       ...walkSteps(),
-      { x: consoles[1].rig.levers[1].x, z: consoles[1].rig.levers[1].z, r: 0.8, until: () => phase === 2 && bank.every((b) => !b.want) },
+      { x: consoles[1].rig.levers[1].x, z: consoles[1].rig.levers[1].z - 2.0, r: 0.5, until: () => phase === 2 && bank.every((b) => !b.want) },
       ...leverSteps(consoles[1], () => false),
       { x: 0, z: -78, r: 1.0 },
       { x: 0, z: -78, r: 1.0, until: () => !D2.locked },
