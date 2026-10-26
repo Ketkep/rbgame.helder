@@ -191,7 +191,10 @@ export function barWindow(w, { x, y = 1.7, z, rot = 0, width = 1.6, height = 1.1
 /** A painted stencil on a wall ("WARD B", "DO NOT"…). */
 export function stencil(w, text, { x, y = 2.2, z, rot = 0, size = 0.5, color = '#c9d3cc', width = 4 }) {
   const c = document.createElement('canvas'); c.width = 1024; c.height = 256; const g = c.getContext('2d');
-  g.font = `700 ${Math.floor(256 * size * 1.5)}px "Archivo Black", Impact, sans-serif`; g.fillStyle = color; g.textAlign = 'center'; g.textBaseline = 'middle'; g.globalAlpha = 0.75; g.fillText(text, 512, 128);
+  let px = Math.floor(256 * size * 1.5);
+  g.font = `700 ${px}px "Archivo Black", Impact, sans-serif`;
+  const tw = g.measureText(text).width; if (tw > 960) { px = Math.floor((px * 960) / tw); g.font = `700 ${px}px "Archivo Black", Impact, sans-serif`; }          // long words shrink to fit the plate
+  g.fillStyle = color; g.textAlign = 'center'; g.textBaseline = 'middle'; g.globalAlpha = 0.75; g.fillText(text, 512, 128);
   g.globalCompositeOperation = 'destination-out'; for (let i = 0; i < 260; i++) { g.fillStyle = `rgba(0,0,0,${Math.random() * 0.7})`; g.fillRect(Math.random() * 1024, Math.random() * 256, 2 + Math.random() * 12, 1 + Math.random() * 3); }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
   const m = new THREE.Mesh(new THREE.PlaneGeometry(width, width / 4), new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4, color: 0x9aa8a0 }));

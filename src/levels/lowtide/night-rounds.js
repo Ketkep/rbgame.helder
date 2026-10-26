@@ -107,11 +107,11 @@ export default {
     // =============================================================================================================================
     //  DRESSING
     // =============================================================================================================================
-    const L = (x, z, mode, o = {}) => H.lamp({ x, y: 3.35, z, mode, ...o });
+    const L = (x, z, mode, o = {}) => H.lamp({ x, y: 3.35, z, mode, power: 0.62, ...o });
     // ---- lobby ---------------------------------------------------------------------------------------------------------------
     L(-2.5, 0, 'buzz'); L(3, 5, 'dying'); L(0, -3.4, 'steady', { color: 0xcfe8dc, len: 1.6 });
-    stencil(w, 'CHAPTER 2 · NIGHT ROUNDS', { x: -3.1, y: 2.5, z: -5.8, rot: 0, width: 4.6 });
-    stencil(w, 'WARD B · STAFF ONLY', { x: 0, y: 2.7, z: 9.8, rot: PI, width: 3.4 });
+    stencil(w, 'CHAPTER 2 · NIGHT ROUNDS', { x: -3.4, y: 2.5, z: -5.8, rot: 0, width: 4.6, size: 0.3 });
+    stencil(w, 'WARD B · STAFF ONLY', { x: 0, y: 2.7, z: 9.8, rot: PI, width: 3.4, size: 0.34 });
     // the arrival lift behind you: shut, with a dead indicator
     box(w, { x: 0, y: 1.25, z: 9.75, w: 2.8, h: 2.5, d: 0.2, kind: 'rust', color: 0x59645f, rough: 0.5 });
     box(w, { x: -0.7, y: 1.2, z: 9.62, w: 1.3, h: 2.3, d: 0.06, kind: 'rust', color: 0x7a8682, rough: 0.35 }); box(w, { x: 0.7, y: 1.2, z: 9.62, w: 1.3, h: 2.3, d: 0.06, kind: 'rust', color: 0x7a8682, rough: 0.35 });
@@ -127,8 +127,8 @@ export default {
     L(0, -9.5, 'dying', { rot: PI / 2, len: 1.0 });
     decal(w, { kind: 'drag', seed: 5, x: 0, y: 0.02, z: -10, w: 1.8, h: 4, face: 'floor', rot: 1.57 }); decal(w, { kind: 'hand', seed: 2, x: 1.36, y: 1.1, z: -8, w: 0.5, h: 0.5, face: 'e' });
     // ---- the ring ---------------------------------------------------------------------------------------------------------------
-    [-12, -4, 4, 12].forEach((x, i) => { L(x, -15, ['buzz', 'dying', 'steady', 'buzz'][i], { len: 1.4 }); L(x, -57, ['dying', 'buzz', 'dead', 'buzz'][i], { len: 1.4 }); });
-    [-23, -31, -39, -47, -52].forEach((z, i) => { L(-14.75, z, ['buzz', 'steady', 'dying', 'buzz', 'dead'][i], { rot: PI / 2, len: 1.4 }); L(14.75, z, ['dying', 'buzz', 'steady', 'dead', 'buzz'][i], { rot: PI / 2, len: 1.4 }); });
+    [-12, -4, 4, 12].forEach((x, i) => { L(x, -15, ['buzz', 'dying', 'steady', 'buzz'][i], { len: 1.4, shaft: false }); L(x, -57, ['dying', 'buzz', 'dead', 'buzz'][i], { len: 1.4, shaft: false }); });
+    [-23, -31, -39, -47, -52].forEach((z, i) => { L(-14.75, z, ['buzz', 'steady', 'dying', 'buzz', 'dead'][i], { rot: PI / 2, len: 1.4, shaft: false }); L(14.75, z, ['dying', 'buzz', 'steady', 'dead', 'buzz'][i], { rot: PI / 2, len: 1.4, shaft: false }); });
     pipes(w, { x0: -16.2, z0: -17, x1: -16.2, z1: -55, y: 2.95, n: 2 }); pipes(w, { x0: 16.2, z0: -17, x1: 16.2, z1: -55, y: 2.95, n: 2 }); pipes(w, { x0: -16, z0: -14, x1: 16, z1: -14, y: 2.95, n: 2 }); pipes(w, { x0: -16, z0: -58, x1: 16, z1: -58, y: 2.95, n: 1 });
     // lockers = hiding places
     for (let i = 0; i < 5; i++) locker(w, { x: -9.6 + i * 0.64, z: -13.5, rot: PI, ajar: i === 2 ? 0.7 : 0 });
@@ -148,9 +148,9 @@ export default {
     decal(w, { kind: 'hand', seed: 14, x: -12.64, y: 1.2, z: -33, w: 0.5, h: 0.5, face: 'e' }); decal(w, { kind: 'hand', seed: 15, x: -12.64, y: 1.0, z: -33.4, w: 0.5, h: 0.5, face: 'e' });
     decal(w, { kind: 'scratch', seed: 17, x: 12.64, y: 1.4, z: -22, w: 1.4, h: 1.4, face: 'w' }); decal(w, { kind: 'hand', seed: 18, x: 16.84, y: 1.2, z: -33, w: 0.5, h: 0.5, face: 'e' });
     decal(w, { kind: 'scratch', seed: 20, x: 0, y: 1.5, z: -55.16, w: 1.6, h: 1.6, face: 's' });
-    stencil(w, 'WARD B · WEST', { x: -12.64, y: 2.5, z: -45, rot: -PI / 2, width: 2.6 }); stencil(w, 'WARD B · EAST', { x: 12.64, y: 2.5, z: -28, rot: PI / 2, width: 2.6 });
-    stencil(w, 'NURSES', { x: -6, y: 2.6, z: -16.84, rot: 0, width: 2.4 }); stencil(w, 'NO RUNNING', { x: 6, y: 2.6, z: -55.16, rot: PI, width: 2.4 });
-    stencil(w, 'LAUNDRY', { x: 16.84, y: 2.65, z: -39, rot: -PI / 2, width: 2.0 }); stencil(w, 'DORMITORY', { x: -16.84, y: 2.65, z: -39, rot: PI / 2, width: 2.2 });
+    stencil(w, 'WARD B · WEST', { x: -12.64, y: 2.5, z: -45, rot: -PI / 2, width: 2.6, size: 0.3 }); stencil(w, 'WARD B · EAST', { x: 12.64, y: 2.5, z: -28, rot: PI / 2, width: 2.6, size: 0.3 });
+    stencil(w, 'NURSES', { x: -6, y: 2.6, z: -16.84, rot: 0, width: 2.4 }); stencil(w, 'NO RUNNING', { x: 6, y: 2.6, z: -55.16, rot: PI, width: 2.4, size: 0.3 });
+    stencil(w, 'LAUNDRY', { x: 16.84, y: 2.65, z: -39, rot: -PI / 2, width: 2.0, size: 0.3 }); stencil(w, 'DORMITORY', { x: -16.84, y: 2.65, z: -39, rot: PI / 2, width: 2.2, size: 0.3 });
     // ---- the nurses' station -------------------------------------------------------------------------------------------------
     L(-6, -22, 'buzz', { color: 0xffe6c0 }); L(6, -22, 'steady', { color: 0xffe6c0, power: 0.7 }); L(-5, -32, 'dying', { color: 0xffe6c0 }); L(5, -32, 'buzz', { color: 0xffe6c0 }); L(0, -28, 'steady', { color: 0xdfffe6, power: 0.6 });
     for (const x of [-7.2, -5.6, -4.0, -2.4, 2.4, 4.0, 5.6, 7.2]) desk(w, { x, z: -26, rot: 0, papers: x < 0 });
@@ -160,13 +160,13 @@ export default {
     pipes(w, { x0: -12, z0: -19, x1: 12, z1: -19, y: 2.9, n: 2 });
     decal(w, { kind: 'splat', seed: 31, x: -5, y: 0.02, z: -24.2, w: 2.8, h: 2.8 }); decal(w, { kind: 'drag', seed: 32, x: 1, y: 0.02, z: -22, w: 2.4, h: 5, rot: 1.57 }); decal(w, { kind: 'hand', seed: 33, x: 12.34, y: 1.1, z: -30, w: 0.5, h: 0.5, face: 'w' });
     decal(w, { kind: 'scratch', seed: 34, x: -12.34, y: 1.5, z: -24, w: 1.5, h: 1.5, face: 'e' }); decal(w, { kind: 'puddle', seed: 35, x: -3, y: 0.025, z: -30, w: 2.6, h: 2.6 });
-    stencil(w, 'NURSES\' STATION', { x: 0, y: 2.75, z: -36.84, rot: 0, width: 4.4 });
+    stencil(w, 'NURSES\' STATION', { x: 0, y: 2.75, z: -36.84, rot: 0, width: 4.4, size: 0.3 });
     // ---- the pharmacy store -----------------------------------------------------------------------------------------------------
     L(-6, -42, 'dying', { color: 0xc8f0e0 }); L(6, -46, 'buzz', { color: 0xc8f0e0 }); L(-2, -51, 'dead');
     K.shelf(w, { x: -6, z: -40.4, len: 4 }); K.shelf(w, { x: 4, z: -43, len: 4.4 }); K.shelf(w, { x: -8, z: -45, len: 3.4 }); K.shelf(w, { x: 3, z: -48.5, len: 5 }); K.shelf(w, { x: -3, z: -53.6, len: 3 });
     desk(w, { x: -9.5, z: -52.6, rot: 0 }); box(w, { x: 10.6, y: 1.0, z: -52.2, w: 1.7, h: 2.0, d: 1.2, kind: 'rust', color: 0x727e7a, rough: 0.5 });
     decal(w, { kind: 'drag', seed: 41, x: 2, y: 0.02, z: -44, w: 3, h: 6, rot: 1.57 }); decal(w, { kind: 'splat', seed: 42, x: -9, y: 0.02, z: -49, w: 2.8, h: 2.8 }); decal(w, { kind: 'scratch', seed: 43, x: 12.34, y: 1.4, z: -46, w: 1.4, h: 1.4, face: 'w' });
-    stencil(w, 'PHARMACY · SIGN FOR EVERY DOSE', { x: 0, y: 2.7, z: -54.84, rot: 0, width: 5.2 });
+    stencil(w, 'PHARMACY · SIGN FOR EVERY DOSE', { x: 0, y: 2.7, z: -54.84, rot: 0, width: 5.2, size: 0.3 });
     // ---- the laundry -------------------------------------------------------------------------------------------------------------
     L(21, -30, 'buzz', { color: 0xffd9a0 }); L(28, -30, 'dying', { color: 0xffd9a0 }); L(22, -42, 'dying', { color: 0xffd9a0 }); L(29, -42, 'dead');
     for (const x of [19.4, 21.7, 24.0]) K.washer(w, { x, z: -47.2, rot: 0 });
@@ -178,7 +178,7 @@ export default {
     pipes(w, { x0: 18, z0: -46, x1: 32, z1: -46, y: 2.95, n: 3 }); pipes(w, { x0: 32.3, z0: -26, x1: 32.3, z1: -46, y: 2.9, n: 2 });
     decal(w, { kind: 'puddle', seed: 51, x: 25, y: 0.025, z: -36, w: 3.4, h: 3.4 }); decal(w, { kind: 'splat', seed: 52, x: 29, y: 0.02, z: -44.4, w: 2.8, h: 2.8 }); decal(w, { kind: 'drag', seed: 53, x: 26, y: 0.02, z: -40, w: 3, h: 6, rot: 1.57 });
     decal(w, { kind: 'hand', seed: 54, x: 32.84, y: 1.2, z: -40, w: 0.5, h: 0.5, face: 'e' }); decal(w, { kind: 'scratch', seed: 55, x: 25, y: 1.5, z: -47.84, w: 1.5, h: 1.5, face: 'n' });
-    stencil(w, 'LAUNDRY · WASH YOUR OWN', { x: 25, y: 2.8, z: -24.16, rot: PI, width: 5.4 });
+    stencil(w, 'LAUNDRY · WASH YOUR OWN', { x: 25, y: 2.8, z: -24.16, rot: PI, width: 5.4, size: 0.3 });
     barWindow(w, { x: 32.84, y: 1.9, z: -31, rot: -PI / 2 }); barWindow(w, { x: 32.84, y: 1.9, z: -43, rot: -PI / 2 });
     // ---- the dormitory -------------------------------------------------------------------------------------------------------------
     L(-29, -30, 'dying', { color: 0xb8d0ff, power: 0.8, rot: PI / 2 }); L(-22, -31, 'buzz', { color: 0xb8d0ff, power: 0.8, rot: PI / 2 }); L(-29, -41, 'buzz', { color: 0xb8d0ff, power: 0.8, rot: PI / 2 });
@@ -196,7 +196,7 @@ export default {
     decal(w, { kind: 'splat', seed: 61, x: -28, y: 0.02, z: -36, w: 3, h: 3 }); decal(w, { kind: 'drag', seed: 62, x: -22, y: 0.02, z: -35, w: 3, h: 7, rot: 1.57 }); decal(w, { kind: 'puddle', seed: 63, x: -24, y: 0.025, z: -44, w: 3, h: 3 });
     decal(w, { kind: 'hand', seed: 64, x: -32.84, y: 1.2, z: -36, w: 0.5, h: 0.5, face: 'w' }); decal(w, { kind: 'scratch', seed: 65, x: -32.84, y: 1.5, z: -29, w: 1.5, h: 1.5, face: 'w' }); decal(w, { kind: 'scratch', seed: 66, x: -25, y: 1.4, z: -24.16, w: 1.5, h: 1.5, face: 'n' });
     barWindow(w, { x: -32.84, y: 1.9, z: -31, rot: PI / 2 }); barWindow(w, { x: -32.84, y: 1.9, z: -42, rot: PI / 2 });
-    stencil(w, 'DORMITORY · LIGHTS OUT 22:00', { x: -25, y: 2.8, z: -24.16, rot: PI, width: 5.6 });
+    stencil(w, 'DORMITORY · LIGHTS OUT 22:00', { x: -25, y: 2.8, z: -24.16, rot: PI, width: 5.6, size: 0.3 });
     // ---- the duct ---------------------------------------------------------------------------------------------------------------------
     for (const z of [-52, -58, -64]) L(-30, z, ['dying', 'buzz', 'dying'][[-52, -58, -64].indexOf(z)], { color: 0xff6a4a, power: 0.7, rot: PI / 2, len: 0.7, shaft: false });
     for (const x of [-24, -17, -10]) L(x, -66, ['buzz', 'dying', 'dead'][[-24, -17, -10].indexOf(x)], { color: 0xff6a4a, power: 0.7, len: 0.7, shaft: false });
@@ -204,7 +204,7 @@ export default {
     // ---- the stairwell ------------------------------------------------------------------------------------------------------------------
     L(0, -63, 'dying', { color: 0xdfffe6 }); L(0, -67.5, 'buzz', { color: 0xdfffe6, power: 0.8 });
     decal(w, { kind: 'splat', seed: 81, x: 0, y: 0.02, z: -65, w: 3.2, h: 3.2 }); decal(w, { kind: 'scratch', seed: 82, x: -4.84, y: 1.4, z: -62, w: 1.5, h: 1.5, face: 'w' }); decal(w, { kind: 'hand', seed: 83, x: 4.84, y: 1.2, z: -63, w: 0.5, h: 0.5, face: 'e' });
-    stencil(w, 'STAIRS · LIFT TO WARD C', { x: 0, y: 2.9, z: -68.84, rot: 0, width: 3.6 });
+    stencil(w, 'STAIRS · LIFT TO WARD C', { x: 0, y: 2.9, z: -68.84, rot: 0, width: 3.6, size: 0.3 });
     gurney(w, { x: 3.4, z: -65.6, rot: PI / 2, solid: true }); wheelchair(w, { x: -3.4, z: -63.6, rot: 0.8 });
     exitDoor(w, { x: 0, z: -71.7, rot: 0 });
 
