@@ -31,7 +31,7 @@ const CODE = [5, 2, 9, 6];                              // minutes · index · h
 const SOLUTION = [1, 2, 0];                             // BELL blue · EARTH yellow · BED red
 const qs = new URLSearchParams(location.search);
 const BOT_LOCKS = qs.get('lock') !== '0';               // bots lock the Subject in unless ?lock=0
-const WINDOW = window.__noRender ? 14 : 90;             // seconds the Keyholder has to decide
+const WINDOW = window.__noRender ? 40 : 90;             // seconds the Keyholder has to decide
 const REEL = 80;                                        // length of the film
 
 export default {
@@ -593,7 +593,6 @@ export default {
     press({
       x: lv.x, y: 1.2, z: lv.z, bw: 0.6, bh: 1.4, bd: 0.9, range: 3.0,
       label: () => (!R.is('keyholder') ? 'Bolt panel (staff only)' : c.get('c7:lock', false) && D_v.locked ? 'Draw the bolt' : winOpen && subjectInVault() ? 'Throw the bolt' : winOpen ? 'Throw the bolt (nobody is inside)' : 'The bolt'),
-      enabled: () => !D_v.open || D_v.locked,
       onUse: () => {
         if (!R.is('keyholder')) { tell(me, 'lt.c7.bolt.staff', { priority: 1 }); S.squeak(0, 0.06); return; }
         if (D_v.locked) { c.emit('c7:release'); return; }
@@ -732,7 +731,7 @@ export default {
       walk(-11.5, -15.4, 0.9), { x: -12.5, z: -16.2, r: 0.9 }, { x: -12.5, z: -17.6, r: 2.1, use: true, until: () => rv1n >= 1 },
       { x: -16.5, z: -14.4, r: 0.6 }, { x: -16.5, z: -12.9, r: 2.0, use: true, until: () => rv1n >= 2 },
       { x: -16.3, z: -19.4, r: 0.7 }, { x: -17.8, z: -19.4, r: 1.7, use: true, until: () => rv1n >= 3 },
-      { x: -12, z: -16, r: 1, until: () => !D_mr.locked }, walk(-8, -16, 0.9), walk(-3, -16, 1.0), walk(4, -16, 1.0), walk(9, -16, 0.9),
+      { x: -15.2, z: -15.6, r: 0.5, until: () => !D_mr.locked }, walk(-8, -16, 0.9), walk(-3, -16, 1.0), walk(4, -16, 1.0), walk(9, -16, 0.9),
       { x: 13.5, z: -16, r: 0.9 }, { x: 15, z: -16, r: 0.9, until: () => mir.done && c.get('rv2:' + me, false) },
       { x: 9, z: -16, r: 1.0, until: () => !D_sc.locked }, walk(4, -16, 0.9), walk(0, -30, 1.0), { x: 0, z: -34, r: 1.0, until: () => !D_sc.locked },
       walk(0, -37, 0.9), { x: 0, z: -37.6, r: 1.0, until: () => scBoth.active }, { x: 0, z: -37.5, r: 1.6, use: true, until: () => reelT >= 0 || reelDone },
@@ -747,10 +746,10 @@ export default {
       { x: -20.7, z: -60.9, r: 0.8 }, { x: -20.7, z: -60.9, r: 1.0, use: true, until: () => powered },
       { x: -18, z: -61, r: 1.0, until: () => D_v.locked || (!BOT_LOCKS && c.get('c7:key', '') !== '') },
       // sealed in (or not): if sealed, break out; if not, wait for the key
-      { x: -18, z: -65.3, r: 0.9, until: () => !D_v.locked || toolHere() }, { x: -18, z: -65.6, r: 1.2, use: true, until: () => !D_v.locked || toolHere() },
-      { x: unscrew.x, z: unscrew.z, r: 1.0, until: () => !D_v.locked || !covered() }, { x: unscrew.x, z: unscrew.z, r: 1.2, use: true, until: () => !D_v.locked || !covered() },
-      ...[0, 1, 2].flatMap((i) => { const p = panel.at([-0.4, 0, 0.4][i], 0.1); return [{ x: p.x, z: p.z, r: 0.9, until: () => !D_v.locked || wires[i] === SOLUTION[i] }, { x: p.x, z: p.z, r: 1.0, use: true, until: () => !D_v.locked || wires[i] === SOLUTION[i] }]; }),
-      { x: ov.x, z: ov.z + 0.5, r: 1.0, until: () => !D_v.locked || armed() }, { x: ov.x, z: ov.z, r: 0.9, use: true, until: () => !D_v.locked || breach },
+      { x: -18, z: -65.0, r: 0.5 }, { x: -18, z: -65.6, r: 1.2, use: true, until: () => !D_v.locked || toolHere() },
+      { x: unscrew.x, z: unscrew.z - 1.2, r: 0.5 }, { x: unscrew.x, z: unscrew.z, r: 1.2, use: true, until: () => !D_v.locked || !covered() },
+      ...[0, 1, 2].flatMap((i) => { const p = panel.at([-0.4, 0, 0.4][i], 0.1); return [{ x: p.x, z: p.z, r: 0.5 }, { x: p.x, z: p.z, r: 1.0, use: true, until: () => !D_v.locked || wires[i] === SOLUTION[i] }]; }),
+      { x: ov.x, z: ov.z - 0.8, r: 0.5 }, { x: ov.x, z: ov.z, r: 0.9, use: true, until: () => !D_v.locked || breach },
       { x: -18, z: -60, r: 1.0, until: () => !D_v.locked }, walk(-8, -59, 0.9), walk(0, -59, 1.0),
       { x: 0, z: -64, r: 1.0 }, { x: -8, z: -64.5, r: 0.9 }, { x: -8, z: -69, r: 0.9 }, { x: -9, z: -74, r: 1.0 }, { x: -2, z: -74.2, r: 1.0 },
       { x: 4, z: -78, r: 1.0, until: () => !D_exit.locked }, { x: 4, z: -86, r: 1.0 },
@@ -760,14 +759,14 @@ export default {
     const diaPos = [0, 1, 2, 3].map((i) => safe.dial(i));
     const keyholderSteps = [
       ...common1, ...fromA,
-      { x: 0, z: -58, r: 1.0, until: () => powered && (!BOT_LOCKS || winOpen) }, { x: -8, z: -58, r: 1.0 },
-      ...(BOT_LOCKS ? [{ x: lever.x, z: lever.z, r: 0.6, until: () => c.get('c7:lock', false) || !winOpen }, { x: lever.x, z: lever.z, r: 1.1, use: true, until: () => c.get('c7:lock', false) || !winOpen }] : [{ x: -8, z: -58, r: 1.0, until: () => !winOpen }]),
-      { x: 8, z: -59, r: 1.0, until: () => !D_ve.locked }, walk(12.5, -62.8, 0.9),
+      { x: lever.x + 0.3, z: lever.z + 2.2, r: 0.5, until: () => powered },
+      ...(BOT_LOCKS ? [{ x: lever.x, z: lever.z, r: 0.6 }, { x: lever.x, z: lever.z, r: 1.1, use: true, until: () => c.get('c7:lock', false) || !winOpen }] : [{ x: lever.x + 0.3, z: lever.z + 2.2, r: 0.5, until: () => !winOpen }]),
+      { x: 8, z: -59, r: 1.0, until: () => !D_ve.locked }, walk(12, -59, 0.9), walk(12.5, -62.8, 0.9),
       { x: 21, z: -57.4, r: 0.8 }, { x: 22.2, z: -57.2, r: 1.9, use: true, until: () => c.get('c7:minutes', false) || true },
       walk(21.5, -64, 0.9), walk(22, -68, 0.9), walk(22, -70, 0.9), walk(22, -73, 0.9),
       { x: 23.8, z: -74.7, r: 1.5, use: true, until: () => true }, walk(14, -74.2, 0.9), walk(8, -74.2, 0.9),
       { x: -4.5, z: -73.3, r: 1.7, use: true, until: () => true }, walk(-3, -74.2, 0.9), walk(-9, -74.2, 0.9), walk(-13, -76, 0.9),
-      ...[0, 1, 2, 3].flatMap((i) => [{ x: diaPos[i].x, z: diaPos[i].z - 0.2, r: 0.6 }, { x: diaPos[i].x, z: diaPos[i].z, r: 1.1, use: true, until: () => dial[i] === CODE[i] }]),
+      ...[0, 1, 2, 3].flatMap((i) => [{ x: diaPos[i].x, z: diaPos[i].z + 0.7, r: 0.35 }, { x: diaPos[i].x, z: diaPos[i].z, r: 1.1, use: true, until: () => dial[i] === CODE[i] }]),
       { x: -14, z: -78.2, r: 0.9, until: () => c.get('sf:open', false) }, { x: -14, z: -78.6, r: 1.3, use: true, until: () => !!c.get('c7:key', '') },
       walk(-9, -74.2, 0.9), walk(-3, -74.2, 0.9), { x: 6.2, z: -79.0, r: 1.0 }, { x: 6.9, z: -79.6, r: 1.1, use: true, until: () => !D_exit.locked },
       { x: 4, z: -80, r: 1.0, until: () => !D_v.locked }, { x: 4, z: -86, r: 1.0 },
