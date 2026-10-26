@@ -179,7 +179,7 @@ export default {
     stairs(w, { x: -7.5, z: -78, dir: '-z', y0: 0, y1: -2.2, width: 3 }); stairs(w, { x: 7.5, z: -100, dir: '+z', y0: 0, y1: -2.2, width: 3 });
     stairs(w, { x: -16.8, z: -83, dir: '-z', y0: 0, y1: 3, width: 2.4 }); slab(w, { x: -15.93, z: -92, y: 3, w: 3.85, d: 8, h: 0.5 });
     stairs(w, { x: -16.8, z: -96, dir: '-z', y0: 3, y1: 5, width: 2.4 }); slab(w, { x: -15.93, z: -103.05, y: 5, w: 3.85, d: 7.9, h: 0.5 });
-    slab(w, { x: 0, z: -108.5, y: 5, w: 35.7, d: 3, h: 0.5 });
+    slab(w, { x: 0, z: -109.5, y: 5, w: 35.7, d: 5, h: 0.5 });
     stairs(w, { x: 16.5, z: -90, dir: '-z', y0: 0, y1: 5, width: 2.4 }); slab(w, { x: 16.575, z: -102.5, y: 5, w: 2.55, d: 8.9, h: 0.5 });
     for (let x = -16; x <= 16; x += 2) box(w, { x, y: 5.55, z: -107.1, w: 0.06, h: 1.1, d: 0.06, kind: 'rust', color: 0x55605c, shadow: false });
     box(w, { x: 0, y: 6.05, z: -107.1, w: 35, h: 0.05, d: 0.05, kind: 'rust', color: 0x55605c, shadow: false });
@@ -254,7 +254,7 @@ export default {
     // 5 · THE TUNNEL AND THE DROWNED CORRIDOR — torches only
     // =========================================================================================================================
     room(w, { x: 0, z: -118, w: 5.2, d: 12, h: 8.4, sides: { s: false, n: false }, ...tiled });
-    slab(w, { x: 0, z: -113.1, y: 5, w: 4.7, d: 1.9, h: 0.5 });
+    slab(w, { x: 0, z: -113.05, y: 5, w: 4.7, d: 2.1, h: 0.5 });
     stairs(w, { x: 0, z: -114.05, dir: '-z', y0: 5, y1: 0.4, width: 4.7, base: -1 });
     H.lamp({ x: 0, y: 8.35, z: -116, mode: 'dying', len: 1.2, shaft: false }); H.lamp({ x: 0, y: 8.35, z: -121, mode: 'dead', len: 1.2, shaft: false });
     pipes(w, { x0: -2, z0: -113, x1: -2, z1: -124, y: 7.6, n: 2 });
@@ -404,7 +404,7 @@ export default {
       ],
       p2: [
         { x: 0, z: -3, r: 1 }, { x: 0, z: -9, r: 1 }, { x: 0.5, z: -23, r: 1 }, { x: 1.95, z: -23, r: 0.8 }, { x: 1.95, z: -34.5, r: 0.45, until: done('v1') },
-        { x: 0, z: -37, r: 1 }, { x: 0, z: -39, r: 0.8 }, { x: 0, z: -43, r: 1 },
+        { x: 0, z: -37, r: 1 }, { x: 0, z: -39, r: 0.8 }, { x: 3, z: -44, r: 1 },
         { until: () => seq() >= 1 },
         { x: 8.3, z: lz('07'), r: 0.3 }, { x: 10.4, z: lz('07'), r: 1.0, use: true, until: () => seq() >= 2 },
         { until: () => seq() >= 3 },
