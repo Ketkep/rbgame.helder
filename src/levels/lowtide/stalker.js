@@ -93,8 +93,8 @@ export function stalker(w, game, H, S, o) {
   const players = () => {
     const P = c.partner, g = game.player, out = [];
     if (game.state === 'playing') out.push({ role: me, x: g.x, y: g.y, z: g.z, speed: Math.hypot(g.vx, g.vz), lit: lit(me, g.x, g.z), hidden: c.get('hid:' + me, false) && !lit(me, g.x, g.z) });
-    if (P.has && !P.dead) out.push({ role: c.other, x: P.sx, y: P.sy, z: P.sz, speed: Math.hypot(P.vx || 0, P.vz || 0), lit: lit(c.other, P.sx, P.sz), hidden: c.get('hid:' + c.other, false) && !lit(c.other, P.sx, P.sz) });
-    return out;
+    if (P.has && !P.dead) out.push({ role: c.other, y: P.sy, x: P.sx, y: P.sy, z: P.sz, speed: Math.hypot(P.vx || 0, P.vz || 0), lit: lit(c.other, P.sx, P.sz), hidden: c.get('hid:' + c.other, false) && !lit(c.other, P.sx, P.sz) });
+    return o.ignoreHigh ? out.filter((p) => !(p.y > o.ignoreHigh)) : out;                  // option: players on a gallery/balcony above this height are out of his reach and ignored
   };
 
   // ---- the brain (host) -----------------------------------------------------------------------------------------------------
