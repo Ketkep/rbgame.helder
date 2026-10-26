@@ -138,7 +138,7 @@ export default {
     // ---- LINEN STORE (west, z -43): console A ------------------------------------------------------------------------------------
     room(w, { x: -6.2, z: -43, w: 8, d: 6, sides: { e: false }, doors: {}, path: false });
     for (let i = 0; i < 4; i++) locker(w, { x: -4.4 + i * 0.64, z: -40.4, rot: Math.PI, ajar: i === 1 ? 0.6 : 0 });
-    H.lamp({ x: -6.2, y: 3.35, z: -43, mode: 'buzz' });
+    H.lamp({ x: -6.2, y: 3.35, z: -43, mode: 'dying' });
     for (let i = 0; i < 3; i++) { box(w, { x: -4.3, y: 0.3 + i * 0.6, z: -45.5, w: 1.6, h: 0.6, d: 0.8, kind: 'concrete', color: 0xb9bdb0, rough: 1, shadow: true }); }
     w.collider({ x: -4.3, y: 0.9, z: -45.5, w: 1.6, h: 1.8, d: 0.8 });
     decal(w, { kind: 'splat', seed: 23, x: -6.8, y: 0.02, z: -44, w: 2.2, h: 2.2 });
