@@ -20,7 +20,7 @@ import { figure } from './figure.js';
 const PI = Math.PI;
 const COLS = ['RED', 'GREEN', 'BLUE', 'AMBER'];
 const COLHEX = ['#ff3a3a', '#3dff7a', '#4a9bff', '#ffb02a'];
-const POST = { x: 1.35, z: -32.2 };
+const POST = { x: 1.7, z: -33.3 };
 const DAIS = { x: 0, z: -32 };
 const GAL = 3.2;
 const SECS = [8, 10, 12];
@@ -184,8 +184,8 @@ export default {
     H.lamp({ x: -5, y: 2.75, z: -43, mode: 'dying', power: 0.5, shaft: false }); H.lamp({ x: 5, y: 2.75, z: -43, mode: 'dead', power: 0.5, shaft: false });
     const table = T.tiltTable(w, DAIS);
     const lamp = T.surgicalLamp(w, { x: DAIS.x - 1.05, y: 5.6, z: DAIS.z, tx: DAIS.x, tz: DAIS.z - 0.2 });
-    T.instrumentTable(w, { x: 3.6, z: -28.4, rot: 0.2 }); T.instrumentTable(w, { x: -3.4, z: -35.8, rot: -0.3 }); T.instrumentTable(w, { x: 4.2, z: -36.4, rot: 1.2, blood: false });
-    T.anaesCart(w, { x: 2.0, z: -30.6, rot: 0.6 });
+    T.instrumentTable(w, { x: 9.2, z: -28.4, rot: 0.2 }); T.instrumentTable(w, { x: -9.4, z: -32.8, rot: -0.3 }); T.instrumentTable(w, { x: 9.4, z: -36.6, rot: 1.2, blood: false });
+    T.anaesCart(w, { x: 10.2, z: -31.5, rot: 0.6 });
     T.xrayBox(w, { x: 12.84, y: 2.0, z: -29, rot: -PI / 2 }); T.xrayBox(w, { x: -12.84, y: 2.0, z: -27, rot: PI / 2, width: 1.2, height: 0.8 });
     curtain(w, { x: -11.6, z: -26.2, width: 2.6 }); curtain(w, { x: 11.6, z: -26.2, width: 2.6 });
     curtain(w, { x: -9.8, z: -37.5, width: 2.4, rot: PI / 2 }); curtain(w, { x: 9.8, z: -37.5, width: 2.4, rot: PI / 2 });
@@ -369,7 +369,7 @@ export default {
     const bw = (lx, ly = 1.15) => T.worldOf(CON.group, lx, ly, 0.38);
     const btnIt = [0, 1, 2, 3].map((i) => {
       const p = bw(CON.btn[i].lx);
-      return w.interactable({ x: p.x, y: p.y, z: p.z + 0.1, w: 0.46, h: 0.4, d: 0.5, range: 3.5, pad: 0.04, label: () => `Press ${COLS[i]}`, enabled: () => me === OP && phase === 'A' && aOn, onUse: () => c.emit('c5:btn', { b: i, who: me }) });
+      return w.interactable({ x: p.x, y: p.y, z: p.z + 0.1, w: 0.46, h: 0.4, d: 0.5, range: 3.5, pad: 0.04, label: () => `Press ${COLS[i]}`, enabled: () => me === OP && phase === 'A' && aOn, onUse: () => c.emit('c5:btn', { b: i, r: aRound, i: aIn }) });
     });
     const kp = bw(1.55), lp0 = bw(-1.55);
     let klaxCd = 0; const KLX = [{ x: -11, z: -27 }, { x: 11, z: -27 }];
@@ -404,7 +404,7 @@ export default {
       if (aErr === 1) tell('all', 'lt.c5.err1', { priority: 2 }); else if (aErr === 4) tell('all', 'lt.c5.err2', { priority: 2 });
     };
     c.onEvent('c5:btn', (a) => {
-      if (phase !== 'A' || !aOn) return; CON.flash(a.b); S.bell((a.b - 1.5) * 0.2, 0.08 + a.b * 0.02);
+      if (phase !== 'A' || a.r !== aRound || a.i !== aIn) return; CON.flash(a.b); S.bell((a.b - 1.5) * 0.2, 0.08 + a.b * 0.02);
       const seq = SEQ[aRound];
       if (a.b === seq[aIn]) { aIn++; if (aIn >= seq.length) roundDone(); } else discharge();
     });
@@ -611,7 +611,7 @@ export default {
       void press;
       // the operator's bot answers the shared sequence (the patient's bot just waits)
       let pressT = 0;
-      w.updaters.push(() => { if (me !== OP1 || phase !== 'A' || !aOn || w.t < pressT || !nearP(0, -42.2, 4)) return; pressT = w.t + 0.7; c.emit('c5:btn', { b: SEQ[aRound][aIn], who: me }); });
+      w.updaters.push(() => { if (me !== OP1 || phase !== 'A' || !aOn || w.t < pressT || !nearP(0, -42.2, 4)) return; pressT = w.t + 0.7; c.emit('c5:btn', { b: SEQ[aRound][aIn], r: aRound, i: aIn }); });
       let kt = 0;
       w.updaters.push(() => {
         if (w.t < kt) return;
@@ -624,8 +624,8 @@ export default {
       };
       const winchRole = 'p1', fetchRole = 'p2';
       const pre = (role) => (role === winchRole
-        ? [{ x: 8, z: -9 }, { x: 16.5, z: -9 }, { x: 18, z: -8.2, r: 0.7, until: () => { if (cardTaken) return true; winch.it.onUse(); return false; } }, { x: 12, z: -9.5 }]
-        : [{ x: 10, z: -12 }, { x: 14, z: -14, r: 0.7 }, { x: 18, z: -14 }, { x: 23.5, z: -15.5, r: 0.8 }, { x: 23.5, z: -19, r: 0.8, until: () => { if (cardTaken) return true; if (shut.k > 0.85) cardIt.onUse(); return false; } }, { x: 18, z: -14 }, { x: 12, z: -11 }]);
+        ? [{ x: 10, z: -14 }, { x: 14, z: -14, r: 0.7 }, { x: 17, z: -11 }, { x: 18, z: -8.2, r: 0.7, until: () => { if (cardTaken) return true; winch.it.onUse(); return false; } }, { x: 17, z: -11 }, { x: 14, z: -14, r: 0.7 }, { x: 10, z: -14 }]
+        : [{ x: 10, z: -14 }, { x: 14, z: -14, r: 0.7 }, { x: 18, z: -14 }, { x: 23.5, z: -15.5, r: 0.8 }, { x: 23.5, z: -19, r: 0.8, until: () => { if (cardTaken) return true; if (shut.k > 0.85) cardIt.onUse(); return false; } }, { x: 18, z: -14 }, { x: 14, z: -14, r: 0.7 }, { x: 10, z: -14 }]);
       const readers = (isP1) => [{ x: isP1 ? -2.2 : 2.2, z: -20.5, r: 0.8, until: hold(rdH[isP1 ? 0 : 1], isP1 ? -2.2 : 2.2, -20.9, () => rdDone[isP1 ? 0 : 1], 1.8) }, { x: 0, z: -24, until: () => phase !== 'enter' }];
       const patientA = [{ x: 0, z: -28, r: 0.8 }, { x: 0, z: -31.2, r: 0.5, until: hold(buckle, 0, -31, () => strapOn && phase !== 'assign', 3) }, { until: () => phase === 'swap1' }, { until: () => phase === 'swap2' || !strapOn }];
       const operatorA = [{ x: 0, z: -28, r: 0.8 }, ...gal, { x: 0, z: -42.2, r: 0.7, until: () => phase === 'A' || phase === 'swap1' }];
@@ -639,7 +639,7 @@ export default {
       let bt = 0;
       w.updaters.push(() => {
         if (phase !== 'B' || bDone) return; if (w.t < bt) return; bt = w.t + 0.1;
-        if (me === OP && nearP(0, -42.2, 4)) { if (bStage === 2) { /* grip is held by the patient bot below */ } lever.it.onUse(); }
+        if (me === OP && nearP(0, -42.2, 4)) { lever.it.onUse(); if (c.get('c5.sed', 0) > 0.3 && klaxCd <= w.t) { klaxCd = w.t + 11; c.emit('c5:klax', { i: 0 }); } }
         if (me === TB && bStage === 2) grip.it.onUse();
       });
       const lounge = (role) => [{ x: -11, z: -34, r: 1.0 }, { x: -15, z: -34 }, { x: -22, z: role === 'p1' ? -29.6 : -30.8, r: 0.5, until: () => { if (halves[role]) return true; if (!halves[role]) c.emit('c5:half', { role }); return halves[role]; } }, { x: -21, z: -34.6, r: 0.7, until: hold(join, -21, -32.4, () => photoDone, 2.5) }];
@@ -659,6 +659,6 @@ export default {
       void bOp;
       botSteps(w, { p1: mk('p1'), p2: mk('p2') });
     }
-    w.after(1, () => { void 0; });
+    window.__c5 = () => ({ phase, bStage, bk, sed: c.get('c5.sed', 0), grip: c.get('c5.grip', false), strapOn, TB, OP, aRound, aErr, lp: c.get('c5.lp', 0), st: [st.x, st.z, st.state], adj: st.nodes.map((n) => n.id + ':' + n.adj.length).join(' ') });
   },
 };
