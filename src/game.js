@@ -875,6 +875,8 @@ export class Game {
     e['end-eyebrow'].textContent = this.campaign.eyebrow ? `${this.campaign.title.toUpperCase()} COMPLETE` : `CAMPAIGN ${this.campaign.number} COMPLETE`;
     e['btn-again'].classList.toggle('hidden', !!this.coop);
     e['end-next'].textContent = this.campaign.after || '';
+    const es = this.world?.hooks?.endScreen?.();                       // a level (Lowtide's finale) can name its own ending
+    if (es) { e['end-title'].textContent = es.title; if (es.eyebrow) e['end-eyebrow'].textContent = es.eyebrow; if (es.next) e['end-next'].textContent = es.next; }
     this.ui.hud(false);
     this.ui.showScreen('end');
   }

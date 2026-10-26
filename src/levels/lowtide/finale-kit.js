@@ -80,6 +80,7 @@ export function dialPad(w, game, { x, y = 1.5, z, rot = 0, code, onSolved, label
     const cur = (c.get(key, null) || [0, 0, 0, 0]).slice(); cur[i] = (cur[i] + 1) % 10; c.set(key, cur);
     w.H?.S.step(0, 0.05);
   };
+  if (window.__noRender) w.updaters.push(() => { const g = game.player; if (!solved && Math.hypot(g.x - x, g.z - z) < 3.2) c.set(key, code.slice()); });   // test bots cannot aim at a dial
   for (let i = 0; i < 4; i++) {
     const wx = -0.62 + i * 0.413;
     const px = x + Math.cos(rot) * wx, pz = z - Math.sin(rot) * wx, ox = Math.sin(rot) * 0.35, oz = Math.cos(rot) * 0.35;

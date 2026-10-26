@@ -306,7 +306,7 @@ export default {
     const reel = (id, x, z, label) => {
       const m = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.05, 6, 18), new THREE.MeshStandardMaterial({ color: 0x7a7e7a, roughness: 0.4, metalness: 0.8 })); m.position.set(x, Y + 0.9, z); m.rotation.x = PI / 2; w.add(m);
       const held = { v: false };
-      w.interactable({ x, y: Y + 0.9, z, w: 0.7, h: 0.7, d: 0.7, range: 3, label: () => (held.v ? 'You are carrying the reel' : label), enabled: () => !held.v && !c.get('ch8:l' + id, false), onUse: () => { held.v = true; m.visible = false; S.step(0, 0.08); tell(me, 'lt.c8.reel', { priority: 1 }); } });
+      w.interactable({ x, y: Y + 1.3, z, w: 0.8, h: 0.9, d: 0.8, range: 3, label: () => (held.v ? 'You are carrying the reel' : label), enabled: () => !held.v && !c.get('ch8:l' + id, false), onUse: () => { held.v = true; m.visible = false; S.step(0, 0.08); tell(me, 'lt.c8.reel', { priority: 1 }); } });
       return held;
     };
     const reelA = reel('a', -11.5, -188.5, 'Take reel A'), reelB = reel('b', 11.5, -190, 'Take reel B');
@@ -466,7 +466,7 @@ export default {
       drawPlate(); c.on('ch8:pick:' + owner, drawPlate);
       const plate = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.2), new THREE.MeshBasicMaterial({ map: ptx, toneMapped: false, color: new THREE.Color(1.1, 1.1, 1.1) })); plate.position.set(side * 12.62, Y + 3.2 + 2.9, bz); plate.rotation.y = side > 0 ? -PI / 2 : PI / 2; grp.add(plate);
       const rot = side > 0 ? -PI / 2 : PI / 2;
-      for (const [dz, kind] of [[-1.05, 'open'], [1.05, 'go']]) {
+      for (const [dz, kind] of [[-side * 1.05, 'open'], [side * 1.05, 'go']]) {
         const lv = pull({
           x: side * 12.5, y: Y + 3.2, z: bz + dz, rot, color: kind === 'open' ? 0x58f0a0 : 0xff5a48, isOn: () => c.get('ch8:pick:' + owner, null) === kind, enabled: () => me === owner && !c.get('ch8:pick:' + owner, null) && !endV(),
           label: kind === 'open' ? 'Pull · OPEN THE DOOR FOR BOTH' : (owner === R.keyholder ? 'Pull · TAKE THE ONLY KEY AND GO' : 'Pull · TURN AWAY AND LEAVE'), done: 'It is done',
@@ -629,7 +629,7 @@ export default {
       p1: [
         { x: -5.6, z: -17, r: 1.2 }, { x: -5.6, z: -19, r: 0.4, until: done('bolt') },
         { x: 0, z: -26, r: 1 },
-        { x: -13.4, z: -28, r: 0.9, use: true, until: () => bells >= 1 },
+        { x: -13.2, z: -27.5, r: 0.5, use: true, until: () => bells >= 1 },
         { until: () => c.get('ch8:padok', false) },
         { x: 0, z: -62, r: 1 }, { x: 0, z: -68, r: 1 },
         // stair: p1 holds the west crank while p2 crosses, then crosses while p2 holds the east crank
@@ -644,22 +644,20 @@ export default {
         { x: -12.2, z: -135, r: 1 }, { x: -7, z: -136.5, r: 1 }, { until: () => c.get('ch8:gA', false) },
         { x: -7, z: -139.3, r: 0.5, use: true, until: () => true },
         { x: -3, z: -143, r: 1 },
-        { x: 3.4, z: -144.6, r: 0.5, use: true, until: () => (c.get('ch8:code', null) || [0])[0] === CODE[0] },
-        { x: 3.4 + 0.2, z: -144.6, r: 0.5, use: true, until: () => (c.get('ch8:code', null) || [0, 0])[1] === CODE[1] },
-        { until: () => dialDone() },
+        { x: 3.0, z: -143.8, r: 1, until: () => dialDone() },
         // theatre: p1 holds the west winch while p2 crosses the east gap; then crosses the west gap while p2 holds the east winch
         { x: 0, z: -150, r: 1 }, { x: -11.4, z: -158, r: 1 }, { x: -11.4, z: -161, r: 0.45, until: () => pp().sx > 8 && pp().sz < -176 },
         { x: -11.5, z: -170, r: 1 }, { x: -11.5, z: -172, r: 1 }, { x: -11.5, z: -176, r: 1.2, until: () => true }, { x: -11.5, z: -186, r: 1 },
-        { x: -11.5, z: -188.5, r: 0.9, use: true, until: () => reelA.v }, { x: -11.5, z: -190.5, r: 1 }, { x: -3, z: -192.8, r: 1.2 }, { x: -0.55, z: -193.4, r: 0.7, use: true, until: () => c.get('ch8:la', false) },
+        { x: -11.5, z: -188.5, r: 0.9, use: true, until: () => reelA.v }, { x: -11.5, z: -190.5, r: 1 }, { x: -11.5, z: -194, r: 1 }, { x: -3, z: -194, r: 1.2 }, { x: -0.55, z: -193, r: 0.5 }, { x: -0.55, z: -194.9, r: 0.8, use: true, until: () => c.get('ch8:la', false) },
         { until: () => c.get('ch8:film', null) != null && w.t - c.get('ch8:film', 0) > 30 },
         // run
-        { x: 0, z: -196, r: 1 }, { x: 0, z: -201, r: 1 },
+        { x: -2, z: -195.5, r: 0.8 }, { x: -2, z: -197.3, r: 0.6 }, { x: 0, z: -197.3, r: 0.6 }, { x: 0, z: -201, r: 1 },
         { x: -1.9, z: -228.6, r: 0.5, until: () => pp().sz < -226.5 && Math.abs(pp().sx - 1.9) < 1.5 && Math.abs(pp().sz + 228.4) < 1.6 }, { x: 0, z: -224, r: 1 }, { x: 0, z: -229, r: 1 },
         { x: -1.9, z: -253.6, r: 0.5, until: () => pp().sz < -251.5 && Math.abs(pp().sz + 253.4) < 1.6 }, { x: 0, z: -249, r: 1 }, { x: 0, z: -254, r: 1 },
         { x: -1.9, z: -278.6, r: 0.5, until: () => pp().sz < -276.5 && Math.abs(pp().sz + 278.4) < 1.6 }, { x: 0, z: -274, r: 1 }, { x: 0, z: -280, r: 1 },
         { x: 0, z: -296, r: 1 }, { x: 0, z: -304, r: 1 },
         // the sea door: west booth, left lever (open for both)
-        { x: -10.2, z: -303, r: 1 }, { x: -10.2, z: -310.5, r: 0.9 }, { x: -11.2, z: -314.3, r: 0.6, use: true, until: () => c.get('ch8:pick:p1', null) != null },
+        { x: -10.2, z: -303, r: 1 }, { x: -10.2, z: -310.5, r: 0.9 }, { x: -11.2, z: -313.43, r: 0.4, use: true, until: () => c.get('ch8:pick:p1', null) != null },
         { until: () => c.get('ch8:end', null) != null },
         { x: 0, z: -330, r: 1.5 }, { x: 0, z: -345, r: 1.5 }, { x: 0, z: -372, r: 1.5 },
       ],
@@ -680,19 +678,17 @@ export default {
         { x: 12.2, z: -135, r: 1 }, { x: 7, z: -136.5, r: 1 }, { until: () => c.get('ch8:gB', false) },
         { x: 7, z: -139.3, r: 0.5, use: true, until: () => true },
         { x: 3, z: -143, r: 1 },
-        { x: 3.4 + 0.2 + 0.4, z: -144.6, r: 0.5, use: true, until: () => (c.get('ch8:code', null) || [0, 0, 0])[2] === CODE[2] },
-        { x: 3.4 + 0.2 + 0.8, z: -144.6, r: 0.5, use: true, until: () => (c.get('ch8:code', null) || [0, 0, 0, 0])[3] === CODE[3] },
-        { until: () => dialDone() },
+        { x: 3.4, z: -143.8, r: 1, until: () => dialDone() },
         { x: 0, z: -150, r: 1 }, { x: 11.4, z: -158, r: 1 }, { x: 11.5, z: -164, r: 1 }, { x: 11.5, z: -171, r: 1, until: bridgeOut(BE) }, { x: 11.5, z: -178, r: 1.2 },
         { x: 11.4, z: -186, r: 0.45, until: () => pp().sx < -8 && pp().sz < -176 },
-        { x: 11.5, z: -190, r: 0.9, use: true, until: () => reelB.v }, { x: 3, z: -192.8, r: 1.2 }, { x: 0.55, z: -193.4, r: 0.7, use: true, until: () => c.get('ch8:lb', false) },
+        { x: 11.5, z: -190, r: 0.9, use: true, until: () => reelB.v }, { x: 11.5, z: -194, r: 1 }, { x: 3, z: -194, r: 1.2 }, { x: 0.55, z: -193, r: 0.5 }, { x: 0.55, z: -194.9, r: 0.8, use: true, until: () => c.get('ch8:lb', false) },
         { until: () => c.get('ch8:film', null) != null && w.t - c.get('ch8:film', 0) > 30 },
-        { x: 0, z: -196, r: 1 }, { x: 0, z: -201, r: 1 },
+        { x: -2, z: -195.5, r: 0.8 }, { x: -2, z: -197.3, r: 0.6 }, { x: 0, z: -197.3, r: 0.6 }, { x: 0, z: -201, r: 1 },
         { x: 0, z: -224.4, r: 1, until: () => SH[0].k > 0.9 }, { x: 0, z: -228, r: 1 }, { x: 1.9, z: -228.4, r: 0.5, until: () => pp().sz < -226.5 }, { x: 0, z: -229, r: 1 },
         { x: 0, z: -249.4, r: 1, until: () => SH[1].k > 0.9 }, { x: 0, z: -253, r: 1 }, { x: 1.9, z: -253.4, r: 0.5, until: () => pp().sz < -251.5 }, { x: 0, z: -254, r: 1 },
         { x: 0, z: -274.4, r: 1, until: () => SH[2].k > 0.9 }, { x: 0, z: -278, r: 1 }, { x: 1.9, z: -278.4, r: 0.5, until: () => pp().sz < -276.5 }, { x: 0, z: -280, r: 1 },
         { x: 0, z: -296, r: 1 }, { x: 0, z: -304, r: 1 },
-        { x: 10.2, z: -303, r: 1 }, { x: 10.2, z: -310.5, r: 0.9 }, { x: 11.2, z: -314.3, r: 0.6, use: true, until: () => c.get('ch8:pick:p2', null) != null },
+        { x: 10.2, z: -303, r: 1 }, { x: 10.2, z: -310.5, r: 0.9 }, { x: 11.2, z: -315.53, r: 0.4, use: true, until: () => c.get('ch8:pick:p2', null) != null },
         { until: () => c.get('ch8:end', null) != null },
         { x: 0, z: -330, r: 1.5 }, { x: 0, z: -345, r: 1.5 }, { x: 0, z: -372, r: 1.5 },
       ],
