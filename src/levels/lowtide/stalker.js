@@ -116,7 +116,7 @@ export function stalker(w, game, H, S, o) {
     st.dist = best ? best.d : 99;
     if (st.huntHold > 0) { st.huntHold -= dt; if (st.state === 'chase') st.state = 'search'; }
     if (st.hunt && !(st.huntHold > 0)) {                                                    // scripted relentless pursuit of the nearest player who is not hiding
-      const cand = ps.filter((p) => !p.hidden).sort((a, b) => a.d - b.d)[0];
+      const cand = ps.filter((p) => !p.hidden && !(st.skip && st.skip(p.role))).sort((a, b) => a.d - b.d)[0];
       if (cand) { st.state = 'chase'; target = cand.role; lost = 0; if (clear(st.x, st.z, cand.x, cand.z)) { wp = [{ x: cand.x, z: cand.z }]; wi = 0; } else if (!wp.length || wi >= wp.length || Math.floor(game.time * 3) !== Math.floor((game.time - dt) * 3)) { wp = path(st.x, st.z, cand.x, cand.z); wi = 0; } }
       else if (st.state === 'chase') { st.state = 'search'; search = 3; }
       if (st.state === 'chase') return;

@@ -7,6 +7,7 @@ import hydro from './hydro.js';
 import theatre from './theatre.js';
 import morgue from './morgue.js';
 import finale from './lowtide-finale.js';
+import director from './director.js';
 
 const ROSTER = [
   ['Intake', 'Wake up. Check your wristband. It is not your name.'],
@@ -24,6 +25,6 @@ export const KIND_ICON = {};
 const planned = ([name, tagline], i) => ({ id: `lowtide-${i + 1}`, name, kind: 'horror', tagline, index: i, placeholder: true });
 
 export function buildLowtideLevels() {
-  const BUILT = [intake, nightRounds, records, hydro, theatre, morgue, null, finale];
+  const BUILT = [intake, nightRounds, records, hydro, theatre, morgue, director, finale];
   return ROSTER.map((r, i) => (BUILT[i] ? Object.assign(BUILT[i], { kind: 'horror', tagline: r[1], index: i }) : planned(r, i)));
 }
