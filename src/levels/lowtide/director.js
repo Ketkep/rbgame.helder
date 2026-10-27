@@ -80,6 +80,8 @@ export default {
     };
     const lamps = (list, y = LY) => list.map(([x, z, mode, power = 1, len = 1.3, rot = 0]) => H.lamp({ x, y, z, mode, power, len, rot }));
     const confirm = () => game.audio.confirm?.();
+    const coolT = {};
+    const cool = (k) => { const n = performance.now(); if (n - (coolT[k] || 0) < 450) return false; coolT[k] = n; return true; };
     const hostDo = (fn) => { if (host) fn(); };
 
     // ================================================================ 1. lobby =================================================
@@ -298,8 +300,9 @@ export default {
     for (let i = 0; i < 3; i++) {
       const pt = panel.at([-0.4, 0, 0.4][i], 0.1);
       c.on('v:w' + i, (v) => { wires[i] = (v | 0) % 4; panel.setWire(i, wires[i]); S.squeak(0.2, 0.05); panel.setArmed(armed()); if (armed() && !armedSaid) { armedSaid = true; S.bell(0, 0.15); tell('all', 'lt.c7.panel.armed', { priority: 2 }); overload.set(0, false); } });
-      press({ x: pt.x, y: 1.6, z: pt.z, bw: 0.38, bh: 1.4, bd: 0.8, label: () => `${['BELL', 'EARTH', 'BED'][i]} socket · ${WIRE[wires[i]].n} (next)`, enabled: () => !covered() && !breach, onUse: () => { c.set('v:w' + i, (wires[i] + 1) % 4); confirm(); } });
+      press({ x: pt.x, y: 1.6, z: pt.z, bw: 0.38, bh: 1.4, bd: 0.8, label: () => `${['BELL', 'EARTH', 'BED'][i]} socket · ${WIRE[wires[i]].n} (next)`, enabled: () => !covered() && !breach, onUse: () => { if (!cool('w' + i)) return; c.set('v:w' + i, (wires[i] + 1) % 4); confirm(); } });
     }
+    w._dbg = () => ({ wires, scr, tool: toolHere(), dial });
     const ov = overload.levers[0];
     press({ x: ov.x, y: 1.2, z: ov.z, bw: 0.7, bh: 1.4, bd: 0.6, label: () => (armed() ? 'Throw the overload' : 'OVERLOAD (no power)'), enabled: () => !breach, onUse: () => { if (!armed()) { S.squeak(0, 0.06); tell(me, 'lt.c7.panel.dead', { priority: 1 }); return; } c.emit('c7:breach'); } });
     w.updaters.push((dt) => { overload.tick(dt); bolt.tick(dt); });
@@ -657,7 +660,7 @@ export default {
       safe.setDial(i, 0);
       c.on('sf:' + i, (v) => { dial[i] = v | 0; safe.setDial(i, dial[i]); S.squeak(0.1, 0.04); if (host && dial.every((q, k) => q === CODE[k]) && !c.get('sf:open', false)) c.set('sf:open', true); });
       const dp = safe.dial(i);
-      press({ x: dp.x, y: 1.3, z: dp.z, bw: 0.34, bh: 1.2, bd: 0.5, label: () => `Dial ${i + 1} (${dial[i]})`, enabled: () => !c.get('sf:open', false), onUse: () => { c.set('sf:' + i, (dial[i] + 1) % 10); confirm(); } });
+      press({ x: dp.x, y: 1.3, z: dp.z, bw: 0.34, bh: 1.2, bd: 0.5, label: () => `Dial ${i + 1} (${dial[i]})`, enabled: () => !c.get('sf:open', false), onUse: () => { if (!cool('d' + i)) return; c.set('sf:' + i, (dial[i] + 1) % 10); confirm(); } });
     }
     let safeK = 0, keyTaken = false;
     c.on('sf:open', (v) => { if (!v) return; S.door(0, 0.35); S.groan(0.1); sayAll('lt.c7.safe', { priority: 2 }); safe.glint.intensity = 6; });
@@ -732,7 +735,7 @@ export default {
       { x: -16.5, z: -14.4, r: 0.6 }, { x: -16.5, z: -12.9, r: 2.0, use: true, until: () => rv1n >= 2 },
       { x: -16.3, z: -19.4, r: 0.7 }, { x: -17.8, z: -19.4, r: 1.7, use: true, until: () => rv1n >= 3 },
       { x: -15.2, z: -15.6, r: 0.5, until: () => !D_mr.locked }, walk(-8, -16, 0.9), walk(-3, -16, 1.0), walk(4, -16, 1.0), walk(9, -16, 0.9),
-      { x: 13.5, z: -16, r: 0.9 }, { x: 15, z: -16, r: 0.9, until: () => mir.done && c.get('rv2:' + me, false) },
+      { x: 12, z: -16, r: 0.9 }, { x: 17.4, z: -16, r: 0.3, until: () => mir.done && c.get('rv2:' + me, false) },
       { x: 9, z: -16, r: 1.0, until: () => !D_sc.locked }, walk(4, -16, 0.9), walk(0, -30, 1.0), { x: 0, z: -34, r: 1.0, until: () => !D_sc.locked },
       walk(0, -37, 0.9), { x: 0, z: -37.6, r: 1.0, until: () => scBoth.active }, { x: 0, z: -37.5, r: 1.6, use: true, until: () => reelT >= 0 || reelDone },
       { x: 0, z: -37, r: 0.9, until: () => c.get('rv3:' + me, false) }, { x: 5.5, z: -45, r: 1.0, until: () => !D_scn.locked }, walk(5.5, -50, 0.9), walk(5, -54, 0.9),
@@ -747,8 +750,8 @@ export default {
       { x: -18, z: -61, r: 1.0, until: () => D_v.locked || (!BOT_LOCKS && c.get('c7:key', '') !== '') },
       // sealed in (or not): if sealed, break out; if not, wait for the key
       { x: -18, z: -65.0, r: 0.5 }, { x: -18, z: -65.6, r: 1.2, use: true, until: () => !D_v.locked || toolHere() },
-      { x: unscrew.x, z: unscrew.z - 1.2, r: 0.5 }, { x: unscrew.x, z: unscrew.z, r: 1.2, use: true, until: () => !D_v.locked || !covered() },
-      ...[0, 1, 2].flatMap((i) => { const p = panel.at([-0.4, 0, 0.4][i], 0.1); return [{ x: p.x, z: p.z, r: 0.5 }, { x: p.x, z: p.z, r: 1.0, use: true, until: () => !D_v.locked || wires[i] === SOLUTION[i] }]; }),
+      { x: unscrew.x, z: unscrew.z - 1.0, r: 0.4 }, { x: unscrew.x, z: unscrew.z, r: 1.2, use: true, until: () => !D_v.locked || !covered() },
+      ...[0, 1, 2].flatMap((i) => { const p = panel.at([-0.4, 0, 0.4][i], 0.1); return [{ x: p.x, z: p.z - 0.9, r: 0.1 }, { x: p.x, z: p.z, r: 1.2, use: true, until: () => !D_v.locked || wires[i] === SOLUTION[i] }]; }),
       { x: ov.x, z: ov.z - 0.8, r: 0.5 }, { x: ov.x, z: ov.z, r: 0.9, use: true, until: () => !D_v.locked || breach },
       { x: -18, z: -60, r: 1.0, until: () => !D_v.locked }, walk(-8, -59, 0.9), walk(0, -59, 1.0),
       { x: 0, z: -64, r: 1.0 }, { x: -8, z: -64.5, r: 0.9 }, { x: -8, z: -69, r: 0.9 }, { x: -9, z: -74, r: 1.0 }, { x: -2, z: -74.2, r: 1.0 },
@@ -766,7 +769,7 @@ export default {
       walk(21.5, -64, 0.9), walk(22, -68, 0.9), walk(22, -70, 0.9), walk(22, -73, 0.9),
       { x: 23.8, z: -74.7, r: 1.5, use: true, until: () => true }, walk(14, -74.2, 0.9), walk(8, -74.2, 0.9),
       { x: -4.5, z: -73.3, r: 1.7, use: true, until: () => true }, walk(-3, -74.2, 0.9), walk(-9, -74.2, 0.9), walk(-13, -76, 0.9),
-      ...[0, 1, 2, 3].flatMap((i) => [{ x: diaPos[i].x, z: diaPos[i].z + 0.7, r: 0.35 }, { x: diaPos[i].x, z: diaPos[i].z, r: 1.1, use: true, until: () => dial[i] === CODE[i] }]),
+      ...[0, 1, 2, 3].flatMap((i) => [{ x: diaPos[i].x, z: diaPos[i].z + 0.8, r: 0.1 }, { x: diaPos[i].x, z: diaPos[i].z, r: 1.1, use: true, until: () => dial[i] === CODE[i] }]),
       { x: -14, z: -78.2, r: 0.9, until: () => c.get('sf:open', false) }, { x: -14, z: -78.6, r: 1.3, use: true, until: () => !!c.get('c7:key', '') },
       walk(-9, -74.2, 0.9), walk(-3, -74.2, 0.9), { x: 6.2, z: -79.0, r: 1.0 }, { x: 6.9, z: -79.6, r: 1.1, use: true, until: () => !D_exit.locked },
       { x: 4, z: -80, r: 1.0, until: () => !D_v.locked }, { x: 4, z: -86, r: 1.0 },
