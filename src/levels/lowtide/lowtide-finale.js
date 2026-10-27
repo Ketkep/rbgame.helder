@@ -283,7 +283,7 @@ export default {
     const W5 = HY.water({ x: 0, z: -174, w: 19.7, d: 35.7, floorY: 2.4, height: 7, flecks: 90, caustics: 2.2, level: (t) => ({ y: 2.55 + 1.15 * smooth((t - 120) / 520), warn: 0 }) });
     void W5;
     lampRow([[-8, -150, 'buzz', 1.6], [8, -150, 'dying', 1.6], [-11.5, -163, 'steady', 1.2], [11.5, -165, 'dying', 1.2], [-11.5, -185, 'buzz', 1.2], [11.5, -185, 'steady', 1.2], [0, -195, 'dead'], [0, -175, 'dead', 2.4]], Y + 9.9);
-    for (let x = -9; x <= 9; x += 3) H.lamp({ x, y: 5.2, z: -156.4, mode: x % 2 ? 'steady' : 'buzz', len: 0.8, power: 0.55, color: 0xffd8a0, shaft: false });
+    for (let x = -9; x <= 9; x += 6) H.lamp({ x, y: 4.7, z: -156.6, mode: 'dying', len: 0.6, power: 0.15, color: 0xffb070, shaft: false });
     decals([['hand', 41, -12.84, Y + 1.0, -165, 0.5, 0.5, 'w'], ['scratch', 42, 12.84, Y + 1.7, -184, 1.6, 1.6, 'e'], ['splat', 43, -11.5, Y + 0.02, -188, 2.4, 2.4], ['drag', 44, 0, Y + 0.02, -150, 5, 3, 'floor', 0.2]]);
     wheelchair(w, { x: 5, z: -152, rot: 1 }); gurney(w, { x: -6, z: -149, rot: 0.4 });
     checkpoint(w, { x: 0, y: Y, z: -147.5 });
@@ -518,11 +518,13 @@ export default {
     // ---- the endings -------------------------------------------------------------------------------------------------------
     const pierG = pier(w, { z0: -338.4, len: 48 });
     const dawn = { k: 0, on: false };
+    for (const o of [pierG.sea, pierG.sky, pierG.sun]) o.visible = false;
     const fog = w.scene.fog, fogBase = { c: fog.color.clone(), d: fog.density }, fogDawn = new THREE.Color(0xb59a86);
     const prevF = w.hooks.frame;
     w.hooks.frame = (dt, g) => {
       prevF?.(dt, g);
       dawn.k += ((dawn.on ? 1 : 0) - dawn.k) * Math.min(1, dt * 0.5);
+      if (dawn.on && !pierG.sky.visible) for (const o of [pierG.sea, pierG.sky, pierG.sun]) o.visible = true;
       if (dawn.k > 0.01) { fog.color.lerpColors(fogBase.c, fogDawn, dawn.k); fog.density = lerp(fogBase.d, 0.012, dawn.k); pierG.light.intensity = 1.6 * dawn.k; w.scene.background = new THREE.Color(0x020406).lerp(new THREE.Color(0xe8c9a0), dawn.k); g.fx.tint = [1 + 0.08 * dawn.k, 1, 1 - 0.1 * dawn.k]; }
     };
     const recordEnding = (name) => { const cs = game.cs('lowtide'); cs.endings = { ...(cs.endings || {}), [name]: true }; cs.lastEnding = name; };
