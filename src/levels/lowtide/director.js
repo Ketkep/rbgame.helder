@@ -57,6 +57,7 @@ export default {
     const names = () => ({ M: esc(c.names[me]), O: esc(c.names[other]) });
     const toast = (t, kind = '') => game.ui?.toast?.(t, kind);
     const host = c.isHost;
+    let ready = false;
     R.flag('locked-in', false);
 
     // ================================================================ helpers ====================================================
@@ -89,7 +90,7 @@ export default {
     for (const [x, len] of [[-6.15, 9.7], [6.15, 9.7]]) wainscot(w, { x, z: -7, len, along: 'x', side: 1 });
     wainscot(w, { x: -11, z: 0, len: 14, along: 'z', side: 1 }); wainscot(w, { x: 11, z: 0, len: 14, along: 'z', side: -1 }); wainscot(w, { x: 0, z: 7, len: 22, along: 'x', side: -1 });
     rug(w, { x: 0, z: -1, w: 5.6, d: 11 });
-    chandelier(w, { x: 0, y: 3.1, z: 0.5 });
+    chandelier(w, { x: 0, y: 3.1, z: -1.5 });
     stencil(w, 'CHAPTER 7', { x: -6.2, y: 3.5, z: -6.82, rot: 0, width: 3, size: 0.4 }); stencil(w, 'THE DIRECTOR', { x: -6.2, y: 2.85, z: -6.82, rot: 0, width: 4, size: 0.34 });
     stencil(w, 'DIRECTOR\'S WING · STAFF ONLY', { x: 0, y: 3.55, z: 6.82, rot: PI, width: 5, size: 0.3 });
     portrait(w, { x: 6.5, y: 2.2, z: -6.82, seed: 5, plaque: 'FOUNDER\nE. HALLOWAY 1931' }); portrait(w, { x: 9.2, y: 2.2, z: -6.82, seed: 8, plaque: 'BENEFACTOR\nTHE TIDE COMMITTEE' });
@@ -217,7 +218,7 @@ export default {
     stencil(w, 'SCREENING ROOM', { x: 4.2, y: 3.4, z: -35.2, rot: 0, width: 3.2, size: 0.3 }); stencil(w, 'SILENCE DURING THE FILM', { x: -4.2, y: 3.4, z: -35.2, rot: 0, width: 3.6, size: 0.26 });
     decal(w, { kind: 'drag', seed: 31, x: 0, y: 0.03, z: -45, w: 2.2, h: 5, face: 'floor', rot: 0 }); decal(w, { kind: 'splat', seed: 17, x: -3, y: 0.02, z: -49.5, w: 1.8, h: 1.8 }); decal(w, { kind: 'hand', seed: 21, x: 6.84, y: 1.3, z: -40, w: 0.5, h: 0.5, face: 'w' });
     let reelT = -1, reelDone = false;                                // seconds since the film began on THIS machine (-1: not started)
-    const screen = monitor(w, { x: -1.5, y: 2.2, z: -50.7, nx: 0, nz: 1, width: 7, height: 3.2, cw: 640, ch: 292, draw: (g, cw, ch, t) => drawFilm(g, cw, ch, t, reelT) });
+    const screen = monitor(w, { x: -1.5, y: 2.2, z: -50.7, nx: 0, nz: 1, width: 7, height: 3.2, cw: 640, ch: 292, draw: (g, cw, ch, t) => { if (ready) drawFilm(g, cw, ch, t, reelT); } });
     const scBoth = c.zone({ x: 0, y: 1, z: -43, w: 13, h: 3, d: 15, need: 'both', shrink: 0 });
     press({
       x: 0, y: 1.2, z: -37.4, bw: 1.2, bh: 1.6, bd: 0.9, label: () => (reelT >= 0 || reelDone ? 'The reel is running' : 'Start the reel'), enabled: () => reelT < 0 && !reelDone,
@@ -322,7 +323,7 @@ export default {
     c.onEvent('c7:bell', (a) => { const B = BELLS[a?.i | 0]; if (!B) return; S.bell(0.5, 0.12); bellCool = 22; if (host) st.noise(B.x, B.z, 18); });
     w.updaters.push((dt) => { bellCool = Math.max(0, bellCool - dt); });
     let monT = 0;
-    const cctv = monitor(w, { x: -23.7, y: 2.0, z: -60, nx: 1, nz: 0, width: 3.6, height: 2.5, cw: 544, ch: 384, draw: (g, cw, ch, t) => drawMap(g, cw, ch, t) });
+    const cctv = monitor(w, { x: -23.7, y: 2.0, z: -60, nx: 1, nz: 0, width: 3.6, height: 2.5, cw: 544, ch: 384, draw: (g, cw, ch, t) => { if (ready) drawMap(g, cw, ch, t); } });
     w.updaters.push((dt) => { monT -= dt; if (monT <= 0) { monT = 0.15; cctv.redraw(w.t); screen.redraw(w.t); } });
 
     // ================================================================ 8. the private wing =========================================
@@ -473,7 +474,7 @@ export default {
       const dx = MIR.x - g.x, dz = MIR.z - g.z, d = Math.hypot(dx, dz) || 1;
       const facing = (-Math.sin(game.yaw) * dx + -Math.cos(game.yaw) * dz) / d;
       if (mir.st === 'idle') {
-        if (facing > 0.55 && d < 9) {
+        if (facing > 0.4 && d < 10) {
           mir.st = 'mimic'; mir.t = 0; mir.fig = figure(w, { kind: 'patient' }); tint(mir.fig, 0x6a7670, R.is('keyholder') ? 0xdcdccf : 0x6f7d86);
           mir.phase = 0; tell(me, mirLines[R.mine].k[0], { priority: 2 }); S.whisper(0, 1.4, 0.08);
         } else return;
@@ -482,7 +483,7 @@ export default {
       mir.hist.push({ t: w.t, x: g.x, z: g.z, yaw: game.yaw }); while (mir.hist.length && mir.hist[0].t < w.t - 1.2) mir.hist.shift();
       const sp = Math.hypot(g.vx || 0, g.vz || 0); mir.phase += dt * (3 + sp * 1.4);
       const place = (px, pz, yw) => { F.set(Math.min(28, 2 * MIR.x - px), 0, pz); F.face(PI - yw); F.pose(mir.phase, Math.min(1, sp / 6), 0, w.t); };
-      if (facing > 0.1 || mir.st === 'touch') mir.t += dt;
+      if (facing > -0.3 || mir.st === "touch") mir.t += dt;
       if (mir.st === 'mimic') {
         place(g.x, g.z, game.yaw);
         if (mir.t > 8) { mir.st = 'drift'; mir.t = 0; S.static(0.25, 0.05); }
@@ -538,7 +539,7 @@ export default {
     const rv3Check = () => {
       if (c.get('rv3:p1', false) && c.get('rv3:p2', false)) hostDo(() => { if (D_scn.locked) { D_scn.unlock(); D_scn.setOpen(true); sayAll('lt.c7.rv3.open', { priority: 2 }); } });
     };
-    const drawFilm = (g, cw, ch, t, tt) => {
+    function drawFilm(g, cw, ch, t, tt) {
       const R_ = R.mine, k = R_ === 'keyholder';
       g.fillStyle = '#05080a'; g.fillRect(0, 0, cw, ch);
       if (tt < 0) {
@@ -563,7 +564,7 @@ export default {
       g.fillStyle = 'rgba(0,0,0,.2)'; for (let y = 0; y < ch; y += 3) g.fillRect(0, y, cw, 1);
       if (lt < 0.5 || lt > 10.6) { g.fillStyle = `rgba(255,255,255,${0.35 + Math.random() * 0.4})`; g.fillRect(0, Math.random() * ch, cw, 2 + Math.random() * 10); }
       if (tt > REEL - 4) { g.fillStyle = `rgba(255,255,255,${Math.min(1, (tt - (REEL - 4)) / 4)})`; g.fillRect(0, 0, cw, ch); }
-    };
+    }
 
     // ================================================================ 6/7. the strongroom lobby, the power, the bolt ================
     trip('ante', { x: 0, y: 1, z: -55, w: 18, h: 3, d: 6 }, () => {
@@ -776,6 +777,7 @@ export default {
     ];
     // the Keyholder takes a detour to unseal the vault if the Subject has not broken out in time? (not needed: the Subject breaks out; if not locked there is nothing to do)
     void both; void partnerNear; void near; void Z_;
+    ready = true;
     botSteps(w, { [R.keyholder]: keyholderSteps, [R.subject]: subjectSteps });
     // the bot Keyholder only learns the minutes etc. by reading; those papers are not needed for the bots (they know the code)
   },

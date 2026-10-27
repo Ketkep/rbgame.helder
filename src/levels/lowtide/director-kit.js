@@ -62,8 +62,8 @@ export function chandelier(w, { x, y = 4.2, z, r = 0.9 }) {
   const ring2 = new THREE.Mesh(new THREE.TorusGeometry(r * 0.55, 0.03, 6, 20), metal(0x4a3a1c)); ring2.rotation.x = PI / 2; ring2.position.y = 0.2; g.add(ring2);
   const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.4, 6), metal(0x2a2a22)); chain.position.y = 0.7; g.add(chain);
   for (let i = 0; i < 8; i++) { const a = (i / 8) * PI * 2; const b = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), glowMat(0xffd89a, 1.6)); b.position.set(Math.cos(a) * r, 0.08, Math.sin(a) * r); g.add(b); const st = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.14, 6), metal(0x6a6050)); st.position.set(Math.cos(a) * r, -0.02, Math.sin(a) * r); g.add(st); }
-  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTexture('glow'), color: 0xffc47a, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); halo.scale.setScalar(4.2); g.add(halo);
-  w.updaters.push(() => { g.rotation.z = Math.sin(w.t * 0.5 + x) * 0.012; g.rotation.x = Math.cos(w.t * 0.4 + z) * 0.01; halo.material.opacity = 0.3 + Math.sin(w.t * 9 + x) * 0.04; });
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTexture('glow'), color: 0xffc47a, transparent: true, opacity: 0.2, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); halo.scale.setScalar(2.0); g.add(halo);
+  w.updaters.push(() => { g.rotation.z = Math.sin(w.t * 0.5 + x) * 0.012; g.rotation.x = Math.cos(w.t * 0.4 + z) * 0.01; halo.material.opacity = 0.18 + Math.sin(w.t * 9 + x) * 0.03; });
   return g;
 }
 /** A wall clock stopped at a time. */
@@ -214,7 +214,8 @@ export function projector(w, { x, z, y = 1.5, len = 12 }) {
 /** A big mirror (a window onto a dark alcove behind it). The glass is a transparent canvas the level draws on (fog writing, cracks). */
 export function mirrorGlass(w, { x, y = 1.75, z, nx = -1, nz = 0, width = 6.2, height = 2.7 }) {
   const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rotOf(nx, nz); w.add(g);
-  const fr = new THREE.Mesh(new THREE.BoxGeometry(width + 0.4, height + 0.4, 0.16), horrorSurface('wood', { color: 0x6a5230, roughness: 0.5, metalness: 0.3 })); fr.position.z = -0.02; g.add(fr);
+  const fm = horrorSurface('wood', { color: 0x6a5230, roughness: 0.5, metalness: 0.3 });
+  for (const [bw, bh, px, py] of [[width + 0.4, 0.2, 0, height / 2 + 0.1], [width + 0.4, 0.2, 0, -height / 2 - 0.1], [0.2, height, -width / 2 - 0.1, 0], [0.2, height, width / 2 + 0.1, 0]]) { const fr = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, 0.16), fm); fr.position.set(px, py, 0.02); g.add(fr); }
   const [c, q] = cv(1024, 440); const t = tex(c);
   const glass = new THREE.Mesh(new THREE.PlaneGeometry(width, height), new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.05, metalness: 0.2, depthWrite: false })); glass.position.z = 0.04; glass.renderOrder = 4; g.add(glass);
   const M = { canvas: c, ctx: q, tex: t, width, height, glass };
