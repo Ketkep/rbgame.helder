@@ -81,6 +81,12 @@ export class Narrator {
   }
 
   _speak(line) {
+    // Night Desk (Lowtide): the voice is rare — only important lines, or one line per ~45 s; the subtitle still shows
+    if (this.desk) {
+      const n = performance.now();
+      if (line.prio < 2 && n - (this._deskLast || -1e9) < 45000) return;
+      this._deskLast = n;
+    }
     const clean = line.text.replace(/…/g, '...').replace(/\s+/g, ' ').trim();
     if (!clean) return;
     try {

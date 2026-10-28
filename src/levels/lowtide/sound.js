@@ -6,7 +6,7 @@ export function horrorSound(game) {
   const A = game.audio;
   const S = { ok: false };
   const ctx = () => A.ctx;
-  let bus, drone, droneGain, lp, heart = { on: false, rate: 1, next: 0 }, dripNext = 0, wasOn = false;
+  let bus, drone, droneGain, lp, heart = { on: false, rate: 1, next: 0 }, dripNext = 0, oddNext = 0, wasOn = false;
   const nz = () => A.noiseBuf;
 
   S.start = () => {
@@ -22,12 +22,12 @@ export function horrorSound(game) {
     const lfo = c.createOscillator(); lfo.frequency.value = 0.07; const lg = c.createGain(); lg.gain.value = 40; lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
     lp.connect(droneGain); droneGain.connect(bus);
     // air: very quiet filtered noise
-    const ns = c.createBufferSource(); ns.buffer = nz(); ns.loop = true; const nf = c.createBiquadFilter(); nf.type = 'lowpass'; nf.frequency.value = 380; const ng = c.createGain(); ng.gain.value = 0.05; ns.connect(nf); nf.connect(ng); ng.connect(bus); ns.start();
+    const ns = c.createBufferSource(); ns.buffer = nz(); ns.loop = true; const nf = c.createBiquadFilter(); nf.type = 'lowpass'; nf.frequency.value = 380; const ng = c.createGain(); ng.gain.value = 0.008; ns.connect(nf); nf.connect(ng); ng.connect(bus); ns.start();
     S.ok = true;
   };
   S.stop = () => { if (!S.ok) return; try { bus.gain.setTargetAtTime(0, A.ctx.currentTime, 0.2); } catch { /* ignore */ } S.ok = false; };
   /** 0 calm … 1 terror: opens the drone filter and raises it. */
-  S.dread = (k) => { if (!S.ok) return; const t = A.ctx.currentTime; droneGain.gain.setTargetAtTime(0.1 + 0.5 * k, t, 0.6); lp.frequency.setTargetAtTime(110 + 520 * k, t, 0.8); };
+  S.dread = (k) => { if (!S.ok) return; const t = A.ctx.currentTime; droneGain.gain.setTargetAtTime(0.5 * k * k, t, 0.9); lp.frequency.setTargetAtTime(110 + 520 * k, t, 0.8); };
 
   const tone = ({ f = 200, type = 'sine', dur = 0.3, vol = 0.2, when = 0, slide = 0, pan = 0, attack = 0.005 }) => {
     const c = ctx(); if (!c || !S.ok) return;
@@ -72,7 +72,9 @@ export function horrorSound(game) {
   /** Per-frame: heartbeat, random drips, a heart of the room. */
   S.update = (dt, t) => {
     if (!S.ok) return;
-    if (t > dripNext) { S.drip(); dripNext = t + 2 + Math.random() * 6; }
+    if (t > dripNext) { S.drip(); dripNext = t + 9 + Math.random() * 18; }
+    // the silence is the point: one distant sound now and then
+    if (t > oddNext) { if (oddNext > 0) { const pan = (Math.random() - 0.5) * 1.6; const r = Math.random(); if (r < 0.3) S.groan(0.08); else if (r < 0.55) S.door(pan, 0.1); else if (r < 0.8) { S.step(pan, 0.05, true); S.step(pan, 0.04, true); } else S.scrape(pan, 0.05); } oddNext = t + 40 + Math.random() * 50; }
     if (heart.on && t > heart.next) { S.beat(0.8); heart.next = t + 0.9 / heart.rate; }
     wasOn = heart.on; void wasOn;
   };
