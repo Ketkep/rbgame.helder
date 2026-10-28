@@ -242,13 +242,16 @@ export default {
 
     // ---- 2. torch, dose cabinet, key card --------------------------------------------------------------------------------------
     let torchLine = false;
+    let torchOff = false; H.ownF = true;
+    const onF = (e) => { if (e.code === 'KeyF' && !e.repeat && game.state === 'playing' && !game.modal && c.get('torch:' + me, false)) torchOff = !torchOff; };
+    window.addEventListener('keydown', onF); w.disposers.push(() => window.removeEventListener('keydown', onF));
     w.interactable({
       x: 0, y: 1.25, z: -3.4, w: 1.8, h: 0.9, d: 0.9, range: 3.2, pad: 0.1,
       label: () => 'Take your torch', enabled: () => free(me) && !c.get('torch:' + me, false),
       onUse: () => { c.set('torch:' + me, true); S.door(0, 0.06); S.step(0, 0.08); },
     });
     w.updaters.push(() => {
-      H.torchOn = !!c.get('torch:' + me, false); H.theirOn = !!c.get('torch:' + other, false);
+      H.torchOn = !!c.get('torch:' + me, false) && !torchOff; H.theirOn = !!c.get('torch:' + other, false);
       torches.p1.visible = !c.get('torch:p1', false); torches.p2.visible = !c.get('torch:p2', false);
       if (H.torchOn && !torchLine) { torchLine = true; w.after(0.7, () => sayMe('lt.c1.torch')); }
     });

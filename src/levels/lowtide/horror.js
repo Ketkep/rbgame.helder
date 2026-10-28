@@ -60,6 +60,13 @@ export function horrorEnv(w, game, o = {}) {
   const theirGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: softTexture('glow'), color: 0xcfeaff, transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
   theirGlow.scale.setScalar(0.9); theirGlow.visible = false; w.add(theirGlow);
   H.torch = torch;
+  // F toggles the torch in every chapter (chapters with their own F handler set H.ownF)
+  const onTorchKey = (e) => {
+    if (e.code !== 'KeyF' || e.repeat || H.ownF || game.state !== 'playing' || game.modal) return;
+    if (H.noTorch) return;
+    H.torchOn = !H.torchOn; w.coop?.set?.('torch:' + w.coop.me, H.torchOn);
+  };
+  window.addEventListener('keydown', onTorchKey); w.disposers.push(() => window.removeEventListener('keydown', onTorchKey));
 
   // ---- ward lamps -------------------------------------------------------------------------------------------------------
   const POOL = low ? 3 : 5;
@@ -108,8 +115,8 @@ export function horrorEnv(w, game, o = {}) {
     const k = (H.torchOn ? 1 : 0) * H.torchK * (H.dimT > 0 ? 0.25 + 0.75 * hash(Math.floor(t * 20)) : 1) * (0.97 + 0.03 * Math.sin(t * 23));
     fwd.set(0, 0, -1).applyQuaternion(cam.quaternion);
     tmp.set(0.22, -0.2, -0.1).applyQuaternion(cam.quaternion).add(cam.position);
-    torch.position.copy(tmp); torch.target.position.copy(tmp).addScaledVector(fwd, 10); torch.intensity = 72 * k;
-    myBeam.position.copy(tmp); myBeam.quaternion.copy(cam.quaternion); myBeam.visible = k > 0.05; myBeam.material.uniforms.uInt.value = 0.05 * k;
+    torch.position.copy(tmp); torch.target.position.copy(tmp).addScaledVector(fwd, 10); torch.intensity = 46 * k;
+    myBeam.position.copy(tmp); myBeam.quaternion.copy(cam.quaternion); myBeam.visible = k > 0.05; myBeam.material.uniforms.uInt.value = 0.035 * k;
     // partner's torch
     const c = w.coop, P = c?.partner;
     const on = !!(P && P.has && !P.dead && H.theirOn !== false);

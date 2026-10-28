@@ -245,6 +245,7 @@ export default {
     document.body.appendChild(panel); w.disposers.push(() => panel.remove());
     const q = (s) => panel.querySelector(s);
     const setPanel = (role, task, bar = null, color = '#a8171f') => { panel.style.opacity = role ? '0.92' : '0'; q('#c5-role').textContent = role || ''; q('#c5-task').textContent = task || ''; const bw = q('#c5-bw'); bw.style.display = bar === null ? 'none' : 'block'; if (bar !== null) { q('#c5-bar').style.width = Math.round(Math.max(0, Math.min(1, bar)) * 100) + '%'; q('#c5-bar').style.background = color; } };
+    H.ownF = true;
     const onKey = (e) => { if (e.code === 'KeyF' && !e.repeat && game.state === 'playing' && !game.modal) { H.torchOn = !H.torchOn; c.set('tv:' + me, H.torchOn); } };
     document.addEventListener('keydown', onKey); w.disposers.push(() => document.removeEventListener('keydown', onKey));
     c.set('tv:' + me, true); c.set('torch:' + me, false); c.on('tv:' + other, (v) => { H.theirOn = v !== false; });

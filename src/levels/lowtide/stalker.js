@@ -142,6 +142,13 @@ export function stalker(w, game, H, S, o) {
     return true;
   };
 
+  let spawnTold = false;
+  c.onEvent('orderly-away', (d) => {
+    if (!host || !d || Math.hypot(st.x - d.x, st.z - d.z) > 32) return;
+    const far = nodes.slice().sort((a, b) => Math.hypot(b.x - d.x, b.z - d.z) - Math.hypot(a.x - d.x, a.z - d.z)).slice(0, 3);
+    const n = far[Math.floor(Math.random() * far.length)]; if (!n) return;
+    st.warp(n.x, n.z); st.state = 'search'; search = 6; wp = []; wi = 0;
+  });
   w.updaters.push((dt) => {
     if (!st.on) return;
     if (host) {
@@ -155,8 +162,11 @@ export function stalker(w, game, H, S, o) {
     // everyone: dist to me, cues, catching me
     const g = game.player, dme = Math.hypot(g.x - st.x, g.z - st.z); st.dist = Math.min(st.dist, dme);
     st.myDist = dme;
+    // respawn protection: whoever respawns tells the host, who drags the Orderly to the far side of the ward so a death is never a spawn-camp
+    if (game.state === 'playing' && game.timeSinceSpawn < 0.25 && !spawnTold) { spawnTold = true; c.emit('orderly-away', { x: g.x, z: g.z }); }
+    else if (game.timeSinceSpawn > 1) spawnTold = false;
     const chase = st.state === 'chase';
-    if (!st.bot && game.state === 'playing' && dme < 1.0 && Math.abs(g.y - Y0) < 2.2 && chase && !(c.get('hid:' + me, false) && !lit(me, g.x, g.z))) { c.emit('orderly-caught', { role: me }); game.kill('The Orderly'); }
+    if (!st.bot && game.state === 'playing' && dme < 1.0 && game.timeSinceSpawn > 5 && Math.abs(g.y - Y0) < 2.2 && chase && !(c.get('hid:' + me, false) && !lit(me, g.x, g.z))) { c.emit('orderly-caught', { role: me }); game.kill('The Orderly'); }
   });
 
   // ---- visuals and cues (per frame, both machines) -------------------------------------------------------------------------

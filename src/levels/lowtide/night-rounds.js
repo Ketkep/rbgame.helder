@@ -451,6 +451,7 @@ export default {
     // =============================================================================================================================
     //  PER-FRAME: HUD, torch key, torch sharing
     // =============================================================================================================================
+    H.ownF = true;
     const onKey = (e) => { if (e.code === 'KeyF' && !e.repeat && game.state === 'playing' && !game.modal) { H.torchOn = !H.torchOn; c.set('tv:' + me, H.torchOn); c.set('torch:' + me, dark && H.torchOn); } };
     document.addEventListener('keydown', onKey);
     w.disposers.push(() => document.removeEventListener('keydown', onKey));

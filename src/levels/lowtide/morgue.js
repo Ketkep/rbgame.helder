@@ -156,6 +156,7 @@ export default {
 
     // ---- the torch switch (the Orderly sees a lit torch from five metres) -----------------------------------------------
     c.set('torch:' + me, true);
+    H.ownF = true;
     const onKey = (e) => { if (e.code === 'KeyF' && !e.repeat && game.state === 'playing' && !game.modal) { H.torchOn = !H.torchOn; c.set('torch:' + me, H.torchOn); } };
     window.addEventListener('keydown', onKey); w.disposers.push(() => window.removeEventListener('keydown', onKey));
 
