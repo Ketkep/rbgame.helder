@@ -106,7 +106,7 @@ async function open(url, size = { width: 1280, height: 720 }, ctx = {}) {
   const { context, page } = await open(`${base}?debug&touch`, { width: 844, height: 390 }, { isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
   const r = await page.evaluate(() => ({ shots: window.__trust.backdrop.list.map((s) => s.id), host: getComputedStyle(document.getElementById('host-wrap')).display, chips: getComputedStyle(document.getElementById('home-chips')).display, cards: document.querySelectorAll('#campaigns .card').length }));
   ok(!r.shots.includes('lobby') && !r.shots.includes('ledge') && r.shots.length === 5, `phone: only the five tutorial levels are used as backdrops (${r.shots.join(', ')})`);
-  ok(r.host === 'none' && r.chips === 'none' && r.cards === 3, `phone: the host and the stat chips are hidden, the three cards are there`);
+  ok(r.host === 'none' && r.chips === 'none' && r.cards === 4, `phone: the host and the stat chips are hidden, the four cards are there`);
   if (shots) await page.screenshot({ path: `${shots}/home-phone.png` });
   await context.close();
 }

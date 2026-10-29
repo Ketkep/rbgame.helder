@@ -363,11 +363,6 @@ export class Game {
     }
     const cs = this.cs(c.id);
     const hub = !!c.hub;
-    if (hub && this.touch && !this.debug) {                       // the hotel is not on touch yet
-      card.classList.remove('playable'); card.classList.add('soon');
-      card.appendChild(mk('div', 'soon-badge', '🖥 Desktop only for now'));
-      return card;
-    }
     if (c.coop) {                                                                // online two-player: the card opens the room screen
       if (this.touch && !this.debug) { card.classList.remove('playable'); card.classList.add('soon'); card.appendChild(mk('div', 'soon-badge', '🖥 Desktop only for now')); return card; }
       const cleared = c.levels.filter((_, i) => cs.levelBest[i]).length, ready = c.levels.filter((l) => !l.placeholder).length;

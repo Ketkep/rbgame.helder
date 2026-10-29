@@ -323,11 +323,17 @@ body.touch { height: 100dvh; }
 #t-jump { right: calc(env(safe-area-inset-right, 0px) + 30px); bottom: 30px; width: 94px; height: 94px; font-size: 17px; border-color: rgba(255,200,61,0.7); }
 #t-reset { right: calc(env(safe-area-inset-right, 0px) + 140px); bottom: 26px; width: 56px; height: 56px; font-size: 24px; }
 #t-use { right: calc(env(safe-area-inset-right, 0px) + 42px); bottom: 140px; width: 74px; height: 74px; border-color: rgba(255,200,61,0.9); }
+#t-hint { right: calc(env(safe-area-inset-right, 0px) + 26px); top: calc(env(safe-area-inset-top, 0px) + 60px); width: 52px; height: 52px; font-size: 11px; }
+#panel-leave { display: block; margin: 12px auto 0; }
+body.touch #panel-foot { display: none; }
+body.touch .ad-skip.tap { pointer-events: auto; padding: 10px 14px; font-size: 14px; }
+body.touch #ov-ad .ad-skip::after { content: ' · tap to pay $0.99 and skip'; }
 #t-pause { top: calc(env(safe-area-inset-top, 0px) + 8px); left: 50%; margin-left: -22px; width: 44px; height: 44px; font-size: 14px; }
 .t-btn.small { opacity: 0.85; }
 
 body.touch #crosshair { opacity: 0.6; }
-body.touch #hint-chip, body.touch #money-chip { display: none !important; }
+body.touch #hint-chip { display: none !important; }
+body.touch #money-chip { left: calc(env(safe-area-inset-left, 0px) + 12px); bottom: auto; top: 74px; padding: 4px 10px; font-size: 13px; }
 body.touch #hud-left { top: calc(env(safe-area-inset-top, 0px) + 8px); left: calc(env(safe-area-inset-left, 0px) + 12px); gap: 5px; }
 body.touch #hud-right { top: calc(env(safe-area-inset-top, 0px) + 8px); right: calc(env(safe-area-inset-right, 0px) + 12px); gap: 5px; }
 body.touch #lvl-chip { font-size: 10px; padding: 5px 10px; }
@@ -549,3 +555,14 @@ body.horror #subs .line { font-family: ui-monospace, Menlo, Consolas, monospace;
 #lt-warn ul { margin: 10px 0 18px; padding-left: 20px; }
 #lt-warn .btns { display: flex; gap: 12px; }
 #lt-flash { position: fixed; inset: 0; z-index: 60; background: #fff; opacity: 0; pointer-events: none; }
+
+/* panels (keypads, notes, bills) on a landscape phone: compact, scrollable, a 6x2 keypad */
+body.touch .panel-card { min-width: 0; max-width: calc(100vw - 24px); max-height: calc(100vh - 16px); overflow-y: auto; padding: 10px 16px 10px; border-radius: 14px; }
+body.touch .panel-card h3 { margin: 0 0 6px; font-size: 11px; }
+body.touch .kp-digit { width: 40px; height: 48px; font-size: 28px; }
+body.touch .kp-display { margin-bottom: 4px; }
+body.touch .kp-msg { margin: 2px 0 6px; min-height: 16px; font-size: 12px; }
+body.touch .kp-pad { grid-template-columns: repeat(6, 52px); gap: 6px; margin-bottom: 6px; }
+body.touch .kp-pad button { height: 44px; }
+body.touch .kp-info { margin: 0 0 6px; padding: 5px 8px; font-size: 11px; }
+body.touch #panel-leave { margin-top: 6px; padding: 8px 18px; }

@@ -34,7 +34,7 @@ const centre = (page, sel) => page.evaluate((s) => { const r = document.querySel
 const playing = (page) => page.waitForFunction(() => window.__trust && window.__trust.state === 'playing' && window.__trust.world, null, { timeout: 90000, polling: 400 });
 const shot = async (page, name) => { if (shots) await page.screenshot({ path: `${shots}/${name}.png` }); };
 
-// ---- 1. the home page on a phone: no "desktop only" wall, touch wording, hotel marked desktop-only ---------------------
+// ---- 1. the home page on a phone: no "desktop only" wall, touch wording, hotel playable (2-player marked desktop-only) ---------------------
 {
   const { context, page } = await phone(base);
   await page.waitForSelector('#campaigns .card', { timeout: 60000 });
@@ -47,7 +47,7 @@ const shot = async (page, name) => { if (shots) await page.screenshot({ path: `$
   }));
   ok(info.touch && info.homeShown && !info.mobileScreen, 'phone: the home page shows (no "desktop only" wall)');
   ok(info.cards[0].btns.includes('Play') || info.cards[0].btns.includes('Continue'), `phone: Campaign 1 can be played (${info.cards[0].btns.join(', ')})`);
-  ok(info.cards.some((c) => /Desktop only/.test(c.badge)) && info.cards.every((c) => !/Enter the hotel|lobby/.test(c.btns.join(' '))), `phone: the hotel is marked desktop-only (${info.cards.map((c) => c.badge || c.btns[0]).join(' | ')})`);
+  ok(info.cards.some((c) => /Enter the hotel/.test(c.btns.join(' '))) && info.cards.some((c) => /Desktop only/.test(c.badge)), `phone: the hotel is playable, 2-player stays desktop-only (${info.cards.map((c) => c.badge || c.btns[0]).join(' | ')})`);
   ok(/thumb/i.test(info.keys) && !/WASD/.test(info.keys), 'phone: the home page explains thumbs, not WASD');
   await shot(page, '1-home');
   await context.close();
@@ -154,6 +154,31 @@ const shot = async (page, name) => { if (shots) await page.screenshot({ path: `$
   const dodged = await l4.page.evaluate(() => ({ state: window.__trust.state, tf: document.getElementById('btn-resume').style.transform }));
   ok(dodged.state === 'paused' && /translate/.test(dodged.tf), `level 4: the Resume button slides away from a thumb (${dodged.tf})`);
   await l4.context.close();
+}
+
+// ---- hotel on a phone: HINT button, panels have a Done button and hide the thumb zones, the ad can be skipped by tap ----------
+{
+  const { context, page, t } = await phone(`${base}?debug&touch&campaign=hotel&level=3`);
+  await playing(page);
+  const r = await page.evaluate(async () => {
+    const g = window.__trust, { openKeypad } = await import('/src/engine/keypad.js').catch(() => ({}));
+    return { hint: !!document.getElementById('t-hint'), leave: !!document.getElementById('panel-leave'), hasKp: !!openKeypad };
+  });
+  ok(r.hint && r.leave, 'hotel/touch: HINT button and panel Done button exist');
+  const before = await page.evaluate(() => window.__trust.hintCool || 0);
+  const hb = await centre(page, '#t-hint'); await t.down(5, hb.x, hb.y); await t.up(5);
+  await page.waitForTimeout(300);
+  const after = await page.evaluate(() => window.__trust.hintCool || 0);
+  ok(after > before, `hotel/touch: tapping HINT asks for a hint (cooldown ${before.toFixed(1)} -> ${after.toFixed(1)})`);
+  await page.evaluate(() => { const g = window.__trust; g.modal = { key() {}, close() { g.modal = null; document.getElementById('panel').classList.add('hidden'); } }; document.getElementById('panel').classList.remove('hidden'); });
+  await page.waitForTimeout(300);
+  const m = await page.evaluate(() => ({ touchShown: document.getElementById('touch').classList.contains('show'), leave: getComputedStyle(document.getElementById('panel-leave')).display }));
+  ok(!m.touchShown && m.leave !== 'none', `hotel/touch: with a panel open the thumb zones hide and Done shows (${JSON.stringify(m)})`);
+  const lb = await centre(page, '#panel-leave'); await t.down(6, lb.x, lb.y); await t.up(6);
+  await page.waitForTimeout(300);
+  ok(await page.evaluate(() => !window.__trust.modal), 'hotel/touch: tapping Done closes the panel');
+  await shot(page, '9-hotel');
+  await context.close();
 }
 
 await browser.close();

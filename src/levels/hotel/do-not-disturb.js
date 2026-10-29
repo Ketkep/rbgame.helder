@@ -485,7 +485,7 @@ export default {
       if (hidden) {
         hideT += dt;
         const k = game.keys;
-        if (hideT > 0.35 && (k.has('KeyW') || k.has('KeyA') || k.has('KeyS') || k.has('KeyD') || k.has('KeyE') || k.has('Space'))) unhide(game);
+        if (hideT > 0.35 && (k.has('KeyW') || k.has('KeyA') || k.has('KeyS') || k.has('KeyD') || k.has('KeyE') || k.has('Space') || Math.hypot(game.touchMove.x, game.touchMove.y) > 0.3)) unhide(game);
       }
       // the wax one: step, nothing; she is looking right at you and nothing happens
       if (statue) {

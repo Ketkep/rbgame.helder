@@ -40,9 +40,10 @@ export class TouchControls {
     this.btnReset = mk('button', 't-reset', 't-btn small', '↺');
     this.btnUse = mk('button', 't-use', 't-btn hidden', 'USE');
     this.btnPause = mk('button', 't-pause', 't-btn small', '❚❚');
+    this.btnHint = mk('button', 't-hint', 't-btn small', 'HINT');
     this.btnReset.setAttribute('aria-label', 'Respawn at the last checkpoint');
     this.btnPause.setAttribute('aria-label', 'Pause');
-    root.append(look, stick, this.btnJump, this.btnReset, this.btnUse, this.btnPause);
+    root.append(look, stick, this.btnJump, this.btnReset, this.btnUse, this.btnPause, this.btnHint);
     document.getElementById('app').appendChild(root);
 
     this._bindLook(look);
@@ -153,6 +154,14 @@ export class TouchControls {
     this._hold(this.btnReset, () => g.manualReset(), () => {});
     this._hold(this.btnUse, () => g.useFocus(), () => {});
     this._hold(this.btnPause, () => g.pause(), () => {});
+    this._hold(this.btnHint, () => g.useHint(), () => {});
+    // puzzle panels (keypads, notes, bills) have no keyboard on a phone: one tap target to step away (never on a trap modal)
+    const panel = g.ui.el.panel, leave = mk('button', 'panel-leave', 'btn', 'Done ✕');
+    leave.addEventListener('click', (e) => { e.preventDefault(); g.audio.click?.(); g.modal?.close?.(); });
+    panel.querySelector('.panel-card').appendChild(leave); leave.style.display = 'none'; this.leave = leave;
+    // the ad's skip button (a keyboard key on desktop)
+    const skip = document.querySelector('.ad-skip');
+    if (skip) { skip.classList.add('tap'); skip.addEventListener('pointerdown', (e) => { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyK' })); }); }
   }
 
   /** Swap the keyboard wording in the shared HUD for touch wording. */
@@ -176,7 +185,8 @@ export class TouchControls {
   /** Called every frame: show the controls only while a run is on, and let go of everything when it is not. */
   sync() {
     const g = this.g;
-    const show = (g.state === 'playing' || g.state === 'dead') && !g.ui.anyScreen;
+    const leave = this.leave; if (leave) { const on = !!g.modal && !g.modal.troll; if (on === (leave.style.display === 'none')) leave.style.display = on ? '' : 'none'; }
+    const show = (g.state === 'playing' || g.state === 'dead') && !g.ui.anyScreen && !g.modal;
     if (show !== this.shown) {
       this.shown = show;
       this.root.classList.toggle('show', show);
@@ -191,7 +201,7 @@ export class TouchControls {
     this.lookId = null;
     this._stickRelease();
     if (this.g.keys.has('Space')) { this.g.keys.delete('Space'); this.g.ui.markKey('Space', false); }
-    for (const b of [this.btnJump, this.btnReset, this.btnUse, this.btnPause]) b.classList.remove('on');
+    for (const b of [this.btnJump, this.btnReset, this.btnUse, this.btnPause, this.btnHint]) b.classList.remove('on');
   }
 
   /** Full screen + landscape where the browser allows it (Android Chrome). iPhones cannot, which is what "Add to Home Screen" is for. */
