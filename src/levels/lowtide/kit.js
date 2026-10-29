@@ -205,10 +205,10 @@ export function stencil(w, text, { x, y = 2.2, z, rot = 0, size = 0.5, color = '
 export function exitDoor(w, { x, y = 0, z, rot = 0 }) {
   const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rot; w.add(g);
   const add = (geo, m, px, py, pz, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.rotation.y = ry; o.castShadow = true; g.add(o); return o; };
-  add(new THREE.BoxGeometry(2.4, 2.6, 0.3), horrorSurface('rust', { color: 0x4d5a56, roughness: 0.6, metalness: 0.7 }), 0, 1.3, -0.2);
-  add(new THREE.PlaneGeometry(1.7, 2.3), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xcfe8ee).multiplyScalar(1.6), toneMapped: false }), 0, 1.2, -0.05);
-  add(new THREE.BoxGeometry(0.9, 2.3, 0.06), horrorSurface('rust', { color: 0x5d6b66, roughness: 0.55, metalness: 0.7 }), -0.6, 1.2, 0.02, 0.9);
-  add(new THREE.BoxGeometry(0.5, 0.18, 0.05), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x3dff7a).multiplyScalar(1.6), toneMapped: false }), 0, 2.8, 0.0);
+  add(new THREE.BoxGeometry(2.4, 2.6, 0.3), horrorSurface('rust', { color: 0x4d5a56, roughness: 0.6, metalness: 0.7 }), 0, 1.3, -0.28);
+  add(new THREE.PlaneGeometry(1.7, 2.3), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xcfe8ee).multiplyScalar(1.6), toneMapped: false }), 0, 1.2, -0.115);
+  add(new THREE.BoxGeometry(0.9, 2.3, 0.06), horrorSurface('rust', { color: 0x5d6b66, roughness: 0.55, metalness: 0.7 }), -0.6, 1.2, -0.1, 0.9);
+  add(new THREE.BoxGeometry(0.5, 0.18, 0.05), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x3dff7a).multiplyScalar(1.6), toneMapped: false }), 0, 2.8, -0.1);
   const L = new THREE.PointLight(0xcfe8ee, 14, 12, 1.8); L.position.set(0, 1.4, 0.6); g.add(L);
   w.goal({ x, y, z: z + Math.cos(rot) * 0.6, hidden: true });
   return g;
@@ -262,7 +262,7 @@ export function door(w, { x, y = 0, z, along = 'x', width = 1.8, h = 2.5, key, l
   (w.doors ||= []).push(st);
   for (const sd of [-1, 1]) {
     const hx = x + (horiz ? 0 : sd * (0.2)), hz = z + (horiz ? sd * 0.2 : 0);
-    const knob = new THREE.Mesh(new THREE.BoxGeometry(horiz ? 0.34 : 0.06, 0.07, horiz ? 0.06 : 0.34), mat('darkSteel')); knob.position.set(hx, y + 1.05, hz); w.add(knob);
+    const knob = new THREE.Mesh(new THREE.BoxGeometry(horiz ? 0.34 : 0.06, 0.07, horiz ? 0.06 : 0.34), mat('darkSteel')); knob.position.set(hx - x, 1.05 - h / 2, hz - z); p.group.add(knob);
     w.interactable({
       x: hx + (horiz ? 0 : sd * 0.12), y: y + 1.1, z: hz + (horiz ? sd * 0.12 : 0), w: horiz ? 0.8 : 0.5, h: 0.8, d: horiz ? 0.5 : 0.8, range: 2.6, pad: 0.05,
       label: () => (st.locked ? `Locked ${label}` : st.open ? `Close ${label}` : `Open ${label}`),
